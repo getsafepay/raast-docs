@@ -1,0 +1,1644 @@
+openapi: 3.1.0
+info:
+  title: Raast Public
+  version: 1.0.0
+  description: ""
+servers:
+  - url: https://dev.api.getsafepay.com/raastwire
+paths:
+  /v1/aggregators/{raast-aggregator-id}:
+    get:
+      tags:
+        - Aggregators
+      summary: Get Aggregator
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "201":
+          $ref: "#/components/responses/StandardSuccess"
+        "404":
+          $ref: "#/components/responses/StandardSuccess"
+
+  /v1/aggregators/{raast-aggregator-id}/keys:
+    get:
+      tags:
+        - Access Keys
+      summary: List Access Keys
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - name: limit
+          in: query
+          required: false
+          example: "{limit}"
+          schema:
+            deprecated: false
+            type: integer
+            default: "10"
+            minimum: 0
+            maximum: 100
+        - name: offset
+          in: query
+          required: false
+          example: "{offset}"
+          schema:
+            deprecated: false
+            type: integer
+            default: "0"
+            minimum: 0
+        - name: names
+          in: query
+          required: false
+          example: "{names}"
+          schema:
+            type: string
+        - name: is_active
+          in: query
+          required: false
+          example: "{is_active}"
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags:
+        - Access Keys
+      summary: Create Access Key
+      description: Create an access key to access Safepay's Raast APIs
+      operationId: createAccessKey
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateApiKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/aggregators/{raast-aggregator-id}/keys/{access-key-id}:
+    put:
+      tags:
+        - Access Keys
+      summary: Update Access Key
+      description: Update your access key
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AccessKeyIdParam"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateAccessKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+    delete:
+      tags:
+        - Access Keys
+      summary: Delete Access Key
+      description: Delete your access key
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AccessKeyIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/keys/{access-key-id}/rotate:
+    put:
+      tags:
+        - Access Keys
+      summary: Rotate Access Key
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AccessKeyIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+
+  /v1/aggregators/{raast-aggregator-id}/merchants:
+    post:
+      tags:
+        - Merchants
+      summary: Create Merchant
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateMerchant"
+    get:
+      tags:
+        - Merchants
+      summary: List Merchants
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - name: limit
+          in: query
+          required: false
+          example: 10
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          example: 0
+          schema:
+            type: string
+        - name: enabled
+          in: query
+          required: false
+          example: true
+          schema:
+            type: string
+        - name: merchant_identifiers
+          in: query
+          required: false
+          example: am_1234567890
+          schema:
+            type: string
+        - name: names
+          in: query
+          required: false
+          example: Test Merchant
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/merchants/{aggregator-merchant-id}:
+    get:
+      tags:
+        - Merchants
+      summary: Find Merchant
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/MerchantIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - Merchants
+      summary: Delete Merchant
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/MerchantIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    put:
+      tags:
+        - Merchants
+      summary: Update Merchant
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/MerchantIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateMerchant"
+
+  /v1/aggregators/{raast-aggregator-id}/merchants/{aggregator-merchant-id}/raast-activate:
+    put:
+      tags:
+        - Merchants
+      summary: Activate Raast Merchant
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/MerchantIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "406":
+          $ref: "#/components/responses/NotAcceptable"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/aggregators/{raast-aggregator-id}/merchants/{aggregator-merchant-id}/raast-suspend:
+    put:
+      tags:
+        - Merchants
+      summary: Suspend Raast Merchant
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/MerchantIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/payments:
+    post:
+      tags:
+        - Payments
+      summary: Create RTP Now or Later
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "500":
+          $ref: "#/components/responses/InternalError"
+      requestBody:
+        $ref: "#/components/requestBodies/CreatePayment"
+    get:
+      tags:
+        - Payments
+      summary: List Payments
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - name: limit
+          in: query
+          required: false
+          example: 10
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          example: 0
+          schema:
+            type: string
+        - name: aggregator_merchant_id
+          in: query
+          required: false
+          example: am_1234567890
+          schema:
+            type: string
+        - name: order_id
+          in: query
+          required: false
+          example: O_12345
+          schema:
+            type: string
+        - name: request_id
+          in: query
+          required: false
+          example: mMqCEa7Vajgtuu1VSXz4k8ri4R3
+          schema:
+            type: string
+        - name: trace_reference
+          in: query
+          required: false
+          example: bADGhCLmi8f7j9FeRDe3IuyQjCzlM34eZsGS1
+          schema:
+            type: string
+        - name: msg_id
+          in: query
+          required: false
+          example: dmNP1FtMPEQEjvFRJSMZI1VpWohKubU8yV6o2
+          schema:
+            type: string
+        - name: pmt_inf_id
+          in: query
+          required: false
+          example: sTvT4lBvWPHWXw7Y44msStMB
+          schema:
+            type: string
+        - name: uetr
+          in: query
+          required: false
+          example: ee942c2e9854960d
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          example:
+          schema:
+            type: string
+            enum:
+              - P_REJECTED
+              - P_INITIATED
+              - P_AUTHORIZED
+              - P_CAPTURED
+              - P_REFUNDED
+        - name: type
+          in: query
+          required: false
+          example: RTP_LATER
+          schema:
+            type: string
+            enum:
+              - RTP_NOW
+              - RTP_LATER
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+
+  /v1/aggregators/{raast-aggregator-id}/payments/{payment-id}:
+    get:
+      tags:
+        - Payments
+      summary: Find Payment
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/PaymentIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+
+  /v1/aggregators/{raast-aggregator-id}/refunds:
+    post:
+      tags:
+        - Refunds
+      summary: Create Refund
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateRefund"
+      security:
+        - apiKey: []
+    get:
+      tags:
+        - Refunds
+      summary: List Refunds
+      security:
+        - apiKey: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          example: 10
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          example: 0
+          schema:
+            type: string
+        - name: payment_ids
+          in: query
+          required: false
+          example: pm_2288490a
+          schema:
+            type: string
+        - name: direction
+          in: query
+          required: false
+          example: DESC
+          schema:
+            type: string
+            enum:
+              - ASC
+              - DESC
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/aggregators/{raast-aggregator-id}/refunds/{refund-id}:
+    get:
+      tags:
+        - Refunds
+      summary: Find Refund
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/RefundIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /v1/aggregators/{raast-aggregator-id}/QR Codes:
+    post:
+      tags:
+        - QR Codes
+      summary: Create QR
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateQRCode"
+    get:
+      tags:
+        - QR Codes
+      summary: List QR Codes
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - name: type
+          in: query
+          required: false
+          example: STATIC
+          schema:
+            type: string
+            enum:
+              - STATIC
+              - DYNAMIC
+        - name: limit
+          in: query
+          required: false
+          example: 10
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          example: 0
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/QR Codes/{qr-id}:
+    get:
+      tags:
+        - QR Codes
+      summary: Find QR
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/QRIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      tags:
+        - QR Codes
+      summary: Delete QR Codes
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/QRIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                aggregator_merchant_id:
+                  type: string
+  /v1/aggregators/{raast-aggregator-id}/QR Codes/{qr-id}/payments:
+    get:
+      tags:
+        - QR Codes
+      summary: View Payments associated with QR Codes
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/QRIdParam"
+        - name: limit
+          in: query
+          required: false
+          example: 10
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          example: 0
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+
+  /v1/aggregators/{raast-aggregator-id}/title-fetch:
+    get:
+      tags:
+        - Utlities
+      summary: Title Fetch
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                iban:
+                  type: string
+  /v1/aggregators/{raast-aggregator-id}/account-info:
+    get:
+      tags:
+        - Utlities
+      summary: Read Account Info
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/StandardSuccess"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                iban:
+                  type: string
+                with_title_fetch:
+                  type: boolean
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      name: X-SFPY-AGGREGATOR-SECRET-KEY
+      in: header
+  headers:
+    ContentLengthHeader:
+      schema:
+        type: string
+        example: "256"
+    DateHeader:
+      schema:
+        type: string
+        example: Sat, 12 Aug 2023 08:55:04 GMT
+  parameters:
+    AggregatorIdParam:
+      name: aggregator_id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+      description: The unique identifier for the aggregator
+    AccessKeyIdParam:
+      name: accesskey_id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: ak_da8f1c10-346a-4be8-895a-b6187a9a9662
+      description: The unique identifier for the access key
+    MerchantIdParam:
+      name: merchant_id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
+      description: The unique identifier for the merchant
+    PaymentIdParam:
+      name: payment_id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: pm_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+      description: The unique identifier for the payment
+    RefundIdParam:
+      name: refund_id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: rfd_7e26f9be-f59d-4025-8e17-9fc398d16230
+      description: The unique identifier for the refund
+    QRIdParam:
+      name: qr_id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: qr_7e26f9be-f59d-4025-8e17-9fc398d16230
+      description: The unique identifier for the QR code
+  schemas:
+    Timestamp:
+      type: string
+      format: date-time
+      example: 2025-03-13T09:12:34Z
+    StandardResponse:
+      type: object
+      description: Standard response structure for successful operations
+      properties:
+        api_version:
+          type: string
+          example: v1
+          description: The current version of the API spec
+        data:
+          type: object
+          description: Contains the response data
+    ErrorResponse:
+      type: object
+      description: Standard error response structure
+      properties:
+        code:
+          type: string
+          description: Error code identifying the type of error
+        message:
+          type: string
+          description: Human-readable error message
+    Aggregator:
+      type: object
+      properties:
+        token:
+          type: string
+        partner_id:
+          type: string
+        bank_account_id:
+          type: string
+        name:
+          type: string
+        is_active:
+          type: boolean
+        vault_enabled:
+          type: boolean
+        webhook_url:
+          type: string
+        webhook_secret:
+          type: string
+        keys:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              token:
+                type: string
+              key_id:
+                type: string
+              aggregator_id:
+                type: string
+              is_active:
+                type: boolean
+              name:
+                type: string
+              secret:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+              updated_at:
+                type: string
+                format: date-time
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    AccessKey:
+      type: object
+      properties:
+        token:
+          type: string
+        key_id:
+          type: string
+        aggregator_id:
+          type: string
+        is_active:
+          type: boolean
+        name:
+          type: string
+        secret:
+          type: string
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    BankAccount:
+      type: object
+      properties:
+        token:
+          type: string
+        vault_token:
+          type: string
+        title:
+          type: string
+        iban:
+          type: string
+        redacted_iban:
+          type: string
+        hashed_iban:
+          type: string
+        servicer:
+          type: string
+        bank:
+          type: string
+        depositor_id:
+          type: string
+        owner:
+          type: string
+        kind:
+          type: integer
+        version:
+          type: string
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    RaastMerchant:
+      type: object
+      properties:
+        token:
+          type: string
+        partner_id:
+          type: string
+        raast_record_id:
+          type: string
+          format: color
+        status:
+          type: string
+        uid_type:
+          type: string
+        uid_value:
+          type: string
+        name:
+          type: string
+        document_type:
+          type: string
+        document_number:
+          type: string
+        address_details:
+          type: object
+          properties:
+            country:
+              type: string
+            city:
+              type: string
+            state_province_region:
+              type: string
+            address_line:
+              type: string
+        contact_details:
+          type: object
+          properties:
+            mobile_number:
+              type: string
+              format: utc-millisec
+            email:
+              type: string
+              format: email
+        additional_details:
+          type: object
+          properties:
+            dba:
+              type: string
+            mcc:
+              type: string
+              format: utc-millisec
+            lat:
+              type: string
+            long:
+              type: string
+        additional_details_private:
+          type: object
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    RateCard:
+      type: object
+      properties:
+        token:
+          type: string
+        aggregator_merchant_id:
+          type: string
+        connector_id:
+          type: string
+        rate_card_id:
+          type: string
+        fixed_rate:
+          type: string
+          format: integer
+        tax_rate:
+          type: integer
+        tax_region:
+          type: string
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    Merchant:
+      type: object
+      properties:
+        token:
+          type: string
+        name:
+          type: string
+        aggregator_id:
+          type: string
+        merchant_id:
+          type: string
+        merchant_external_id:
+          type: string
+        bank_account_id:
+          type: string
+        enabled:
+          type: boolean
+        bank_account:
+          $ref: "#/components/schemas/BankAccount"
+        raast_merchant:
+          $ref: "#/components/schemas/RaastMerchant"
+        rate_card:
+          $ref: "#/components/schemas/RateCard"
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    TransactionLogs:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        payment_id:
+          type: string
+        status:
+          type: string
+        refund_id:
+          type: string
+        settlement_id:
+          type: string
+        txn_desc:
+          type: string
+        addtl_info:
+          type: string
+        token:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        iso_msg_type:
+          type: string
+    QRCode:
+      type: object
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        aggregator_merchant_id:
+          type: string
+        type:
+          type: string
+        code:
+          type: string
+        terminal_label:
+          type: string
+        reference_label:
+          type: string
+        is_deleted:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Payment:
+      type: object
+      properties:
+        token:
+          type: string
+        aggregator_merchant_id:
+          type: string
+        qr_code_id:
+          type: string
+        order_id:
+          type: string
+        type:
+          type: string
+        amount:
+          type: string
+        status:
+          type: string
+        uetr:
+          type: string
+        trace_reference:
+          type: string
+        msg_id:
+          type: string
+        instr_id:
+          type: string
+        end_to_end_id:
+          type: string
+        pmt_inf_id:
+          type: string
+        request_id:
+          type: string
+        msg_created_at:
+          type: string
+        txn_logs:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionLogs"
+        debitor:
+          nullable: true
+        qr_code:
+          $ref: "#/components/schemas/QRCode"
+        aggregator_merchant:
+          $ref: "#/components/schemas/Merchant"
+        refunds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Refund"
+        settlement:
+          nullable: true
+        expires_at:
+          $ref: "#/components/schemas/Timestamp"
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    Refund:
+      type: object
+      properties:
+        token:
+          type: string
+        payment_id:
+          type: string
+        amount:
+          type: string
+        type:
+          type: string
+        reason:
+          type: string
+        addtl_info:
+          type: string
+        status:
+          type: string
+        trace_reference:
+          type: string
+        msg_id:
+          type: string
+        return_id:
+          type: string
+        request_id:
+          type: string
+        msg_created_at:
+          $ref: "#/components/schemas/Timestamp"
+        settle_at:
+          nullable: true
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+    EMVCoDetails:
+      type: object
+      properties:
+        payload_format_indicator:
+          type: string
+        point_of_initiation_method:
+          type: string
+        merchant_category_code:
+          type: string
+        transaction_currency:
+          type: string
+        transaction_amount:
+          type: string
+        country_code:
+          type: string
+        merchant_name:
+          type: string
+        merchant_city:
+          type: string
+        postal_code:
+          type: string
+        tip_or_convenience_indicator:
+          type: string
+        convenience_fixed_fee:
+          type: string
+        convenience_percentage_fee:
+          type: string
+        crc:
+          type: string
+        additional_data_field_template:
+          type: object
+          properties:
+            bill_number:
+              type: string
+            store_label:
+              type: string
+            loyalty_label:
+              type: string
+            customer_label:
+              type: string
+            reference_label:
+              type: string
+            terminal_label:
+              type: string
+            transaction_purpose:
+              type: string
+            additional_consumer_request:
+              type: string
+            country_code:
+              type: string
+            rfu_for_emvco:
+              type: array
+              items: {}
+            payment_system_specific:
+              type: array
+              items: {}
+        merchant_information_language_template:
+          nullable: true
+        merchant_account_information:
+          type: array
+          items:
+            type: object
+            properties:
+              tag:
+                type: string
+              value:
+                type: object
+                properties:
+                  globally_unique_identifier:
+                    type: object
+                    properties:
+                      tag:
+                        type: string
+                      value:
+                        type: string
+                  payment_network_specific:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                        value:
+                          type: string
+        rfu_for_emvco:
+          type: array
+          items: {}
+        unreserved_templates:
+          type: array
+          items:
+            type: object
+            properties:
+              tag:
+                type: string
+              value:
+                type: object
+                properties:
+                  globally_unique_identifier:
+                    type: object
+                    properties:
+                      tag:
+                        type: string
+                      value:
+                        type: string
+                  context_specific_data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        tag:
+                          type: string
+                        value:
+                          type: string
+    QRCodeDetailed:
+      type: object
+      properties:
+        token:
+          type: string
+        aggregator_merchant_id:
+          type: string
+        type:
+          type: string
+        code:
+          type: string
+        terminal_label:
+          type: string
+        reference_label:
+          type: string
+        is_deleted:
+          type: boolean
+        code_details:
+          $ref: "#/components/schemas/EMVCoDetails"
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        expired_at:
+          $ref: "#/components/schemas/Timestamp"
+  requestBodies:
+    CreateAccessKey:
+      description: Request to create a new access key
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              is_active:
+                type: boolean
+              name:
+                type: string
+            required:
+              - is_active
+              - name
+          examples:
+            Create AccessKey:
+              value:
+                is_active: true
+                name: Developer Access Key
+    UpdateAccessKey:
+      description: Request to update an existing access key
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              is_active:
+                type: boolean
+              name:
+                type: string
+          examples:
+            Disable AccessKey:
+              value:
+                is_active: false
+            Change AccessKey Name:
+              value:
+                name: Updated Access Key
+    CreateMerchant:
+      description: Request to create a merchant
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              merchant_external_id:
+                type: string
+              iban:
+                type: string
+              name:
+                type: string
+              enabled:
+                type: boolean
+              raast_merchant:
+                type: object
+                properties:
+                  uid_type:
+                    type: string
+                    required: true
+                  uid_value:
+                    type: string
+                    required: true
+                  name:
+                    type: string
+                    required: true
+                  address_details:
+                    type: object
+                    properties:
+                      country:
+                        type: string
+                      city:
+                        type: string
+                      state_province_region:
+                        type: string
+                        required: true
+                      address_line:
+                        type: string
+                  contact_details:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                      mobile_number:
+                        type: string
+                  additional_details:
+                    type: object
+                    properties:
+                      dba:
+                        type: string
+                        required: true
+                      mcc:
+                        type: string
+                        required: true
+              rate_card:
+                type: object
+                properties:
+                  ratecard_kind:
+                    type: string
+                  fixed_rate:
+                    type: integer
+                  tax_rate:
+                    type: number
+            required:
+              - merchant_external_id
+              - iban
+              - name
+              - raast_merchant
+              - rate_card
+          examples:
+            Create Merchant:
+              value:
+                merchant_external_id: sec_0c3de397-441f-471f-bcd7-b6d948e1c307
+                iban: PK62ABPA0010000222380013
+                name: TestingMerchant
+                enabled: true
+                raast_merchant:
+                  uid_type: NTN
+                  uid_value: "33225247890431"
+                  name: TestHasMerchant
+                  address_details:
+                    country: PK
+                    city: Lahore
+                    state_province_region: Punjab
+                    address_line: h193c1 saddiq
+                  contact_details:
+                    email: testing1702@gmail.com
+                    mobile_number: "+9233330226445"
+                  additional_details:
+                    dba: The best business 001
+                    mcc: "3434"
+                rate_card:
+                  ratecard_kind: fixed
+                  fixed_rate: 3000
+                  tax_rate: 0.1
+    UpdateMerchant:
+      description: Request to create a merchant
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              merchant_external_id:
+                type: string
+              iban:
+                type: string
+              name:
+                type: string
+              enabled:
+                type: boolean
+              raast_merchant:
+                type: object
+                properties:
+                  uid_type:
+                    type: string
+                    required: true
+                  uid_value:
+                    type: string
+                    required: true
+                  name:
+                    type: string
+                    required: true
+                  address_details:
+                    type: object
+                    properties:
+                      country:
+                        type: string
+                      city:
+                        type: string
+                      state_province_region:
+                        type: string
+                        required: true
+                      address_line:
+                        type: string
+                  contact_details:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        format: email
+                      mobile_number:
+                        type: string
+                  additional_details:
+                    type: object
+                    properties:
+                      dba:
+                        type: string
+                        required: true
+                      mcc:
+                        type: string
+                        required: true
+              rate_card:
+                type: object
+                properties:
+                  ratecard_kind:
+                    type: string
+                  fixed_rate:
+                    type: integer
+                  tax_rate:
+                    type: number
+          examples:
+            Update Merchant IBAN:
+              value:
+                iban: PK12ALFH0031001006740433
+            Update Merchant Rate:
+              value:
+                ratecard_kind: fixed
+                fixed_rate: 3000
+                tax_rate: 0.1
+    CreatePayment:
+      description: Request to create an RTP Now or RTP Later
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              request_id:
+                type: string
+              amount:
+                type: integer
+              debitor_iban:
+                type: string
+              aggregator_merchant_identifier:
+                type: string
+              order_id:
+                type: string
+              type:
+                type: string
+              expiry_in_days:
+                type: integer
+              expiry_in_minutes:
+                type: integer
+            required:
+              - request_id
+              - amount
+              - debitor_iban
+              - aggregator_merchant_identifier
+              - order_id
+              - type
+          examples:
+            Create RTP Now With Expiry:
+              value:
+                request_id: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
+                amount: 34000
+                debitor_iban: PK89SCBL0000001234651601
+                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                order_id: test_nowExpiry
+                type: RTP_NOW
+                expiry_in_minutes: 100
+            Create RTP Later With Expiry:
+              value:
+                request_id: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
+                amount: 5000
+                debitor_iban: PK89SCBL0000001234651601
+                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                order_id: test_iban_later
+                type: RTP_LATER
+                expiry_in_days: 12
+            Create RTP Now with Raast Alias:
+              value:
+                request_id: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
+                amount: 34000
+                debitor_raast_id: "03202296111"
+                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                order_id: test_nowExpiry
+                type: RTP_NOW
+                expiry_in_minutes: 100
+    CreateRefund:
+      description: Request to create an RTP Now or RTP Later
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              request_id:
+                type: string
+              payment_id:
+                type: string
+              amount:
+                type: integer
+              reason:
+                type: string
+              addtl_info:
+                type: string
+              debitor_iban:
+                type: string
+            required:
+              - request_id
+              - payment_id
+              - amount
+              - reason
+              - debitor_iban
+          examples:
+            Create Refund:
+              value:
+                request_id: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
+                payment_id: pm_54b6bcee-aa58-454d-aed9-ce97d6bdd797
+                amount: 500
+                reason: TechnicalProblem
+                addtl_info: ""
+                debitor_iban: PK12ALFH0031001006540005
+    CreateQRCode:
+      description: Request to create a dynamic or static QR code
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+              aggregator_merchant_identifier:
+                type: string
+              request_id:
+                type: string
+              order_id:
+                type: string
+              amount:
+                type: integer
+            required:
+              - type
+              - aggregator_merchant_identifier
+          examples:
+            Create Static QR Code:
+              value:
+                type: STATIC
+                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+            Create Dynamic QR Code:
+              value:
+                type: DYNAMIC
+                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                order_id: "033301"
+                request_id: "749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30"
+                amount: 1200
+  responses:
+    StandardSuccess:
+      description: Successful operation
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StandardResponse"
+    BadRequest:
+      description: Bad request
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ErrorResponse"
+              - type: object
+                properties:
+                  code:
+                    example: error.bad_request
+                  message:
+                    example: Invalid request parameters
+    Unauthorized:
+      description: Unauthorized
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ErrorResponse"
+              - type: object
+                properties:
+                  code:
+                    example: error.unauthorized_access
+                  message:
+                    example: partner access key is required in request header
+    NotFound:
+      description: Resource not found
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ErrorResponse"
+              - type: object
+                properties:
+                  code:
+                    example: error.not_found
+                  message:
+                    example: Requested resource not found
+    Conflict:
+      description: Resource conflict
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ErrorResponse"
+              - type: object
+                properties:
+                  code:
+                    example: error.conflict
+                  message:
+                    example: Resource already exists
+    InternalError:
+      description: Internal Error
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ErrorResponse"
+              - type: object
+                properties:
+                  code:
+                    example: error.internal_server_error
+                  message:
+                    example: rpc error code Internal desc = something went wrong
+    NotAcceptable:
+      description: Not Acceptable
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/ErrorResponse"
+              - type: object
+                properties:
+                  code:
+                    example: error.request_not_acceptable
+                  message:
+                    example: already activated
+tags:
+  - name: Aggregators
+  - name: Access Keys
+  - name: Merchants
+  - name: Payments
+  - name: Refunds
+  - name: QR Codes
+  - name: Utlities
