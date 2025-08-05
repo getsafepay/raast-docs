@@ -457,7 +457,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /v1/aggregators/{raast-aggregator-id}/QR Codes:
+  /v1/aggregators/{raast-aggregator-id}/qrs:
     post:
       tags:
         - QR Codes
@@ -506,7 +506,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{raast-aggregator-id}/QR Codes/{qr-id}:
+  /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}:
     get:
       tags:
         - QR Codes
@@ -544,11 +544,11 @@ paths:
               properties:
                 aggregator_merchant_id:
                   type: string
-  /v1/aggregators/{raast-aggregator-id}/QR Codes/{qr-id}/payments:
+  /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}/payments:
     get:
       tags:
         - QR Codes
-      summary: View Payments associated with QR Codes
+      summary: List payments
       security:
         - apiKey: []
       parameters:
