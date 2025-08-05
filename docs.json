@@ -4,8 +4,8 @@
   "name": "Safepay Raastwire",
   "colors": {
     "primary": "#002de0",
-    "light": "#002de0",
-    "dark": "#002de0"
+    "light": "#ffffff",
+    "dark": "#171721"
   },
   "favicon": "/favicon.svg",
   "navigation": {

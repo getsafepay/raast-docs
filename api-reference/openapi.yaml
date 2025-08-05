@@ -15,9 +15,9 @@ paths:
         - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
         "201":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/AggregatorResponse"
         "404":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/NotFound"
 
   /v1/aggregators/{raast-aggregator-id}/keys:
     get:
@@ -59,7 +59,7 @@ paths:
             type: string
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/ListAccessKeysResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
     post:
@@ -71,10 +71,10 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
       requestBody:
-        $ref: "#/components/requestBodies/CreateApiKey"
+        $ref: "#/components/requestBodies/CreateAccessKey"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/CreateAccessKeyResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "500":
@@ -93,7 +93,7 @@ paths:
         $ref: "#/components/requestBodies/UpdateAccessKey"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/EmptySuccess"
     delete:
       tags:
         - Access Keys
@@ -104,7 +104,7 @@ paths:
         - $ref: "#/components/parameters/AccessKeyIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/EmptySuccess"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -118,7 +118,7 @@ paths:
         - $ref: "#/components/parameters/AccessKeyIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/RotateAccessKeyResponse"
 
   /v1/aggregators/{raast-aggregator-id}/merchants:
     post:
@@ -131,7 +131,7 @@ paths:
         - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/CreateMerchantResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
       requestBody:
@@ -176,7 +176,7 @@ paths:
             type: string
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/ListMerchantsResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -192,7 +192,7 @@ paths:
         - $ref: "#/components/parameters/MerchantIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/FindMerchantsResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -208,10 +208,9 @@ paths:
         - $ref: "#/components/parameters/MerchantIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/EmptySuccess"
         "401":
           $ref: "#/components/responses/Unauthorized"
-
     put:
       tags:
         - Merchants
@@ -223,7 +222,7 @@ paths:
         - $ref: "#/components/parameters/MerchantIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/UpdateMerchantsResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -247,7 +246,7 @@ paths:
         - $ref: "#/components/parameters/MerchantIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/EmptySuccess"
         "406":
           $ref: "#/components/responses/NotAcceptable"
         "500":
@@ -265,7 +264,7 @@ paths:
         - $ref: "#/components/parameters/MerchantIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/EmptySuccess"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -280,7 +279,7 @@ paths:
         - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/CreatePaymentResponse"
         "500":
           $ref: "#/components/responses/InternalError"
       requestBody:
@@ -370,7 +369,7 @@ paths:
               - RTP_LATER
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/ListPaymentsResponse"
 
   /v1/aggregators/{raast-aggregator-id}/payments/{payment-id}:
     get:
@@ -384,7 +383,7 @@ paths:
         - $ref: "#/components/parameters/PaymentIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/FindPaymentResponse"
 
   /v1/aggregators/{raast-aggregator-id}/refunds:
     post:
@@ -395,7 +394,7 @@ paths:
         - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/CreateRefundResponse"
       requestBody:
         $ref: "#/components/requestBodies/CreateRefund"
       security:
@@ -437,7 +436,7 @@ paths:
         - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/ListRefundsResponse"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -453,7 +452,7 @@ paths:
         - $ref: "#/components/parameters/RefundIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/FindRefundResponse"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -468,7 +467,7 @@ paths:
         - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/CreateQRCodeResponse"
       requestBody:
         $ref: "#/components/requestBodies/CreateQRCode"
     get:
@@ -502,7 +501,7 @@ paths:
             type: string
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/ListQRCodesResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -518,10 +517,9 @@ paths:
         - $ref: "#/components/parameters/QRIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/FindQRCodeResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
-
     post:
       tags:
         - QR Codes
@@ -568,7 +566,7 @@ paths:
             type: string
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
+          $ref: "#/components/responses/ListPaymentsForQRCodeResponse"
 
   /v1/aggregators/{raast-aggregator-id}/title-fetch:
     get:
@@ -590,6 +588,7 @@ paths:
               properties:
                 iban:
                   type: string
+
   /v1/aggregators/{raast-aggregator-id}/account-info:
     get:
       tags:
@@ -612,6 +611,7 @@ paths:
                   type: string
                 with_title_fetch:
                   type: boolean
+
 components:
   securitySchemes:
     apiKey:
@@ -1526,6 +1526,25 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/StandardResponse"
+    EmptySuccess:
+      description: Successful operation
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        example: success
     BadRequest:
       description: Bad request
       headers:
@@ -1634,6 +1653,371 @@ components:
                     example: error.request_not_acceptable
                   message:
                     example: already activated
+    AggregatorResponse:
+      description: This response contains details of an aggregator
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Aggregator"
+    ListAccessKeysResponse:
+      description: This response contains a paginated list of access keys linked to an aggregator
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                        description: Total number of access keys
+                      keys:
+                        type: array
+                        description: List of access keys
+                        items:
+                          $ref: "#/components/schemas/AccessKey"
+    CreateAccessKeyResponse:
+      description: This response contains details of an access key
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AccessKey"
+    UpdateAccessKeyResponse:
+      description: This response contains details of an access key
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AccessKey"
+    RotateAccessKeyResponse:
+      description: This response contains details of an access key
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AccessKey"
+    CreateMerchantResponse:
+      description: This response contains details of a merchant
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Merchant"
+    ListMerchantsResponse:
+      description: This response contains a paginated list of merchants linked to an aggregator
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                        description: Total number of merchants
+                      keys:
+                        type: array
+                        description: List of merchants
+                        items:
+                          $ref: "#/components/schemas/Merchant"
+    FindMerchantsResponse:
+      description: This response contains details of a merchant
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Merchant"
+    UpdateMerchantsResponse:
+      description: This response contains details of a merchant
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Merchant"
+    CreatePaymentResponse:
+      description: This response contains details of a payment
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Payment"
+    ListPaymentsResponse:
+      description: This response contains a paginated list of payments linked to a merchant
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                        description: Total number of payments
+                      keys:
+                        type: array
+                        description: List of payments
+                        items:
+                          $ref: "#/components/schemas/Payment"
+    FindPaymentResponse:
+      description: This response contains details of a payment
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Payment"
+    CreateRefundResponse:
+      description: This response contains details of a refund
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Refund"
+    ListRefundsResponse:
+      description: This response contains a paginated list of refunds linked to a payment
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                        description: Total number of refunds
+                      keys:
+                        type: array
+                        description: List of refunds
+                        items:
+                          $ref: "#/components/schemas/Refund"
+    FindRefundResponse:
+      description: This response contains details of a refund
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Refund"
+    CreateQRCodeResponse:
+      description: This response contains details of a QR Code
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/QRCode"
+    ListQRCodesResponse:
+      description: This response contains a paginated list of QR Codes linked to a merchant
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                        description: Total number of QR Codes
+                      keys:
+                        type: array
+                        description: List of QR Codes
+                        items:
+                          $ref: "#/components/schemas/QRCode"
+    FindQRCodeResponse:
+      description: This response contains details of a QR Code
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/QRCodeDetailed"
+    ListPaymentsForQRCodeResponse:
+      description: This response contains a paginated list of payments linked to a QR Code
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                        example: 1
+                        description: Total number of payments
+                      keys:
+                        type: array
+                        description: List of payments
+                        items:
+                          $ref: "#/components/schemas/Payment"
+
 tags:
   - name: Aggregators
   - name: Access Keys
