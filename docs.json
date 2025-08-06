@@ -56,18 +56,18 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "Home",
+          "href": "https://getsafepay.pk",
+          "icon": "house"
         },
         {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
+          "anchor": "Card Payment Docs",
+          "href": "https://safepay-docs.netlify.app",
+          "icon": "book"
         },
         {
           "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
+          "href": "https://getsafepay.pk/blog",
           "icon": "newspaper"
         }
       ]
