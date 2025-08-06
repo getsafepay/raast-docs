@@ -1,0 +1,85 @@
+---
+title: 'Create Static QR'
+description: 'Generate a reusable QR code linked to a merchant for recurring Raast payments'
+---
+
+Static QR codes are linked to a specific merchant’s Raast alias or IBAN and are ideal for recurring, fixed, or location-based payments. Once created, they can be reused indefinitely.
+
+Common use cases include:
+
+- In-store payment displays
+- Utility bill payments
+- Subscriptions or donations
+- Freelancers or service providers with a fixed receiving account
+
+## Characteristics of Static QRs
+
+| Feature         | Static QR                          |
+|------------------|-------------------------------------|
+| Reusable         | ✅ Yes                              |
+| Encodes metadata | ❌ No (no order ID or amount)       |
+| Tied to merchant | ✅ Yes                              |
+| Ideal for        | POS, invoices, countertop displays  |
+
+<Note>Static QRs do not carry transaction metadata. Any reconciliation must be done using the actual payment object.</Note>
+
+## API Example
+
+```bash title="Create Static QR" expandable
+curl -X POST https://api.getsafepay.com/v1/qr \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "STATIC",
+    "merchant_id": "mch_84ef70dbad2e4900"
+  }'
+```
+
+## Request Fields
+
+<Fields>
+  <Field name="type" type="string" required="true">Must be set to `"STATIC"`</Field>
+  <Field name="merchant_id" type="string" required="true">The ID of the merchant generating the QR</Field>
+</Fields>
+
+## Sample Response
+
+```json title="Static QR Response"
+{
+  "qr_type": "STATIC",
+  "qr_data": "000201010211...63043ABF",
+  "created_at": "2025-08-06T17:03:00Z"
+}
+```
+
+* The `qr_data` field contains an EMVCo-compliant QR payload that can be rendered into a scannable image.
+* This QR can be printed or displayed for offline or in-store transactions.
+
+<Tip>Static QR payloads are shorter and simpler than dynamic QR, and do not change per transaction.</Tip>
+
+## Rendering the QR
+
+Use a standard QR code library to turn `qr_data` into an image or SVG:
+
+```tsx title="React Example"
+import QRCode from 'qrcode.react'
+
+<QRCode value={qrData} size={200} />
+```
+
+You can also convert it to a downloadable PNG or display it on web/POS systems.
+
+## Best Practices
+
+* Assign a unique static QR per merchant location if needed
+* Educate staff or customers on which QR to scan for which account
+* Combine with printed instructions or display templates
+* Monitor all payments made to the merchant ID for attribution
+
+<Note>Static QRs do not expire and can be reused across sessions. If you need one-time or metadata-specific payments, use dynamic QR instead.</Note>
+
+## Related Guides
+
+* [Concepts: QR Code](/concepts/qr_code)
+* [Create Dynamic QR](/use_cases/create_dynamic_qr)
+* [Initiate Payment Now](/use_cases/create_rtp_now)

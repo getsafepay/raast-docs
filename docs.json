@@ -15,27 +15,30 @@
         "groups": [
           {
             "group": "Getting started",
-            "pages": ["index", "quickstart", "development"]
-          },
-          {
-            "group": "Customization",
-            "pages": ["essentials/settings", "essentials/navigation"]
-          },
-          {
-            "group": "Writing content",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "overview/introduction",
+              "overview/quickstart",
+              "overview/create-aggregator",
+              "overview/request-access-key"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Concepts",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "concepts/merchant",
+              "concepts/payment",
+              "concepts/qr_code",
+              "concepts/refunds"
+            ]
+          },
+          {
+            "group": "Use Cases",
+            "pages": [
+              "use-cases/overview",
+              "use-cases/rtp_now",
+              "use-cases/rtp_later",
+              "use-cases/dynamic_qr",
+              "use-cases/static_qr"
             ]
           }
         ]

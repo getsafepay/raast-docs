@@ -1,0 +1,40 @@
+---
+title: 'Request Access Key'
+description: ''
+---
+
+Once your Aggregator account is approved by Safepay, you will be issued an access key. This key is a sensitive credential used to authenticate all API calls made to the Raast system.
+
+## Access Key Format
+
+Access keys are long alphanumeric strings similar to:
+
+```mdx
+spk_live_4f3c98b1c84f42b8a82108cfdb2e45f6
+```
+
+This key must be included in the `Authorization` header of every API request:
+
+```bash
+curl -X GET https://api.getsafepay.com/v1/payments \
+  -H "Authorization: Bearer spk_live_4f3c98b1c84f42b8a82108cfdb2e45f6"
+```
+
+## Key Management Best Practices
+
+Safepay follows industry-standard security practices and recommends you do the same:
+
+- **Keep your access key secret**: Store it in a secure location like AWS Secrets Manager, HashiCorp Vault, or a secure environment variable store.
+- **Avoid hardcoding**: Never hardcode the key in your codebase or frontend assets.
+- **Use different keys for dev/test/prod**: Request separate keys for each environment.
+- **Rotate keys periodically**: You may request key rotation by emailing support@getsafepay.com
+
+## Lost or Compromised Key
+
+If your access key is lost, exposed, or compromised:
+
+- Immediately contact support@getsafepay.com
+- Your old key will be revoked
+- A new one will be issued with minimal disruption
+
+All API requests will fail with a `401 Unauthorized` error if your key is invalid or expired.

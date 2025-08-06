@@ -1,0 +1,72 @@
+---
+title: 'Refund'
+description: 'Issue and manage refunds for settled payments using the Raast API'
+---
+
+Refunds allow you to return funds to a customer for a previously settled payment. Refunds can only be initiated for payments that have a status of `SETTLED`.
+
+Safepay supports partial and full refunds using the `/v1/refunds` endpoint. Each refund must reference the original `payment_id` and include a `reason`.
+
+## Endpoint
+
+```bash title="Create Refund" expandable
+curl -X POST https://api.getsafepay.com/v1/refunds \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payment_id": "pm_2fe8c442e3bb4f3c9b124590f5d4932a",
+    "amount": 1200,
+    "reason": "CustomerRequest",
+    "request_id": "6f9619ff-8b86-4f0d-a9c4-0e2d30abcf3c"
+  }'
+```
+
+<Note>The `amount` must be less than or equal to the amount of the original payment.</Note>
+
+## Required Fields
+
+<Fields>
+  <Field name="payment_id" type="string" required="true">The original payment identifier returned by the `/payments` API</Field>
+  <Field name="amount" type="integer" required="true">The amount to refund, in the smallest currency unit (e.g. paisa)</Field>
+  <Field name="reason" type="string" required="true">Reason for the refund. Use a standardized value or string (e.g. `CustomerRequest`, `DuplicateCharge`, `ServiceIssue`)</Field>
+  <Field name="request_id" type="string" required="true">A UUID used to ensure idempotency and prevent duplicate refunds</Field>
+</Fields>
+
+## Response
+
+```json title="Refund Response"
+{
+  "id": "rf_8a0f2e1b7a134d52a3429db3f4fa21e7",
+  "payment_id": "pm_2fe8c442e3bb4f3c9b124590f5d4932a",
+  "amount": 1200,
+  "status": "PENDING",
+  "reason": "CustomerRequest",
+  "created_at": "2025-08-06T13:00:00Z"
+}
+```
+
+<Note>Refunds are first marked as `PENDING` while they are being processed and then move to `SUCCESS` or `FAILED`.</Note>
+
+## Status Lifecycle
+
+| Status  | Description                                               |
+| ------- | --------------------------------------------------------- |
+| PENDING | Refund has been received and is being validated           |
+| SUCCESS | Refund has been processed and funds returned to customer  |
+| FAILED  | Refund could not be processed (e.g. invalid IBAN, limits) |
+
+Use the `GET /v1/refunds/{id}` endpoint to check the status of a refund.
+
+## Best Practices
+
+* Always use a unique `request_id` to prevent accidental double refunds.
+* Ensure the original payment is in `SETTLED` state before attempting a refund.
+* Store refund IDs for reconciliation and customer service workflows.
+* If a refund fails, inspect the error message and adjust the request if needed.
+
+<Note>Refunds are final and irreversible once marked as `SUCCESS`.</Note>
+
+## Related Topics
+
+* [Create Payment](/concepts/payment)
+* [Webhook Events](/concepts/webhooks)

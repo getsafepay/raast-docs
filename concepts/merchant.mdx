@@ -1,0 +1,43 @@
+---
+title: 'Merchants'
+description: ''
+---
+
+Merchants represent the business entities under your aggregator that are authorized to initiate payments using the Raast network. Each merchant is assigned a unique identifier, and all payments must be initiated by a registered merchant.
+
+## Creating a Merchant
+
+Use the following endpoint to create a new merchant:
+
+```bash
+curl -X POST https://api.getsafepay.com/v1/merchants \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Acme Retail",
+    "identifier": "acme-retail-01"
+  }'
+```
+
+## Request Body Fields
+
+### Best Practices
+
+- Choose a consistent and descriptive naming scheme for identifiers (e.g. brand-location)
+- Use the same identifier across environments (e.g. staging, prod) with different prefixes if needed
+- Store the merchant_id returned in the response securely — it is used in all future payment and QR creation calls
+
+## Response
+
+The API will respond with a JSON object containing the merchant’s unique ID, timestamps, and any validation errors if applicable.
+
+```json
+{
+  "id": "mch_a1b2c3d4",
+  "name": "Acme Retail",
+  "identifier": "acme-retail-01",
+  "created_at": "2025-08-06T10:15:00Z"
+}
+```
+
+Only registered merchants can create payments or generate QR codes using the Raast API.

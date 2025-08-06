@@ -1,0 +1,43 @@
+---
+title: 'Quickstart'
+description: ''
+---
+
+Getting started with Safepay Raast involves four main steps:
+
+<Steps>
+
+<Step title="Request Aggregator Access">
+To use Safepay’s Raast APIs, you must first operate under an Aggregator account. This step cannot be completed via API.
+
+Email support@getsafepay.com with:
+	•	Company Name
+	•	Contact Person
+	•	Business Use Case
+	•	Expected payment volume
+
+Safepay will manually provision your Aggregator account and return your first access key securely.
+
+</Step>
+
+<Step title="Receive and Secure Access Key">
+Once your aggregator account is approved, you’ll receive an `access_key`. This key is required for all API requests and must be passed in the `Authorization` header.
+
+<Warning>Do not expose this key in frontend applications or client-side code. It should remain on your backend only.</Warning>
+</Step>
+
+<Step title="Create a Merchant">
+Use your access key to create one or more merchants under your aggregator. Each merchant will be issued a unique identifier and will be responsible for initiating payments via Raast.
+</Step>
+
+You can create merchants using the /v1/merchants endpoint. See Merchant Concept Guide for field definitions and examples.
+
+<Step title="Initiate Payments">
+Once a merchant is created, they can begin initiating real-time payments to a customer’s IBAN or alias. Payments can also be requested using QR codes.
+
+You may choose between static QR codes (linked to fixed details) or dynamic QR codes (customizable per transaction). Refer to the Use Cases section for live examples.
+</Step>
+
+</Steps>
+
+<Note>All API calls must be authenticated using your Aggregator access key. You must onboard at least one merchant before initiating a payment.</Note>

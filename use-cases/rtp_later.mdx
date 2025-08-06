@@ -1,0 +1,76 @@
+---
+title: 'Create Real-Time Payment (Later)'
+description: 'Generate a Raast payment request for later execution using metadata and order tracking'
+---
+
+Sometimes you may want to prepare a payment in advance but not execute it immediately — for example, collecting payment details for scheduled disbursements or authorizing funds as part of a delayed fulfillment workflow.
+
+This use case allows you to associate metadata like `order_id` or `request_id` with a payment so it can be triggered and tracked asynchronously, either by another process or in response to user input.
+
+## Use Case Examples
+
+- Batch payment runs (e.g. salary processing at end of day)
+- Deferred disbursements for KYC-cleared users
+- Order fulfillment triggered by inventory availability
+
+## Recommended Flow
+
+1. Collect all payment details upfront (IBAN, amount, reference metadata)
+2. Store this securely in your system or create a pre-validated Raast payment request
+3. At the right time, initiate the payment using the stored values and a unique `request_id`
+4. Monitor payment status via polling or webhooks
+
+## API Example
+
+```bash title="Create Payment With Metadata" expandable
+curl -X POST https://api.getsafepay.com/v1/payments \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_id": "mch_fintech_001",
+    "amount": 20000,
+    "debitor_iban": "PK36SCBL0000001188123099",
+    "order_id": "SALARY-BATCH-001",
+    "request_id": "1f7b11d5-52df-4ef2-917e-8fd775aa278e"
+  }'
+```
+
+<Note>Each `request_id` must be unique per payment. If the payment needs to be retried, use the same ID to avoid duplicates.</Note>
+
+## Fields Reference
+
+<Fields>
+  <Field name="merchant_id" type="string" required="true">Registered merchant who will send the payment</Field>
+  <Field name="amount" type="integer" required="true">Amount in paisa (smallest PKR unit)</Field>
+  <Field name="debitor_iban" type="string" required="true">IBAN of customer or beneficiary</Field>
+  <Field name="order_id" type="string" required="true">Your internal reference or order ID for tracking</Field>
+  <Field name="request_id" type="string" required="true">Unique UUID for idempotent execution</Field>
+</Fields>
+
+## Sample Response
+
+```json title="Response"
+{
+  "id": "pm_57cb0eeb44b3478aab08e1b7b1aa8191",
+  "status": "INITIATED",
+  "amount": 20000,
+  "merchant_id": "mch_fintech_001",
+  "debitor_iban": "PK36SCBL0000001188123099",
+  "order_id": "SALARY-BATCH-001",
+  "created_at": "2025-08-06T15:32:00Z"
+}
+```
+
+## Best Practices
+
+* Store all payment metadata along with the `request_id` in your system before submission
+* Retry only if you receive a network or timeout error — reusing `request_id` guarantees safety
+* Do not change `amount`, `IBAN`, or other fields if reusing the same `request_id`
+
+<Note>Delayed execution is managed entirely by your system logic. The Raast API processes payments as soon as they're submitted.</Note>
+
+## Related Topics
+
+* [Create Real-Time Payment (Now)](/use_cases/create_rtp_now)
+* [Merchant Setup](/concepts/merchant)
+* [Webhooks](/concepts/webhooks)

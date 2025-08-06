@@ -1,0 +1,115 @@
+---
+title: 'QR Code'
+description: 'Use static or dynamic QR codes to initiate Raast payments'
+---
+
+Safepay’s Raast API supports QR-based payments to make the payment experience seamless for customers. There are two types of QR codes supported:
+
+- **Static QR**: Linked to a fixed IBAN and optionally a fixed amount. Reused across multiple payments.
+- **Dynamic QR**: Tied to a unique transaction or order, and typically generated at runtime.
+
+## When to Use Static vs. Dynamic QR
+
+| QR Type     | Use Case                                  | Properties                   |
+|-------------|-------------------------------------------|------------------------------|
+| Static QR   | POS terminals, utility bills, subscriptions | Same IBAN and optional amount reused |
+| Dynamic QR | E-commerce checkouts, mobile payments      | Encodes order-specific metadata |
+
+<Note>Static QRs are ideal for walk-in transactions. Dynamic QRs are better for contextual or checkout-based payments.</Note>
+
+
+
+## Create Static QR
+
+Use the following endpoint to generate a reusable QR code tied to a specific merchant.
+
+```bash title="Create Static QR" expandable
+curl -X POST https://api.getsafepay.com/v1/qr \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "STATIC",
+    "merchant_id": "mch_a1b2c3d4"
+  }'
+```
+
+### Request Fields
+
+<Fields>
+  <Field name="type" type="string" required="true">Must be set to `"STATIC"`</Field>
+  <Field name="merchant_id" type="string" required="true">The registered merchant ID for whom the QR is being generated</Field>
+</Fields>
+
+### Sample Response
+
+```json title="Static QR Response"
+{
+  "qr_type": "STATIC",
+  "qr_data": "000201010211...6304B60E",
+  "created_at": "2025-08-06T12:00:00Z"
+}
+```
+
+<Note>The `qr_data` field contains a Raast-compliant payload encoded as a string. It can be rendered into a QR code using any QR image generator.</Note>
+
+## Create Dynamic QR
+
+Dynamic QR codes let you encode payment metadata like `amount`, `order_id`, or `request_id` per transaction. These are typically used in online or session-based payments.
+
+```bash title="Create Dynamic QR" expandable
+curl -X POST https://api.getsafepay.com/v1/qr \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "DYNAMIC",
+    "merchant_id": "mch_a1b2c3d4",
+    "amount": 10000,
+    "order_id": "ORDER-8491",
+    "request_id": "fd6ac880-40e0-42cb-918c-e69a75b7cd60"
+  }'
+```
+
+### Request Fields
+
+<Fields>
+  <Field name="type" type="string" required="true">Must be set to `"DYNAMIC"`</Field>
+  <Field name="merchant_id" type="string" required="true">ID of the merchant issuing the QR code</Field>
+  <Field name="amount" type="integer" required="true">Amount in smallest currency unit (e.g. paisa)</Field>
+  <Field name="order_id" type="string" required="false">Optional reference to your internal order system</Field>
+  <Field name="request_id" type="string" required="true">Unique UUID to ensure idempotency</Field>
+</Fields>
+
+<Note>You must use a new `request_id` each time you generate a dynamic QR.</Note>
+
+### Sample Response
+
+```json title="Dynamic QR Response"
+{
+  "qr_type": "DYNAMIC",
+  "qr_data": "000201010211...6304A832",
+  "created_at": "2025-08-06T12:01:00Z"
+}
+```
+
+## Rendering the QR Code
+
+The `qr_data` field is a base string formatted according to Raast specifications. To render the QR in your frontend:
+
+1. Use any standard QR code generator library (e.g. `qrcode` in JavaScript or `qrcodegen` in Python).
+2. Pass the `qr_data` string as the QR code content.
+3. Display the QR to the customer on your POS device, mobile app, or website.
+
+<Note>Raast QR data complies with the EMVCo QR format and is supported by most QR rendering libraries.</Note>
+
+## Next Steps
+
+Once a customer scans and authorizes a QR payment:
+
+* Safepay will process the payment request
+* You can track its status using the `GET /v1/payments` endpoint or webhook events
+* Refunds can be initiated using the `refunds` API
+
+For more examples, see:
+
+* [Create Static QR Use Case](/use_cases/create_static_qr)
+* [Create Dynamic QR Use Case](/use_cases/create_dynamic_qr)

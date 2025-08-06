@@ -1,0 +1,90 @@
+---
+title: 'Create Dynamic QR'
+description: 'Generate a transaction-specific QR code for Raast payments with embedded metadata'
+---
+
+Dynamic QR codes allow merchants to encode transaction-specific metadata (such as amount, order ID, or request ID) into a scannable Raast-compatible QR. These are ideal for:
+
+- Checkout flows in e-commerce
+- Payment links in apps
+- Time-sensitive transactions or per-order requests
+
+Unlike static QRs, dynamic QRs are generated per payment and cannot be reused.
+
+## Common Use Cases
+
+- Mobile apps that generate a QR at checkout
+- Invoices with embedded QR for one-time payment
+- Payments that require metadata (order ID, request tracking)
+
+## API Example
+
+```bash title="Create Dynamic QR" expandable
+curl -X POST https://api.getsafepay.com/v1/qr \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "DYNAMIC",
+    "merchant_id": "mch_0f8432b8d19e4d85bb39",
+    "amount": 7500,
+    "order_id": "ORDER-4921",
+    "request_id": "f836c6d4-b4c7-4534-bd1c-75c3a93f279a"
+  }'
+```
+
+<Note>Each request must use a unique `request_id` (UUID). If the request fails, you may retry with the same ID for safe duplication.</Note>
+
+## Request Fields
+
+<Fields>
+  <Field name="type" type="string" required="true">Must be set to `"DYNAMIC"`</Field>
+  <Field name="merchant_id" type="string" required="true">The ID of the merchant initiating the QR</Field>
+  <Field name="amount" type="integer" required="true">Amount in smallest currency unit (e.g. 7500 = PKR 75.00)</Field>
+  <Field name="order_id" type="string" required="false">Internal reference for the order or transaction</Field>
+  <Field name="request_id" type="string" required="true">Unique UUID to ensure idempotency</Field>
+</Fields>
+
+## Sample Response
+
+```json title="QR Response"
+{
+  "qr_type": "DYNAMIC",
+  "qr_data": "000201010211...630498BB",
+  "created_at": "2025-08-06T16:20:00Z"
+}
+```
+
+* The `qr_data` field contains an EMVCo-compliant payload.
+* This can be rendered using any standard QR code library to generate a QR image.
+
+<Note>The payload is compatible with Raast scanning apps and banking apps that support EMV QR.</Note>
+
+## Rendering in UI
+
+To render the QR visually:
+
+1. Use the value of `qr_data` as the content
+2. Feed it to a QR code library of your choice (e.g. `qrcode.react`, `qrcodejs`, `pyqrcode`)
+3. Display the image or SVG in your checkout or terminal UI
+
+```tsx title="React Example"
+import QRCode from 'qrcode.react'
+
+<QRCode value={qrData} size={200} />
+```
+
+<Note>The same QR should not be reused across orders. Always generate a new one with a unique `request_id`.</Note>
+
+## After Scan
+
+When the customer scans and authorizes payment:
+
+* The QR is resolved to a Raast payment request
+* Safepay processes the payment under your merchant ID
+* You can track it using `GET /v1/payments` or listen to webhook events
+
+## Related Guides
+
+* [Concepts: QR Code](/concepts/qr_code)
+* [Create Real-Time Payment](/use_cases/create_rtp_now)
+* [Create Static QR](/use_cases/create_static_qr)

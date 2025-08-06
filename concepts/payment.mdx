@@ -1,0 +1,92 @@
+---
+title: 'Payment'
+description: 'How to initiate and manage real-time payments using the Raast API'
+---
+
+Merchants can initiate real-time push payments to a customer’s IBAN or Raast alias using Safepay’s Raast API. These payments are processed instantly and designed for P2P, P2B, and B2B use cases.
+
+This guide covers how to initiate a payment, required fields, and how to manage the payment lifecycle.
+
+## Endpoint
+
+```bash title="Create Payment" expandable
+curl -X POST https://api.getsafepay.com/v1/payments \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_id": "mch_a1b2c3d4",
+    "amount": 2500,
+    "debitor_iban": "PK36SCBL0000001123456702",
+    "order_id": "ORD-12345",
+    "request_id": "c1a8d17e-89f0-4f82-b73b-a8338c841234"
+  }'
+```
+
+<Note>All payment amounts are denominated in the smallest currency unit (e.g. paisa for PKR). 2500 = PKR 25.00</Note>
+
+## Required Fields
+
+<Fields>
+  <Field name="merchant_id" type="string" required="true">
+    Unique ID of the merchant initiating the payment. Must belong to your aggregator.
+  </Field>
+  <Field name="amount" type="integer" required="true">
+    Amount to be paid, in smallest currency units (e.g. paisa).
+  </Field>
+  <Field name="debitor_iban" type="string" required="true">
+    IBAN of the account to be debited. Must belong to the customer.
+  </Field>
+  <Field name="order_id" type="string" required="false">
+    Optional order reference from your internal system. Useful for reconciliation.
+  </Field>
+  <Field name="request_id" type="string" required="true">
+    A unique UUID to ensure idempotency and traceability of the request.
+  </Field>
+</Fields>
+
+## Idempotency
+
+Safepay enforces idempotency on all payment creation requests using the request_id field. Repeated requests with the same request_id will not duplicate the transaction but return the original response.
+
+<Note>Always generate a unique request_id per payment. Use a UUID v4 format for best results.</Note>
+
+Successful Response
+
+```json expandable
+{
+  "id": "pm_4fdba92f2a214b6f93e257e85fef8f7b",
+  "merchant_id": "mch_a1b2c3d4",
+  "amount": 2500,
+  "status": "INITIATED",
+  "debitor_iban": "PK36SCBL0000001123456702",
+  "created_at": "2025-08-06T10:15:00Z",
+  "order_id": "ORD-12345"
+}
+```
+
+<Note>After creation, the payment moves through the status lifecycle: INITIATED → PROCESSING → SETTLED or FAILED.</Note>
+
+## Status Lifecycle
+
+Every payment transitions through the following statuses:
+
+| Status     | Description                                                |
+| ---------- | ---------------------------------------------------------- |
+| INITIATED  | The payment has been accepted and is queued for processing |
+| PROCESSING | The Raast switch is validating and executing the payment   |
+| SETTLED    | The payment has been successfully executed                 |
+| FAILED     | The payment failed due to validation or network error      |
+
+Use the `GET /v1/payments/{id}` endpoint to check the current status of a payment.
+
+## Next Steps
+
+Once the payment is created, you can:
+
+- Monitor its progress via polling or webhook events
+- Link it to a dynamic or static QR if initiated via a QR use case
+- Refund the transaction using the `/v1/refunds` endpoint if necessary
+
+For more advanced use cases, see:
+- Create Real-Time Payment Now
+- Create Payment with Dynamic QR

@@ -1,0 +1,86 @@
+---
+title: 'Create Real-Time Payment (Now)'
+description: 'Initiate an immediate push payment from a merchant to a customer IBAN using the Raast API'
+---
+
+This guide walks you through initiating a real-time payment using the Raast API. The flow assumes the merchant already exists and the aggregator has a valid access key.
+
+Use this pattern when you want to push funds instantly from a merchant to a customer’s account — for example, for cashback, rewards, disbursements, or refunds outside the refund API.
+
+## Flow Summary
+
+1. Authenticate with your access key
+2. Create a payment via `/v1/payments`
+3. Monitor the status transition: `INITIATED` → `PROCESSING` → `SETTLED` or `FAILED`
+4. Optionally handle errors or retry with the same `request_id` (idempotent)
+
+## API Example
+
+```bash title="Create Payment Now" expandable
+curl -X POST https://api.getsafepay.com/v1/payments \
+  -H "Authorization: Bearer <ACCESS_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_id": "mch_a1b2c3d4",
+    "amount": 5000,
+    "debitor_iban": "PK36SCBL0000001123456702",
+    "order_id": "CASHBACK-2025-001",
+    "request_id": "c278d1ff-98a7-4d24-9f12-4cb26dfb7dd0"
+  }'
+```
+
+<Warning>Make sure the IBAN is validated and active. Payments to incorrect or closed IBANs will fail.</Warning>
+
+## Parameters
+
+<Fields>
+  <Field name="merchant_id" type="string" required="true">ID of the merchant sending the payment</Field>
+  <Field name="amount" type="integer" required="true">Amount in paisa (e.g. 5000 = PKR 50.00)</Field>
+  <Field name="debitor_iban" type="string" required="true">Customer's IBAN that will receive the funds</Field>
+  <Field name="order_id" type="string" required="false">Optional order or reference number for internal tracking</Field>
+  <Field name="request_id" type="string" required="true">Unique UUID to enforce idempotency across retries</Field>
+</Fields>
+
+## Sample Success Response
+
+```json title="Success Response"
+{
+  "id": "pm_cdfce1218e144e0ea71ef308e3f11f59",
+  "status": "INITIATED",
+  "amount": 5000,
+  "merchant_id": "mch_a1b2c3d4",
+  "debitor_iban": "PK36SCBL0000001123456702",
+  "order_id": "CASHBACK-2025-001",
+  "created_at": "2025-08-06T14:02:00Z"
+}
+```
+
+## Monitoring Payment Status
+
+You can monitor the status of the payment by polling:
+
+```bash title="Check Payment Status"
+curl -X GET https://api.getsafepay.com/v1/payments/pm_cdfce1218e144e0ea71ef308e3f11f59 \
+  -H "Authorization: Bearer <ACCESS_KEY>"
+```
+
+Or use webhook events to get notified asynchronously (see [Webhook Setup](/concepts/webhooks)).
+
+## Handling Errors
+
+Common errors include:
+
+* Invalid or inactive IBAN
+* Insufficient permissions on merchant account
+* Reuse of `request_id` with different parameters
+
+Always inspect the response message and retry using the same `request_id` only if the error was network-related.
+
+<Note>A payment can only be initiated by an existing merchant using a valid access key.</Note>
+
+## Related Guides
+
+* [Merchant Concept](/concepts/merchant)
+* [Refunds](/concepts/refund)
+* [Webhooks](/concepts/webhooks)
+* [Create Dynamic QR](/use_cases/create_dynamic_qr)
