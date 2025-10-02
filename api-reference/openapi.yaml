@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: Raast Public
+  title: Raast Wire
   version: 1.0.0
   description: ""
 servers:
@@ -11,6 +11,8 @@ paths:
       tags:
         - Aggregators
       summary: Get Aggregator
+      security:
+        - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
@@ -24,14 +26,15 @@ paths:
       tags:
         - Access Keys
       summary: List Access Keys
+      security:
+        - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - name: limit
           in: query
           required: false
-          example: "{limit}"
+          example: 10
           schema:
-            deprecated: false
             type: integer
             default: "10"
             minimum: 0
@@ -39,22 +42,21 @@ paths:
         - name: offset
           in: query
           required: false
-          example: "{offset}"
+          example: 0
           schema:
-            deprecated: false
             type: integer
             default: "0"
             minimum: 0
         - name: names
           in: query
           required: false
-          example: "{names}"
+          example: "Test API Key"
           schema:
             type: string
         - name: is_active
           in: query
           required: false
-          example: "{is_active}"
+          example: "true"
           schema:
             type: string
       responses:
@@ -67,6 +69,8 @@ paths:
         - Access Keys
       summary: Create Access Key
       description: Create an access key to access Safepay's Raast APIs
+      security:
+        - apiKey: []
       operationId: createAccessKey
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
@@ -86,6 +90,8 @@ paths:
         - Access Keys
       summary: Update Access Key
       description: Update your access key
+      security:
+        - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/AccessKeyIdParam"
@@ -99,6 +105,8 @@ paths:
         - Access Keys
       summary: Delete Access Key
       description: Delete your access key
+      security:
+        - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/AccessKeyIdParam"
@@ -113,6 +121,8 @@ paths:
       tags:
         - Access Keys
       summary: Rotate Access Key
+      security:
+        - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/AccessKeyIdParam"
@@ -192,7 +202,7 @@ paths:
         - $ref: "#/components/parameters/MerchantIdParam"
       responses:
         "200":
-          $ref: "#/components/responses/FindMerchantsResponse"
+          $ref: "#/components/responses/FindMerchantResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -234,37 +244,50 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/UpdateMerchant"
 
-  /v1/aggregators/{raast-aggregator-id}/merchants/{aggregator-merchant-id}/raast-activate:
-    put:
+  /v1/aggregators/{raast-aggregator-id}/raast-merchants:
+    get:
       tags:
-        - Merchants
-      summary: Activate Raast Merchant
+        - Raast Merchants
+      summary: List Raast Merchants
+      description: Retrieve Raast merchant records accessible to the aggregator
       security:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/MerchantIdParam"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of Raast merchants to return
+          example: 10
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          description: Cursor offset for pagination
+          example: 0
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter Raast merchants by onboarding status
+          schema:
+            type: string
+            enum:
+              - Active
+              - Suspended
+          example: Active
+        - name: names
+          in: query
+          required: false
+          description: Filter by comma-separated list of Raast merchant names
+          example: Lazer Sports,Testing Merchant
+          schema:
+            type: string
       responses:
         "200":
-          $ref: "#/components/responses/EmptySuccess"
-        "406":
-          $ref: "#/components/responses/NotAcceptable"
-        "500":
-          $ref: "#/components/responses/InternalError"
-
-  /v1/aggregators/{raast-aggregator-id}/merchants/{aggregator-merchant-id}/raast-suspend:
-    put:
-      tags:
-        - Merchants
-      summary: Suspend Raast Merchant
-      security:
-        - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/MerchantIdParam"
-      responses:
-        "200":
-          $ref: "#/components/responses/EmptySuccess"
+          $ref: "#/components/responses/ListRaastMerchantsResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -384,6 +407,26 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/FindPaymentResponse"
+
+  /v1/aggregators/{raast-aggregator-id}/payout:
+    post:
+      tags:
+        - Payments
+      summary: Initiate Payout
+      description: Initiate a Raast payout to credit a beneficiary IBAN
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      requestBody:
+        $ref: "#/components/requestBodies/CreatePayout"
+      responses:
+        "200":
+          $ref: "#/components/responses/CreatePayoutResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/aggregators/{raast-aggregator-id}/refunds:
     post:
@@ -520,7 +563,7 @@ paths:
           $ref: "#/components/responses/FindQRCodeResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
-    post:
+    delete:
       tags:
         - QR Codes
       summary: Delete QR Codes
@@ -534,14 +577,7 @@ paths:
           $ref: "#/components/responses/StandardSuccess"
         "400":
           $ref: "#/components/responses/BadRequest"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                aggregator_merchant_id:
-                  type: string
+
   /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}/payments:
     get:
       tags:
@@ -573,44 +609,69 @@ paths:
       tags:
         - Utlities
       summary: Title Fetch
+      description: Retrieve account title metadata for a Raast IBAN
       security:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
+        - name: iban
+          in: query
+          required: true
+          description: IBAN to fetch the registered account title for
+          schema:
+            type: string
+          example: PK46MPBL0101017140572181
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                iban:
-                  type: string
+          $ref: "#/components/responses/TitleFetchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
   /v1/aggregators/{raast-aggregator-id}/account-info:
     get:
       tags:
         - Utlities
       summary: Read Account Info
+      description: Retrieve Raast account metadata using an IBAN or alias lookup
       security:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
+        - name: iban
+          in: query
+          required: false
+          description: IBAN to fetch account information for; optional when alias parameters are supplied
+          schema:
+            type: string
+          example: PK91ALFH0005001007079203
+        - name: with_title_fetch
+          in: query
+          required: false
+          description: When true, include account title details in the response
+          schema:
+            type: boolean
+          example: true
+        - name: alias_type
+          in: query
+          required: false
+          description: Alias type used for lookup; only MOBILE is supported currently
+          schema:
+            type: string
+            enum:
+              - MOBILE
+          example: MOBILE
+        - name: alias_value
+          in: query
+          required: false
+          description: Alias value to resolve; must be provided when alias_type is supplied
+          schema:
+            type: string
+          example: 03472840476
       responses:
         "200":
-          $ref: "#/components/responses/StandardSuccess"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                iban:
-                  type: string
-                with_title_fetch:
-                  type: boolean
+          $ref: "#/components/responses/AccountInfoResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
 components:
   securitySchemes:
@@ -692,6 +753,79 @@ components:
         data:
           type: object
           description: Contains the response data
+    TitleFetchResult:
+      type: object
+      description: Raast account title lookup result
+      properties:
+        statusCode:
+          type: integer
+          description: Numeric status code returned by the Raast directory
+        acctitle:
+          type: string
+          description: Registered account title associated with the IBAN
+        acctype:
+          type: string
+          description: Classification of the account tied to the IBAN
+    AccountInfo:
+      type: object
+      description: Raast account metadata resolved by IBAN or alias lookup
+      properties:
+        iban:
+          type: string
+          description: IBAN associated with the account when available
+        type:
+          type: string
+          description: Raast account classification code
+        currency:
+          type: string
+          description: ISO 4217 currency code for the account
+        servicer_member_id:
+          type: string
+          description: Member identifier of the servicing institution
+        name:
+          type: string
+          description: Registered account holder name
+        is_default:
+          type: boolean
+          description: Indicates if the account is the default for the merchant
+        dba:
+          type: string
+          description: Doing-business-as name if present
+        mcc:
+          type: string
+          description: Merchant category code associated with the account
+        account_title:
+          type: string
+          description: Account title when title fetch is requested
+        account_type:
+          type: string
+          description: Account type description returned from Raast
+    PaymentParty:
+      type: object
+      description: Participant record linked to a payment or payout
+      properties:
+        id:
+          type: string
+          description: Internal Safepay identifier for the payment party
+        token:
+          type: string
+          description: Public token representing the payment party
+        role:
+          type: string
+          description: Role played by the participant in the transaction lifecycle
+        payment_id:
+          type: string
+          description: Identifier of the payment that this party belongs to
+        bank_account_id:
+          type: string
+          description: Identifier of the linked bank account
+        bank_account:
+          description: Bank account resource associated with the party when available
+          $ref: "#/components/schemas/BankAccount"
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
     ErrorResponse:
       type: object
       description: Standard error response structure
@@ -759,6 +893,7 @@ components:
           type: string
         aggregator_id:
           type: string
+          description: Aggregator identifier that owns the payment
         is_active:
           type: boolean
         name:
@@ -772,6 +907,9 @@ components:
     BankAccount:
       type: object
       properties:
+        id:
+          type: string
+          description: Internal Safepay identifier for the bank account
         token:
           type: string
         vault_token:
@@ -802,103 +940,151 @@ components:
           $ref: "#/components/schemas/Timestamp"
     RaastMerchant:
       type: object
+      description: Raast merchant profile synchronized from the state bank registry
       properties:
+        id:
+          type: string
+          description: Internal Safepay identifier for the Raast merchant record
         token:
           type: string
+          description: Public Raast merchant token
         partner_id:
           type: string
+          description: Identifier of the upstream partner associated with the merchant
         raast_record_id:
           type: string
-          format: color
+          description: Identifier issued by the Raast directory
         status:
           type: string
+          description: Current activation status reported by Raast
         uid_type:
           type: string
+          description: Type of the merchant unique identifier such as NTN or CNIC
         uid_value:
           type: string
+          description: Value of the unique identifier registered with Raast
         name:
           type: string
+          description: Legal entity name on file with Raast
         document_type:
           type: string
+          description: Supporting document type recorded during onboarding
         document_number:
           type: string
+          description: Number of the supporting document
         address_details:
           type: object
+          description: Merchant registered address per Raast records
           properties:
             country:
               type: string
+              description: ISO 3166-1 alpha-2 country code
             city:
               type: string
+              description: City of the address
             state_province_region:
               type: string
+              description: Province or region of the address
             address_line:
               type: string
+              description: Street-level address line
         contact_details:
           type: object
+          description: Merchant contact information on file
           properties:
             mobile_number:
               type: string
-              format: utc-millisec
+              description: Merchant contact mobile number in E.164 format
             email:
               type: string
               format: email
+              description: Merchant contact email address
         additional_details:
           type: object
+          description: Optional public metadata collected during onboarding
           properties:
             dba:
               type: string
+              description: Doing-business-as name if different from the legal name
             mcc:
               type: string
-              format: utc-millisec
+              description: Merchant category code associated with the merchant
             lat:
               type: string
+              description: Latitude coordinate when available
             long:
               type: string
+              description: Longitude coordinate when available
         additional_details_private:
           type: object
+          description: Safepay private metadata for the Raast merchant
         created_at:
           $ref: "#/components/schemas/Timestamp"
         updated_at:
           $ref: "#/components/schemas/Timestamp"
     RateCard:
       type: object
+      description: Rate configuration associated with a merchant for Raast payments
       properties:
+        id:
+          type: string
+          description: Internal Safepay identifier for the rate card linkage
         token:
           type: string
+          description: Public token representing the merchant rate card
         aggregator_merchant_id:
           type: string
+          description: Identifier of the aggregator merchant that owns the rate card
         connector_id:
           type: string
+          description: Identifier of the connector through which payments are processed
         rate_card_id:
           type: string
+          description: Identifier of the underlying rate definition template
         fixed_rate:
-          type: string
-          format: integer
-        tax_rate:
           type: integer
+          description: Fixed transaction fee in paisa when applicable
+        tax_rate:
+          type: number
+          description: Tax rate applied to the fixed fee (fractional value)
         tax_region:
           type: string
+          description: Region for which the tax rate applies
+        variable_rate:
+          type: number
+          description: Percentage fee applied to the transaction amount
         created_at:
           $ref: "#/components/schemas/Timestamp"
         updated_at:
           $ref: "#/components/schemas/Timestamp"
     Merchant:
       type: object
+      description: Merchant resource created under an aggregator for Raast transactions
       properties:
+        id:
+          type: string
+          description: Internal Safepay identifier for the merchant
         token:
           type: string
+          description: Public token identifying the aggregator merchant
         name:
           type: string
+          description: Display name of the merchant
         aggregator_id:
           type: string
+          description: Identifier of the aggregator that owns the merchant
         merchant_id:
           type: string
+          description: Identifier of the linked Raast merchant account
         merchant_external_id:
           type: string
+          description: Original merchant identifier provided by the aggregator
         bank_account_id:
           type: string
+          description: Identifier of the settlement bank account
         enabled:
           type: boolean
+          description: Indicates whether the merchant is currently active
         bank_account:
           $ref: "#/components/schemas/BankAccount"
         raast_merchant:
@@ -962,6 +1148,9 @@ components:
       properties:
         token:
           type: string
+        aggregator_id:
+          type: string
+          description: Aggregator identifier that owns the payment
         aggregator_merchant_id:
           type: string
         qr_code_id:
@@ -994,6 +1183,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TransactionLogs"
+        payment_parties:
+          type: array
+          description: Participant records involved in the payment lifecycle
+          items:
+            $ref: "#/components/schemas/PaymentParty"
         debitor:
           nullable: true
         qr_code:
@@ -1220,75 +1414,51 @@ components:
               value:
                 name: Updated Access Key
     CreateMerchant:
-      description: Request to create a merchant
+      description: Request to create a merchant linked to an aggregator
       content:
         application/json:
           schema:
             type: object
+            description: Merchant creation payload specifying identifiers and rate configuration
             properties:
               merchant_external_id:
                 type: string
+                description: Client-supplied identifier that remains stable across Safepay integrations
               iban:
                 type: string
+                description: Raast-settlement IBAN used for merchant payouts
               name:
                 type: string
+                description: Merchant display name
               enabled:
                 type: boolean
-              raast_merchant:
-                type: object
-                properties:
-                  uid_type:
-                    type: string
-                    required: true
-                  uid_value:
-                    type: string
-                    required: true
-                  name:
-                    type: string
-                    required: true
-                  address_details:
-                    type: object
-                    properties:
-                      country:
-                        type: string
-                      city:
-                        type: string
-                      state_province_region:
-                        type: string
-                        required: true
-                      address_line:
-                        type: string
-                  contact_details:
-                    type: object
-                    properties:
-                      email:
-                        type: string
-                        format: email
-                      mobile_number:
-                        type: string
-                  additional_details:
-                    type: object
-                    properties:
-                      dba:
-                        type: string
-                        required: true
-                      mcc:
-                        type: string
-                        required: true
+                description: Indicates whether the merchant should be active immediately after creation
+              raast_merchant_id:
+                type: string
+                description: Identifier of the previously onboarded Raast merchant to associate
               rate_card:
                 type: object
+                description: Rate configuration Safepay applies to Raast transactions
                 properties:
                   ratecard_kind:
                     type: string
+                    description: Pricing strategy type that controls how the rate card is evaluated
+                    enum:
+                      - fixed
                   fixed_rate:
                     type: integer
+                    description: Fixed per-transaction fee in paisa when using a fixed rate card
                   tax_rate:
                     type: number
+                    description: Applicable tax rate expressed as a fraction (e.g., 0.1 for 10%)
+                required:
+                  - ratecard_kind
+                  - fixed_rate
             required:
               - merchant_external_id
               - iban
               - name
-              - raast_merchant
+              - raast_merchant_id
               - rate_card
           examples:
             Create Merchant:
@@ -1297,99 +1467,63 @@ components:
                 iban: PK62ABPA0010000222380013
                 name: TestingMerchant
                 enabled: true
-                raast_merchant:
-                  uid_type: NTN
-                  uid_value: "33225247890431"
-                  name: TestHasMerchant
-                  address_details:
-                    country: PK
-                    city: Lahore
-                    state_province_region: Punjab
-                    address_line: h193c1 saddiq
-                  contact_details:
-                    email: testing1702@gmail.com
-                    mobile_number: "+9233330226445"
-                  additional_details:
-                    dba: The best business 001
-                    mcc: "3434"
+                raast_merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
                 rate_card:
                   ratecard_kind: fixed
                   fixed_rate: 3000
                   tax_rate: 0.1
     UpdateMerchant:
-      description: Request to create a merchant
+      description: Request to update an existing aggregator merchant
       content:
         application/json:
           schema:
             type: object
+            description: Fields that can be modified for an existing aggregator merchant
             properties:
-              merchant_external_id:
-                type: string
-              iban:
-                type: string
               name:
                 type: string
+                description: Merchant display name
               enabled:
                 type: boolean
-              raast_merchant:
-                type: object
-                properties:
-                  uid_type:
-                    type: string
-                    required: true
-                  uid_value:
-                    type: string
-                    required: true
-                  name:
-                    type: string
-                    required: true
-                  address_details:
-                    type: object
-                    properties:
-                      country:
-                        type: string
-                      city:
-                        type: string
-                      state_province_region:
-                        type: string
-                        required: true
-                      address_line:
-                        type: string
-                  contact_details:
-                    type: object
-                    properties:
-                      email:
-                        type: string
-                        format: email
-                      mobile_number:
-                        type: string
-                  additional_details:
-                    type: object
-                    properties:
-                      dba:
-                        type: string
-                        required: true
-                      mcc:
-                        type: string
-                        required: true
+                description: Indicates whether the merchant should be active for Raast payments
+              iban:
+                type: string
+                description: Settlement IBAN used for Raast payouts
               rate_card:
                 type: object
+                description: Rate configuration Safepay applies to the merchant's Raast transactions
                 properties:
-                  ratecard_kind:
-                    type: string
                   fixed_rate:
                     type: integer
+                    description: Fixed per-transaction fee in paisa
                   tax_rate:
                     type: number
+                    description: Applicable tax rate expressed as a fraction (e.g., 0.1 for 10%)
+                  tax_region:
+                    type: string
+                    description: Region where the tax rate applies
+                  variable_rate:
+                    type: number
+                    description: Fractional fee applied to the transaction amount
+                required:
+                  - fixed_rate
+                  - tax_rate
+            required:
+              - name
+              - enabled
+              - iban
+              - rate_card
           examples:
-            Update Merchant IBAN:
+            Update Merchant:
               value:
-                iban: PK12ALFH0031001006740433
-            Update Merchant Rate:
-              value:
-                ratecard_kind: fixed
-                fixed_rate: 3000
-                tax_rate: 0.1
+                name: NSH merchant
+                enabled: true
+                iban: PK85HABB0002157901170103
+                rate_card:
+                  fixed_rate: 4000
+                  tax_rate: 0.1
+                  tax_region: ""
+                  variable_rate: 0.029
     CreatePayment:
       description: Request to create an RTP Now or RTP Later
       content:
@@ -1448,6 +1582,33 @@ components:
                 order_id: test_nowExpiry
                 type: RTP_NOW
                 expiry_in_minutes: 100
+    CreatePayout:
+      description: Request to initiate a payout
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Payout initiation payload
+            properties:
+              request_id:
+                type: string
+                description: Unique identifier supplied by the client to ensure idempotency
+              amount:
+                type: string
+                description: Amount to credit in PKR, expressed as a string to preserve formatting
+              creditor_iban:
+                type: string
+                description: Destination IBAN that receives the payout
+            required:
+              - request_id
+              - amount
+              - creditor_iban
+          examples:
+            Create Payout:
+              value:
+                request_id: d44940a1-663b-4d92-91e7-65438e4bf80b
+                amount: "200"
+                creditor_iban: PK25ALFH0216001008658216
     CreateRefund:
       description: Request to create an RTP Now or RTP Later
       content:
@@ -1743,6 +1904,157 @@ components:
                 properties:
                   data:
                     $ref: "#/components/schemas/AccessKey"
+    TitleFetchResponse:
+      description: This response contains account title details fetched from Raast
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/TitleFetchResult"
+          examples:
+            Title Fetch:
+              value:
+                api_version: v1
+                data:
+                  statusCode: 0
+                  acctitle: "Title-1 1007079203"
+                  acctype: Account
+    AccountInfoResponse:
+      description: This response contains Raast account information details
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AccountInfo"
+          examples:
+            Account Info:
+              value:
+                api_version: v1
+                data:
+                  iban: PK91ALFH0005001007079203
+                  type: CAS_CONST_UNSPECIFIED
+                  currency: PKR
+                  servicer_member_id: ALFHPKKA
+                  name: MIRZA
+                  is_default: false
+                  dba: ""
+                  mcc: ""
+                  account_title: Title-1 1007079203
+                  account_type: Account
+    CreatePayoutResponse:
+      description: This response contains details of a payout request
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Payment"
+          examples:
+            Create Payout:
+              value:
+                api_version: v1
+                data:
+                  id: "44"
+                  token: pm_2a8c2cfc-e61d-431e-a850-f1808405ca07
+                  aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  aggregator_merchant_id: ""
+                  qr_code_id: ""
+                  order_id: ""
+                  type: PAYOUT
+                  amount: "200"
+                  status: P_INITIATED
+                  uetr: 3335131b-b26c-41c6-a089-a3b4905dcc68
+                  trace_reference: 2005867c-752f-430f-8619-a4c998423e3d
+                  msg_id: QAI8456FZ5NOR5H6ITEVK2U2NCD7POCSKQS
+                  instr_id: cb865267aec142d389f3ff728bb2492a
+                  end_to_end_id: 3335131bb26c41c6a089a3b4905dcc68
+                  pmt_inf_id: ""
+                  request_id: d4659c62-2c4a-4e60-8dfa-cd504bf50cca
+                  msg_created_at: "2025-10-02 11:03:11.041"
+                  expires_at: "1970-01-01T00:00:00Z"
+                  created_at: "2025-10-02T06:03:11Z"
+                  updated_at: "2025-10-02T06:03:11Z"
+                  txn_logs:
+                    - id: "35"
+                      type: TLT_PAYMENT
+                      payment_id: pm_2a8c2cfc-e61d-431e-a850-f1808405ca07
+                      status: P_INITIATED
+                      refund_id: ""
+                      settlement_id: ""
+                      txn_desc: ""
+                      addtl_info: ""
+                      token: txnlog_b9679d70-8874-459b-ad55-28180c53f0b1
+                      timestamp: "2025-10-02T06:03:11Z"
+                      iso_msg_type: pain.013.001.09
+                  payment_parties:
+                    - id: "87"
+                      token: pp_6a71861c-2e6a-4355-957e-0b6d8e4d9a06
+                      role: ROLE_DEBITOR
+                      payment_id: pm_2a8c2cfc-e61d-431e-a850-f1808405ca07
+                      bank_account_id: acc_c03a57cb-a616-42a7-b1dc-de473217a558
+                      bank_account:
+                        id: "11"
+                        token: acc_c03a57cb-a616-42a7-b1dc-de473217a558
+                        vault_token: lock_464309f2-572f-493f-8272-e503277b06fd
+                        title: SYED MUHAMMAD HAQANI
+                        iban: ""
+                        redacted_iban: PK84HABB************8594
+                        hashed_iban: TAQswoYYIJaiPH15TAS5+tnFe7yDOK0kWP2wgSXwi7k=
+                        servicer: HABBPKKARTG
+                        bank: ""
+                        created_at: "2025-03-13T09:12:35Z"
+                        updated_at: "2025-03-13T09:12:35Z"
+                      created_at: "2025-10-02T06:03:11Z"
+                      updated_at: "2025-10-02T06:03:11Z"
+                    - id: "88"
+                      token: pp_42dd9241-794b-4fad-b4c2-ca8d88ce8ca6
+                      role: ROLE_CREDITOR
+                      payment_id: pm_2a8c2cfc-e61d-431e-a850-f1808405ca07
+                      bank_account_id: acc_9fd8d208-0e51-4869-87ea-12bbfc3a3ad6
+                      bank_account:
+                        id: "81"
+                        token: acc_9fd8d208-0e51-4869-87ea-12bbfc3a3ad6
+                        vault_token: lock_124456f6-3e1d-4f31-8baa-ea914ed365f0
+                        title: Title-1 1008658216
+                        iban: ""
+                        redacted_iban: PK25ALFH************8216
+                        hashed_iban: 7zWv4dnBcoTKS4/dyrbMSWlFKVuwNWVkVlKmeRiu7Us=
+                        servicer: ALFHPKKA
+                        bank: ""
+                        created_at: "2025-09-22T09:42:41Z"
+                        updated_at: "2025-09-22T09:42:41Z"
+                      created_at: "2025-10-02T06:03:11Z"
+                      updated_at: "2025-10-02T06:03:11Z"
+                  qr_code: null
+                  aggregator_merchant: null
+                  refunds: []
+                  settlement: null
     CreateMerchantResponse:
       description: This response contains details of a merchant
       headers:
@@ -1759,6 +2071,57 @@ components:
                 properties:
                   data:
                     $ref: "#/components/schemas/Merchant"
+          examples:
+            Create Merchant:
+              value:
+                api_version: v1
+                data:
+                  id: "0"
+                  token: am_d7fd05ea-8613-4038-afd7-4275f29110f5
+                  name: TestingMerchant
+                  aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
+                  merchant_external_id: sec_0c3de397-441f-471f-bcd7-b6d948e1c307
+                  bank_account_id: acc_a17a478a-f7cd-448b-9753-5729a6f237ad
+                  enabled: true
+                  created_at: "2025-05-21T09:36:42.586176361Z"
+                  updated_at: "2025-05-21T09:36:42.586185862Z"
+                  raast_merchant:
+                    id: "0"
+                    token: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
+                    partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+                    raast_record_id: "480776"
+                    status: Inactive
+                    uid_type: NTN
+                    uid_value: "33225247890431"
+                    name: TestHasMerchant
+                    document_type: NTN
+                    document_number: "33225247890431"
+                    address_details:
+                      country: PK
+                      city: Lahore
+                      state_province_region: Punjab
+                      address_line: h193c1 saddiq
+                    contact_details:
+                      mobile_number: "+9233330226445"
+                      email: testing1702@gmail.com
+                    additional_details:
+                      dba: The best business 001
+                      mcc: "3434"
+                      lat: ""
+                      long: ""
+                    additional_details_private: {}
+                    created_at: "2025-05-21T09:36:40.660619343Z"
+                    updated_at: "2025-05-21T09:36:40.660619733Z"
+                  rate_card:
+                    id: "0"
+                    token: mrc_859bf970-6178-48c4-a801-014d027a9fe8
+                    aggregator_merchant_id: am_d7fd05ea-8613-4038-afd7-4275f29110f5
+                    connector_id: conn_eec2d68c-b72a-4f84-82ff-a7d4b3ebaa21
+                    rate_card_id: rc_d0680a67-e8bc-4a39-a7c1-ee9998346f17
+                    created_at: "2025-05-21T09:36:42.586189872Z"
+                    updated_at: "2025-05-21T09:36:42.586190032Z"
+                    tax_rate: 0
     ListMerchantsResponse:
       description: This response contains a paginated list of merchants linked to an aggregator
       headers:
@@ -1785,7 +2148,91 @@ components:
                         description: List of merchants
                         items:
                           $ref: "#/components/schemas/Merchant"
-    FindMerchantsResponse:
+    ListRaastMerchantsResponse:
+      description: This response contains Raast merchant directory records
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      merchants:
+                        type: array
+                        description: Collection of Raast merchants visible to the aggregator
+                        items:
+                          $ref: "#/components/schemas/RaastMerchant"
+                      count:
+                        type: string
+                        description: Total number of Raast merchants matching the filter
+          examples:
+            List Raast Merchants:
+              value:
+                api_version: v1
+                data:
+                  merchants:
+                    - id: "4"
+                      token: mer_dd0aa205-5b38-4691-bf1e-d30524c5be97
+                      partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+                      raast_record_id: "478619"
+                      status: Suspended
+                      uid_type: NTN
+                      uid_value: "4220111082020"
+                      name: Lazer Sports
+                      document_type: NTN
+                      document_number: "4220111082026"
+                      address_details:
+                        country: PK
+                        city: Karachi
+                        state_province_region: Sindh
+                        address_line: Federal.B. Area
+                      contact_details:
+                        mobile_number: "+923001234926"
+                        email: testingbyHas@gesafepay.com
+                      additional_details:
+                        dba: The best business 001
+                        mcc: "5633"
+                        lat: ""
+                        long: ""
+                      additional_details_private: {}
+                      created_at: "2025-03-13T09:13:23Z"
+                      updated_at: "2025-09-02T06:15:35Z"
+                    - id: "3"
+                      token: mer_94e3e994-1479-4dee-a2f0-9d3f14c5ca7e
+                      partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+                      raast_record_id: "478477"
+                      status: Active
+                      uid_type: NTN
+                      uid_value: "4220111082025"
+                      name: Lazer Sports
+                      document_type: NTN
+                      document_number: "4220111082025"
+                      address_details:
+                        country: PK
+                        city: Karachi
+                        state_province_region: Karachi
+                        address_line: Saima royal residency
+                      contact_details:
+                        mobile_number: "+923001234567"
+                        email: ausmani@gesafepay.com
+                      additional_details:
+                        dba: The best business 001
+                        mcc: "5613"
+                        lat: ""
+                        long: ""
+                      additional_details_private: {}
+                      created_at: "2025-03-05T09:32:13Z"
+                      updated_at: "2025-03-05T09:32:26Z"
+                  count: "2"
+    FindMerchantResponse:
       description: This response contains details of a merchant
       headers:
         Content-Length:
@@ -1817,6 +2264,57 @@ components:
                 properties:
                   data:
                     $ref: "#/components/schemas/Merchant"
+          examples:
+            Update Merchant:
+              value:
+                api_version: v1
+                data:
+                  id: "39"
+                  token: am_c1460543-4a10-473c-b60b-60218326d1b1
+                  name: test co type1
+                  aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
+                  merchant_external_id: sec_0c3de397-441f-471f-bcd7-b6d948e1c307
+                  bank_account_id: acc_a17a478a-f7cd-448b-9753-5729a6f237ad
+                  enabled: false
+                  created_at: "2025-07-24T07:11:31Z"
+                  updated_at: "2025-07-25T06:31:25Z"
+                  raast_merchant:
+                    id: "10"
+                    token: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
+                    partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+                    raast_record_id: "480776"
+                    status: Active
+                    uid_type: NTN
+                    uid_value: "33225247890431"
+                    name: TestHasMerchant
+                    document_type: NTN
+                    document_number: "33225247890431"
+                    address_details:
+                      country: PK
+                      city: Lahore
+                      state_province_region: Punjab
+                      address_line: h193c1 saddiq
+                    contact_details:
+                      mobile_number: "+9233330226445"
+                      email: testing1702@gmail.com
+                    additional_details:
+                      dba: The best business 001
+                      mcc: "3434"
+                      lat: ""
+                      long: ""
+                    additional_details_private: {}
+                    created_at: "2025-05-21T09:36:41Z"
+                    updated_at: "2025-07-24T07:07:13Z"
+                  rate_card:
+                    id: "39"
+                    token: mrc_20d3f00e-6e1a-4aa6-bb1c-d9a12afb95b6
+                    aggregator_merchant_id: am_c1460543-4a10-473c-b60b-60218326d1b1
+                    connector_id: conn_af8e9b08-85f3-48f8-845d-23362e51c7b9
+                    rate_card_id: rc_8a9fd9cf-f054-4c5e-bd77-7410f876edb7
+                    created_at: "2025-07-24T07:11:31Z"
+                    updated_at: "2025-07-24T07:11:31Z"
+                    tax_rate: 0
     CreatePaymentResponse:
       description: This response contains details of a payment
       headers:
@@ -2022,6 +2520,7 @@ tags:
   - name: Aggregators
   - name: Access Keys
   - name: Merchants
+  - name: Raast Merchants
   - name: Payments
   - name: Refunds
   - name: QR Codes
