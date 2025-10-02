@@ -6,7 +6,7 @@ info:
 servers:
   - url: https://dev.api.getsafepay.com/raastwire
 paths:
-  /v1/aggregators/{raast-aggregator-id}:
+  /v1/aggregators/{raast_aggregator_id}:
     get:
       tags:
         - Aggregators
@@ -21,7 +21,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /v1/aggregators/{raast-aggregator-id}/keys:
+  /v1/aggregators/{raast_aggregator_id}/keys:
     get:
       tags:
         - Access Keys
@@ -84,7 +84,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /v1/aggregators/{raast-aggregator-id}/keys/{access-key-id}:
+  /v1/aggregators/{raast_aggregator_id}/keys/{access_key_id}:
     put:
       tags:
         - Access Keys
@@ -116,7 +116,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{raast-aggregator-id}/keys/{access-key-id}/rotate:
+  /v1/aggregators/{raast_aggregator_id}/keys/{access_key_id}/rotate:
     put:
       tags:
         - Access Keys
@@ -130,7 +130,7 @@ paths:
         "200":
           $ref: "#/components/responses/RotateAccessKeyResponse"
 
-  /v1/aggregators/{raast-aggregator-id}/merchants:
+  /v1/aggregators/{raast_aggregator_id}/merchants:
     post:
       tags:
         - Merchants
@@ -190,7 +190,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{raast-aggregator-id}/merchants/{aggregator-merchant-id}:
+  /v1/aggregators/{raast_aggregator_id}/merchants/{aggregator_merchant_id}:
     get:
       tags:
         - Merchants
@@ -244,7 +244,7 @@ paths:
       requestBody:
         $ref: "#/components/requestBodies/UpdateMerchant"
 
-  /v1/aggregators/{raast-aggregator-id}/raast-merchants:
+  /v1/aggregators/{raast_aggregator_id}/raast-merchants:
     get:
       tags:
         - Raast Merchants
@@ -291,7 +291,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{raast-aggregator-id}/payments:
+  /v1/aggregators/{raast_aggregator_id}/payments:
     post:
       tags:
         - Payments
@@ -394,7 +394,7 @@ paths:
         "200":
           $ref: "#/components/responses/ListPaymentsResponse"
 
-  /v1/aggregators/{raast-aggregator-id}/payments/{payment-id}:
+  /v1/aggregators/{raast_aggregator_id}/payments/{payment_id}:
     get:
       tags:
         - Payments
@@ -408,7 +408,7 @@ paths:
         "200":
           $ref: "#/components/responses/FindPaymentResponse"
 
-  /v1/aggregators/{raast-aggregator-id}/payout:
+  /v1/aggregators/{raast_aggregator_id}/payout:
     post:
       tags:
         - Payments
@@ -428,7 +428,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /v1/aggregators/{raast-aggregator-id}/refunds:
+  /v1/aggregators/{raast_aggregator_id}/refunds:
     post:
       tags:
         - Refunds
@@ -483,7 +483,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /v1/aggregators/{raast-aggregator-id}/refunds/{refund-id}:
+  /v1/aggregators/{raast_aggregator_id}/refunds/{refund_id}:
     get:
       tags:
         - Refunds
@@ -499,7 +499,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /v1/aggregators/{raast-aggregator-id}/qrs:
+  /v1/aggregators/{raast_aggregator_id}/qrs:
     post:
       tags:
         - QR Codes
@@ -548,7 +548,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}:
+  /v1/aggregators/{raast_aggregator_id}/qrs/{qr_id}:
     get:
       tags:
         - QR Codes
@@ -578,7 +578,7 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
 
-  /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}/payments:
+  /v1/aggregators/{raast_aggregator_id}/qrs/{qr_id}/payments:
     get:
       tags:
         - QR Codes
@@ -604,7 +604,7 @@ paths:
         "200":
           $ref: "#/components/responses/ListPaymentsForQRCodeResponse"
 
-  /v1/aggregators/{raast-aggregator-id}/title-fetch:
+  /v1/aggregators/{raast_aggregator_id}/title-fetch:
     get:
       tags:
         - Utlities
@@ -627,7 +627,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{raast-aggregator-id}/account-info:
+  /v1/aggregators/{raast_aggregator_id}/account-info:
     get:
       tags:
         - Utlities
@@ -690,7 +690,7 @@ components:
         example: Sat, 12 Aug 2023 08:55:04 GMT
   parameters:
     AggregatorIdParam:
-      name: aggregator_id
+      name: raast_aggregator_id
       in: path
       required: true
       schema:
@@ -706,7 +706,7 @@ components:
         example: ak_da8f1c10-346a-4be8-895a-b6187a9a9662
       description: The unique identifier for the access key
     MerchantIdParam:
-      name: merchant_id
+      name: aggregator_merchant_id
       in: path
       required: true
       schema:
