@@ -1,76 +1,148 @@
 ---
-title: 'Create Real-Time Payment (Later)'
-description: 'Generate a Raast payment request for later execution using metadata and order tracking'
+title: 'Create Request To Pay (later)'
+description: 'Schedule an RTP_LATER payment that gives the customer more time to approve.'
 ---
 
-Sometimes you may want to prepare a payment in advance but not execute it immediately — for example, collecting payment details for scheduled disbursements or authorizing funds as part of a delayed fulfillment workflow.
+Use this flow when customers may approve hours or days after you submit the payment—for example, invoice settlements or subscription renewals.
 
-This use case allows you to associate metadata like `order_id` or `request_id` with a payment so it can be triggered and tracked asynchronously, either by another process or in response to user input.
+## Flow summary
 
-## Use Case Examples
+1. Load the `aggregator_merchant_identifier` for the merchant initiating the payment.
+2. Choose an expiry window between 1 and 40 days.
+3. Submit `POST /v1/aggregators/{{aggregator_id}}/payments` with `type: RTP_LATER`.
+4. Wait for the webhook event or poll the status endpoint to confirm settlement.
 
-- Batch payment runs (e.g. salary processing at end of day)
-- Deferred disbursements for KYC-cleared users
-- Order fulfillment triggered by inventory availability
+## RTP later
 
-## Recommended Flow
+<Tabs>
+  <Tab title="Request Fields">
 
-1. Collect all payment details upfront (IBAN, amount, reference metadata)
-2. Store this securely in your system or create a pre-validated Raast payment request
-3. At the right time, initiate the payment using the stored values and a unique `request_id`
-4. Monitor payment status via polling or webhooks
+<ParamField path="request_id" type="string" required>
+  UUID that keeps the scheduled Request To Pay idempotent.
+</ParamField>
+<ParamField path="amount" type="integer" required>
+  Amount in paisa. `22000` equals PKR 220.00.
+</ParamField>
+<ParamField path="aggregator_merchant_identifier" type="string" required>
+  Token returned when you created the merchant.
+</ParamField>
+<ParamField path="order_id" type="string" required>
+  Merchant order reference used for reconciliation.
+</ParamField>
+<ParamField path="type" type="string" required>
+  Set to `RTP_LATER`.
+</ParamField>
+<ParamField path="expiry_in_days" type="integer" required>
+  Approval window in days (1–40).
+</ParamField>
+<ParamField path="debitor_raast_id" type="string">
+  Provide when requesting via a Raast alias. One of the debtor identifiers must be supplied.
+</ParamField>
+<ParamField path="debitor_iban" type="string">
+  Use when you know the debtor’s IBAN instead of a Raast ID. One of the debtor identifiers must be supplied.
+</ParamField>
+<ParamField path="debitor_vault_token" type="string">
+  Reference a stored payment method for recurring requests. One of the debtor identifiers must be supplied.
+</ParamField>
 
-## API Example
+  </Tab>
+  <Tab title="API Example">
 
-```bash title="Create Payment With Metadata" expandable
-curl -X POST https://api.getsafepay.com/v1/payments \
-  -H "Authorization: Bearer <ACCESS_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "merchant_id": "mch_fintech_001",
-    "amount": 20000,
-    "debitor_iban": "PK36SCBL0000001188123099",
-    "order_id": "SALARY-BATCH-001",
-    "request_id": "1f7b11d5-52df-4ef2-917e-8fd775aa278e"
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "request_id": "{{request_id}}",
+    "amount": 22000,
+    "aggregator_merchant_identifier": "{{aggregator_merchant_identifier}}",
+    "order_id": "ORDER-INVOICE-2025-07",
+    "type": "RTP_LATER",
+    "expiry_in_days": 7,
+    "debitor_raast_id": "03202296111"
   }'
 ```
 
-<Note>Each `request_id` must be unique per payment. If the payment needs to be retried, use the same ID to avoid duplicates.</Note>
+```typescript TypeScript
+const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
+if (!aggregatorMerchantIdentifier) {
+  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
+}
 
-## Fields Reference
+const rtpLaterResponse = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payments`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+    body: JSON.stringify({
+      request_id: crypto.randomUUID(),
+      amount: 22000,
+      aggregator_merchant_identifier: aggregatorMerchantIdentifier,
+      order_id: 'ORDER-INVOICE-2025-07',
+      type: 'RTP_LATER',
+      expiry_in_days: 7,
+      debitor_raast_id: '03202296111',
+    }),
+  },
+);
 
-<Fields>
-  <Field name="merchant_id" type="string" required="true">Registered merchant who will send the payment</Field>
-  <Field name="amount" type="integer" required="true">Amount in paisa (smallest PKR unit)</Field>
-  <Field name="debitor_iban" type="string" required="true">IBAN of customer or beneficiary</Field>
-  <Field name="order_id" type="string" required="true">Your internal reference or order ID for tracking</Field>
-  <Field name="request_id" type="string" required="true">Unique UUID for idempotent execution</Field>
-</Fields>
+if (!rtpLaterResponse.ok) {
+  const errorPayload = await rtpLaterResponse.json();
+  throw new Error(`RTP later failed: ${rtpLaterResponse.status} ${errorPayload.message}`);
+}
 
-## Sample Response
+type CreatePaymentPayload = {
+  api_version: string;
+  data: {
+    token: string;
+    status: 'P_INITIATED' | 'P_RECEIVED' | 'P_FAILED' | 'P_REJECTED' | 'P_SETTLED';
+    request_id: string;
+    order_id: string;
+    trace_reference?: string;
+    msg_id?: string;
+    created_at: string;
+  };
+};
 
-```json title="Response"
+const rtpLaterPayload: CreatePaymentPayload = await rtpLaterResponse.json();
+console.log('Scheduled RTP token', rtpLaterPayload.data.token);
+```
+
+</CodeGroup>
+
+  </Tab>
+  <Tab title="Sample Response">
+
+```json
 {
-  "id": "pm_57cb0eeb44b3478aab08e1b7b1aa8191",
-  "status": "INITIATED",
-  "amount": 20000,
-  "merchant_id": "mch_fintech_001",
-  "debitor_iban": "PK36SCBL0000001188123099",
-  "order_id": "SALARY-BATCH-001",
-  "created_at": "2025-08-06T15:32:00Z"
+  "api_version": "v1",
+  "data": {
+    "message": "RTP created successfully",
+    "token": "pm_f531c5eb-5c49-40d6-8ac5-012cfd1b24c1",
+    "msg_id": "IG2Y50ORB7BE2OLEW0HDVJUIP9QGTL1V6WS",
+    "trace_reference": "aa22cc9b-3f55-4613-86cf-9641f11902d1",
+    "uetr": "8df9cc1f-77b2-47e4-9a8b-a3050bee6972",
+    "status": "P_INITIATED",
+    "order_id": "ORDER-INVOICE-2025-07",
+    "request_id": "{{request_id}}",
+    "created_at": "2025-06-26T10:58:17Z"
+  }
 }
 ```
 
-## Best Practices
+  </Tab>
+</Tabs>
 
-* Store all payment metadata along with the `request_id` in your system before submission
-* Retry only if you receive a network or timeout error — reusing `request_id` guarantees safety
-* Do not change `amount`, `IBAN`, or other fields if reusing the same `request_id`
+## Monitor status
 
-<Note>Delayed execution is managed entirely by your system logic. The Raast API processes payments as soon as they're submitted.</Note>
+```bash
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments/{{payment_token}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
 
-## Related Topics
-
-* [Create Real-Time Payment (Now)](/use_cases/create_rtp_now)
-* [Merchant Setup](/concepts/merchant)
-* [Webhooks](/concepts/webhooks)
+When the webhook indicates `P_SETTLED`, mark the invoice paid. If the customer rejects, resend with a new `request_id` after you resolve the issue.

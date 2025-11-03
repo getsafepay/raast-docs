@@ -1,92 +1,113 @@
 ---
-title: 'Payment'
-description: 'How to initiate and manage real-time payments using the Raast API'
+title: 'Payments'
+description: 'Initiate and manage Raast pay-ins using aggregator merchants.'
+sidebar:
+  order: 6
 ---
 
-Merchants can initiate real-time push payments to a customer’s IBAN or Raast alias using Safepay’s Raast API. These payments are processed instantly and designed for P2P, P2B, and B2B use cases.
+Payments initiate a Request-to-Pay (RTP) against a customer’s bank account. Each payment belongs to an [aggregator merchant](/concepts/merchant) and uses the Raast network to settle instantly once the customer approves.
 
-This guide covers how to initiate a payment, required fields, and how to manage the payment lifecycle.
+### Endpoint summary
 
-## Endpoint
+- **Method & path**: `POST /v1/aggregators/{{aggregator_id}}/payments`
+- **Authentication**: `X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}`
+- **Idempotency**: Provide a unique `request_id` and reuse it when retrying the same intent.
 
-```bash title="Create Payment" expandable
-curl -X POST https://api.getsafepay.com/v1/payments \
-  -H "Authorization: Bearer <ACCESS_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "merchant_id": "mch_a1b2c3d4",
-    "amount": 2500,
-    "debitor_iban": "PK36SCBL0000001123456702",
-    "order_id": "ORD-12345",
-    "request_id": "c1a8d17e-89f0-4f82-b73b-a8338c841234"
+| Field | Type | Required? | Notes |
+| --- | --- | --- | --- |
+| `request_id` | string | Yes | UUID that enforces idempotency. |
+| `amount` | integer | Yes | Amount in paisa (PKR). |
+| `aggregator_merchant_identifier` | string | Yes | Token returned when you created the merchant. |
+| `order_id` | string | Yes | Merchant order reference. |
+| `type` | enum | Yes | `RTP_NOW` or `RTP_LATER`. |
+| `expiry_in_minutes` | integer | Required for RTP Now | Range 1–180 minutes. |
+| `expiry_in_days` | integer | Required for RTP Later | Range 1–40 days. |
+| `debitor_iban` | string | One of | Provide IBAN when you know the account. |
+| `debitor_raast_id` | string | One of | Provide Raast alias (for example, phone). |
+| `debitor_vault_token` | string | One of | Provide stored vault token. |
+
+<Callout type="tip">Validate the debtor’s IBAN or alias with the [account validation utilities](/concepts/account-validation) before creating the payment.</Callout>
+
+### Example request
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "request_id": "{{request_id}}",
+    "amount": 7500,
+    "aggregator_merchant_identifier": "{{aggregator_merchant_identifier}}",
+    "order_id": "ORDER-2025-042",
+    "type": "RTP_NOW",
+    "expiry_in_minutes": 30,
+    "debitor_iban": "PK36SCBL0000001123456702"
   }'
 ```
 
-<Note>All payment amounts are denominated in the smallest currency unit (e.g. paisa for PKR). 2500 = PKR 25.00</Note>
+```typescript TypeScript
+type CreatePaymentPayload = {
+  api_version: string;
+  data: {
+    token: string;
+    status: 'P_INITIATED' | 'P_RECEIVED' | 'P_FAILED' | 'P_REJECTED' | 'P_SETTLED';
+    request_id: string;
+    order_id: string;
+    trace_reference?: string;
+    msg_id?: string;
+    created_at: string;
+  };
+};
 
-## Required Fields
-
-<Fields>
-  <Field name="merchant_id" type="string" required="true">
-    Unique ID of the merchant initiating the payment. Must belong to your aggregator.
-  </Field>
-  <Field name="amount" type="integer" required="true">
-    Amount to be paid, in smallest currency units (e.g. paisa).
-  </Field>
-  <Field name="debitor_iban" type="string" required="true">
-    IBAN of the account to be debited. Must belong to the customer.
-  </Field>
-  <Field name="order_id" type="string" required="false">
-    Optional order reference from your internal system. Useful for reconciliation.
-  </Field>
-  <Field name="request_id" type="string" required="true">
-    A unique UUID to ensure idempotency and traceability of the request.
-  </Field>
-</Fields>
-
-## Idempotency
-
-Safepay enforces idempotency on all payment creation requests using the request_id field. Repeated requests with the same request_id will not duplicate the transaction but return the original response.
-
-<Note>Always generate a unique request_id per payment. Use a UUID v4 format for best results.</Note>
-
-Successful Response
-
-```json expandable
-{
-  "id": "pm_4fdba92f2a214b6f93e257e85fef8f7b",
-  "merchant_id": "mch_a1b2c3d4",
-  "amount": 2500,
-  "status": "INITIATED",
-  "debitor_iban": "PK36SCBL0000001123456702",
-  "created_at": "2025-08-06T10:15:00Z",
-  "order_id": "ORD-12345"
+const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
+if (!aggregatorMerchantIdentifier) {
+  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
 }
+
+const paymentResponse = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payments`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+    body: JSON.stringify({
+      request_id: crypto.randomUUID(),
+      amount: 7500,
+      aggregator_merchant_identifier: aggregatorMerchantIdentifier,
+      order_id: 'ORDER-2025-042',
+      type: 'RTP_NOW',
+      expiry_in_minutes: 30,
+      debitor_iban: 'PK36SCBL0000001123456702',
+    }),
+  },
+);
+
+if (!paymentResponse.ok) {
+  const error = await paymentResponse.json();
+  throw new Error(`Payment failed: ${paymentResponse.status} ${error.message}`);
+}
+
+const paymentPayload: CreatePaymentPayload = await paymentResponse.json();
+console.log('Payment status', paymentPayload.data.status);
 ```
 
-<Note>After creation, the payment moves through the status lifecycle: INITIATED → PROCESSING → SETTLED or FAILED.</Note>
+</CodeGroup>
 
-## Status Lifecycle
+### Status lifecycle
 
-Every payment transitions through the following statuses:
+| Status | Description |
+| --- | --- |
+| `P_INITIATED` | Safepay accepted the request and pushed it to Raast. |
+| `P_RECEIVED` | Customer approval pending. |
+| `P_SETTLED` | Funds transferred. Emit confirmation to the user. |
+| `P_FAILED` / `P_REJECTED` | Customer declined or network/compliance error prevented settlement. |
 
-| Status     | Description                                                |
-| ---------- | ---------------------------------------------------------- |
-| INITIATED  | The payment has been accepted and is queued for processing |
-| PROCESSING | The Raast switch is validating and executing the payment   |
-| SETTLED    | The payment has been successfully executed                 |
-| FAILED     | The payment failed due to validation or network error      |
+### Monitoring
 
-Use the `GET /v1/payments/{id}` endpoint to check the current status of a payment.
-
-## Next Steps
-
-Once the payment is created, you can:
-
-- Monitor its progress via polling or webhook events
-- Link it to a dynamic or static QR if initiated via a QR use case
-- Refund the transaction using the `/v1/refunds` endpoint if necessary
-
-For more advanced use cases, see:
-- Create Real-Time Payment Now
-- Create Payment with Dynamic QR
+- Poll `GET /v1/aggregators/{{aggregator_id}}/payments/{payment_id}` for dashboards.
+- Subscribe to [webhooks](/concepts/webhooks) to receive final states.
+- Use `request_id` to deduplicate retries.

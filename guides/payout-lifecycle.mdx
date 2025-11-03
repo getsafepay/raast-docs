@@ -1,0 +1,41 @@
+---
+title: 'Payout lifecycle'
+description: 'Track Raast payout states from initiation to settlement and failure handling.'
+sidebar:
+  order: 4
+---
+
+Payouts are asynchronous like pay-ins. Use this lifecycle to design back-office processes, customer notifications, and retries.
+
+## Flow overview
+
+<Steps>
+  <Step title="Validate beneficiary">
+    Run [`GET /title-fetch`](/concepts/account-validation) or [`GET /account-info`](/concepts/account-validation) before submitting the payout.
+  </Step>
+  <Step title="Initiate payout">
+    Call `POST /v1/aggregators/{{aggregator_id}}/payout` with an idempotent `request_id`, the beneficiary details, and the amount.
+  </Step>
+  <Step title="Await webhook">
+    Safepay pushes status updates to your webhook endpoint. Polling is optional but recommended as a safety net.
+  </Step>
+  <Step title="Reconcile and notify">
+    Update internal ledgers, emit beneficiary notifications, and archive the payload for audit.
+  </Step>
+</Steps>
+
+## Status reference
+
+| Status | Description | Recommended action |
+| --- | --- | --- |
+| `P_INITIATED` | Safepay accepted the payout request and queued it for processing. | Display "processing" in dashboards. |
+| `P_RECEIVED` | Beneficiary bank is validating the transfer. | No action; continue waiting. |
+| `P_SETTLED` | Funds reached the beneficiary. | Mark payouts complete and notify recipients. |
+| `P_FAILED` | The payout could not be delivered (invalid account, compliance block, insufficient balance). | Investigate failure reason, fix data, and retry with same `request_id` if appropriate. |
+
+## Operational best practices
+
+- **Webhook reliability**: Implement exponential backoff retries if your webhook endpoint experiences downtime.
+- **Dual controls**: Require two-person review for high-value payouts before calling the API.
+- **Ledger reconciliation**: Store the `trace_reference` and `request_id` to match Safepay webhooks with internal ledger entries.
+- **Incident response**: Alert operators automatically when a payout remains in `P_RECEIVED` beyond your SLA or enters `P_FAILED`.

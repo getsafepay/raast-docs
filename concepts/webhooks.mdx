@@ -1,0 +1,36 @@
+---
+title: 'Webhooks'
+description: 'Receive asynchronous updates when Raast payments or payouts change state.'
+sidebar:
+  order: 6
+---
+
+Raast is asynchronous: customers approve or reject requests inside their banking apps, and Safepay pushes the resulting status to your backend via webhooks. Subscribe to these notifications to drive real-time UI updates and back-office automations.
+
+<Callout type="warning">Webhook delivery details (endpoint format, signature headers, retry policy) are pending product documentation. Email [support@getsafepay.com](mailto:support@getsafepay.com) for the latest contract.</Callout>
+
+### Event flow
+
+<Steps>
+  <Step title="Create a payment or payout">
+    Trigger RTP, QR, or payout requests using the APIs in this guide.
+  </Step>
+  <Step title="Safepay notifies your webhook endpoint">
+    When the Raast network confirms the customer decision, Safepay sends an event containing the updated status and relevant metadata.
+  </Step>
+  <Step title="Acknowledge promptly">
+    Respond with `200 OK` to stop retries. Store the payload for audit trails.
+  </Step>
+  <Step title="Update downstream systems">
+    Mark orders paid, release goods, or retry failed payouts based on the status received.
+  </Step>
+</Steps>
+
+### Recommended practices
+
+- Host webhook receivers on a dedicated path (for example, `/webhooks/safepay`) and require HTTPS.
+- Validate the payload signature once Safepay publishes the signing algorithm. Until then, pin allowed source IPs.
+- Treat webhook payloads as the source of truth for final payment states—even if polling endpoints for redundancy.
+- Log every attempt with timestamp, event type, and idempotency key for reconciliation.
+
+<Callout type="info">Need specific payload samples? Email [support@getsafepay.com](mailto:support@getsafepay.com) with your aggregator ID and integration timeline to receive the latest schema.</Callout>

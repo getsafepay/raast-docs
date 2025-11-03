@@ -1,0 +1,126 @@
+---
+title: 'Send payouts'
+description: 'Disburse funds to beneficiaries using the Safepay Raast payout endpoint.'
+---
+
+Use this recipe to push funds to beneficiaries such as drivers, vendors, or partners. Payouts share the same aggregator credentials you use for pay-ins.
+
+## Prerequisites
+
+- `{{aggregator_id}}` and `{{secret_key}}`
+- Enabled `{{aggregator_merchant_identifier}}` if you need to associate payouts with a particular merchant in reporting
+- Beneficiary IBAN validated with the [account validation utilities](/concepts/account-validation)
+- Webhook endpoint ready to receive payout status updates
+
+## Steps
+
+<Steps>
+  <Step title="Validate the beneficiary">
+    Resolve the beneficiary’s details with [`GET /title-fetch`](/concepts/account-validation) or [`GET /account-info`](/concepts/account-validation) to avoid payout failures.
+  </Step>
+  <Step title="Call the payout endpoint">
+    Send `POST /v1/aggregators/{{aggregator_id}}/payout` with a unique `request_id`, the payout `amount` (string, in PKR), and the beneficiary `creditor_iban`.
+  </Step>
+  <Step title="Track completion">
+    Listen for webhook notifications or poll `GET /payments` to confirm settlement and update ledgers.
+  </Step>
+</Steps>
+
+## Payouts
+
+<Tabs>
+  <Tab title="Request Fields">
+
+<ParamField path="request_id" type="string" required>
+  UUID that keeps payout submissions idempotent.
+</ParamField>
+<ParamField path="amount" type="string" required>
+  Amount in PKR represented as a string (for example, `"200"` = PKR 200).
+</ParamField>
+<ParamField path="creditor_iban" type="string" required>
+  Beneficiary IBAN that will receive the funds.
+</ParamField>
+
+  </Tab>
+  <Tab title="API Example">
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payout" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "request_id": "{{request_id}}",
+    "amount": "200",
+    "creditor_iban": "PK25ALFH0216001008658216"
+  }'
+```
+
+```typescript TypeScript
+const payoutResponse = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payout`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+    body: JSON.stringify({
+      request_id: crypto.randomUUID(),
+      amount: '200',
+      creditor_iban: 'PK25ALFH0216001008658216',
+    }),
+  },
+);
+
+if (!payoutResponse.ok) {
+  const error = await payoutResponse.json();
+  throw new Error(`Payout failed: ${payoutResponse.status} ${error.message}`);
+}
+
+type CreatePayoutPayload = {
+  api_version: string;
+  data: {
+    token: string;
+    status: 'P_INITIATED' | 'P_RECEIVED' | 'P_FAILED' | 'P_REJECTED' | 'P_SETTLED';
+    amount: string;
+    request_id: string;
+    trace_reference?: string;
+    msg_id?: string;
+    created_at: string;
+  };
+};
+
+const payoutPayload: CreatePayoutPayload = await payoutResponse.json();
+console.log('Payout token', payoutPayload.data.token);
+```
+
+</CodeGroup>
+
+  </Tab>
+  <Tab title="Sample Response">
+
+```json
+{
+  "api_version": "v1",
+  "data": {
+    "token": "pm_2a8c2cfc-e61d-431e-a850-f1808405ca07",
+    "status": "P_INITIATED",
+    "amount": "200",
+    "request_id": "{{request_id}}",
+    "trace_reference": "2005867c-752f-430f-8619-a4c998423e3d",
+    "msg_id": "QAI8456FZ5NOR5H6ITEVK2U2NCD7POCSKQS",
+    "created_at": "2025-10-02T06:03:11Z"
+  }
+}
+```
+
+  </Tab>
+</Tabs>
+
+## Failure handling checklist
+
+- Inspect webhook payloads for failure reasons (insufficient funds, invalid account, compliance hold).
+- Retry transient errors with the same `request_id` to stay idempotent.
+- Raise manual review tasks for permanent failures and notify beneficiaries.

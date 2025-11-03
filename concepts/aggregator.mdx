@@ -1,0 +1,36 @@
+---
+title: 'Aggregator'
+description: 'How Safepay aggregators are provisioned, identified, and authenticated.'
+sidebar:
+  order: 1
+---
+
+Aggregators are top-level accounts that Safepay provisions for partners who process Raast payments on behalf of multiple businesses. Every integration starts with an aggregator: it scopes your merchants, generates credentials, and defines the compliance perimeter for your transactions.
+
+| Attribute | Description | Example |
+| --- | --- | --- |
+| `{{aggregator_id}}` | Primary identifier for all API paths. | `agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e` |
+| `{{secret_key}}` | Aggregator secret sent in the `X-SFPY-AGGREGATOR-SECRET-KEY` header. | `sk_live_c66a5b38-0ce1-4f83-8d72-57b8f91a8762` |
+| Environments | Sandbox and Production share the same aggregator ID but use separate keys. | Request additional secrets per environment. |
+
+## Requesting access
+
+1. Email [support@getsafepay.com](mailto:support@getsafepay.com) with your business details, use cases, and projected volume.
+2. Safepay provisions your aggregator and performs due diligence.
+3. You receive:
+   - `{{aggregator_id}}` (include in every API path)
+   - At least one `{{secret_key}}` scoped to an environment
+   - Dashboard access, if requested
+
+<Callout type="warning">Do not embed your secret key in mobile or web apps. Keep it in a server-side secret manager and rotate it immediately if compromised.</Callout>
+
+## Authentication
+
+All Raast API endpoints use the `apiKey` security scheme defined in the OpenAPI spec. Send `X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}` with every request. Safepay rejects requests that rely on the deprecated `Authorization: Bearer` header.
+
+## Credential hygiene
+
+- Maintain separate secrets per environment and workload (for example, one for payouts, another for pay-ins).
+- Rotate keys proactively or whenever staff changes. Safepay can issue new keys through the [Create access key](/api-reference#post-/v1/aggregators/-raast-aggregator-id-/keys) endpoint.
+- Use the [Rotate access key](/api-reference#put-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-/rotate) endpoint to refresh keys without downtime.
+- Monitor access with [List access keys](/api-reference#get-/v1/aggregators/-raast-aggregator-id-/keys) and disable unused keys with [Delete access key](/api-reference#delete-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-).

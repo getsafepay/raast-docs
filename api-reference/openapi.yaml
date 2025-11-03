@@ -114,7 +114,6 @@ paths:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreateMerchantResponse"
@@ -130,7 +129,6 @@ paths:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - $ref: "#/components/parameters/MerchantListLimitParam"
         - $ref: "#/components/parameters/MerchantListOffsetParam"
         - $ref: "#/components/parameters/MerchantListEnabledParam"
@@ -152,7 +150,6 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/MerchantIdParam"
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindMerchantResponse"
@@ -169,7 +166,6 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/MerchantIdParam"
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/EmptySuccess"
@@ -184,7 +180,6 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/MerchantIdParam"
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/UpdateMerchantsResponse"
@@ -210,7 +205,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - $ref: "#/components/parameters/RaastMerchantListLimitParam"
         - $ref: "#/components/parameters/RaastMerchantListOffsetParam"
         - $ref: "#/components/parameters/RaastMerchantListStatusParam"
@@ -232,8 +226,6 @@ paths:
       description: Explore a Raast merchant in detail.
       security:
         - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindRaastMerchantResponse"
@@ -250,8 +242,6 @@ paths:
       description: Create an RTP Now or Later Payment.
       security:
         - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreatePaymentResponse"
@@ -267,7 +257,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - name: limit
           in: query
           required: false
@@ -377,8 +366,6 @@ paths:
       description: Explore a payment in detail.
       security:
         - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindPaymentResponse"
@@ -393,8 +380,6 @@ paths:
       description: Initiate a Raast payout to credit a beneficiary IBAN
       security:
         - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       requestBody:
         $ref: "#/components/requestBodies/CreatePayout"
       responses:
@@ -413,8 +398,6 @@ paths:
         - Refunds
       summary: Create Refund
       description: Issue a refund against a payment
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreateRefundResponse"
@@ -430,7 +413,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - name: limit
           in: query
           required: false
@@ -475,8 +457,6 @@ paths:
       description: Explore a refund in detail.
       security:
         - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindRefundResponse"
@@ -493,8 +473,6 @@ paths:
       description: Create a static or dynamic QR code
       security:
         - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreateQRCodeResponse"
@@ -508,7 +486,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - $ref: "#/components/parameters/QRListAggregatorMerchantIdParam"
         - $ref: "#/components/parameters/QRListTypeParam"
         - $ref: "#/components/parameters/QRListLimitParam"
@@ -530,8 +507,6 @@ paths:
       description: Explore a QR code in detail
       security:
         - apiKey: []
-      parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindQRCodeResponse"
@@ -545,7 +520,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeaderRequired"
         - $ref: "#/components/parameters/QRDeleteAggregatorMerchantIdParam"
       responses:
         "200":
@@ -565,7 +539,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - $ref: "#/components/parameters/QRPaymentListLimitParam"
         - $ref: "#/components/parameters/QRPaymentListOffsetParam"
       responses:
@@ -583,7 +556,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - $ref: "#/components/parameters/TitleFetchIbanParam"
       responses:
         "200":
@@ -602,7 +574,6 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - $ref: "#/components/parameters/AccountInfoIbanParam"
         - $ref: "#/components/parameters/AccountInfoWithTitleFetchParam"
         - $ref: "#/components/parameters/AccountInfoAliasTypeParam"

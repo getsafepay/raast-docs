@@ -1,43 +1,115 @@
 ---
-title: 'Merchants'
-description: ''
+title: 'Aggregator merchants'
+description: 'Structure, lifecycle, and API contract for the merchants you manage under an aggregator.'
+sidebar:
+  order: 2
 ---
 
-Merchants represent the business entities under your aggregator that are authorized to initiate payments using the Raast network. Each merchant is assigned a unique identifier, and all payments must be initiated by a registered merchant.
+Aggregator merchants represent the businesses you process payments for. They sit under an [aggregator](/concepts/aggregator), inherit its credentials, and must link to a Safepay-managed [Raast merchant](/concepts/raast-merchants) before you can move money on their behalf.
 
-## Creating a Merchant
+| Field | Type | Required? | Example | Notes |
+| --- | --- | --- | --- | --- |
+| `merchant_external_id` | string | Yes | sec_0c3de397-441f-471f-bcd7-b6d948e1c307 | Stable identifier you supply across environments. |
+| `iban` | string | Yes | PK62ABPA0010000222380013 | Settlement IBAN for payouts. |
+| `name` | string | Yes | Acme Foods Saddar | Display name shown in dashboards and reports. |
+| `enabled` | boolean | No | true | Set to `true` to activate immediately. |
+| `raast_merchant_id` | string | Yes | mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2 | Links to a Safepay Raast merchant. |
+| `rate_card.ratecard_kind` | enum | Yes | RateCardKind_fixed | Choose the pricing model. |
+| `rate_card.fixed_rate` | integer | Required for fixed | 3000 | Fee in paisa when using a fixed card. |
+| `rate_card.tax_region` | string | No | PK | Region where the tax applies. |
+| `rate_card.tax_rate` | number | Yes | 0.1 | Tax rate applied to transactions. |
 
-Use the following endpoint to create a new merchant:
+<Callout type="info">Safepay performs KYC/KYB on every merchant. Payments remain blocked until the merchant status becomes `ENABLED`.</Callout>
 
-```bash
-curl -X POST https://api.getsafepay.com/v1/merchants \
-  -H "Authorization: Bearer <ACCESS_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Acme Retail",
-    "identifier": "acme-retail-01"
+```mermaid
+graph TD
+  A[Safepay Raast merchant] -->|links to| M1[Aggregator merchant 1]
+  A --> M2[Aggregator merchant 2]
+  A --> M3[Aggregator merchant N]
+```
+
+- One aggregator merchant can link to only one Raast merchant.
+- A single Raast merchant can be shared across many aggregators. This lets a business entity use multiple aggregators without re-onboarding.
+
+### Create a merchant
+
+Use the Aggregator Merchants API to create and link a merchant. Replace placeholders with your real values. The header name must match the OpenAPI security scheme (`X-SFPY-AGGREGATOR-SECRET-KEY`).
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/merchants" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "merchant_external_id": "sec_0c3de397-441f-471f-bcd7-b6d948e1c307",
+    "iban": "PK62ABPA0010000222380013",
+    "name": "Acme Foods Saddar",
+    "enabled": true,
+    "raast_merchant_id": "{{raast_merchant_id}}",
+    "rate_card": {
+      "ratecard_kind": "RateCardKind_fixed",
+      "fixed_rate": 3000,
+      "tax_region": "PK",
+      "tax_rate": 0.1
+    }
   }'
 ```
 
-## Request Body Fields
+```typescript TypeScript
+type CreateMerchantPayload = {
+  api_version: string;
+  data: {
+    token: string;
+    merchant_external_id: string;
+    enabled: boolean;
+    name: string;
+  };
+};
 
-### Best Practices
+const res = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/merchants`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+    body: JSON.stringify({
+      merchant_external_id: 'sec_0c3de397-441f-471f-bcd7-b6d948e1c307',
+      iban: 'PK62ABPA0010000222380013',
+      name: 'Acme Foods Saddar',
+      enabled: true,
+      raast_merchant_id: process.env.SAFEPAY_RAAST_MERCHANT_ID,
+      rate_card: {
+        ratecard_kind: 'RateCardKind_fixed',
+        fixed_rate: 3000,
+        tax_region: 'PK',
+        tax_rate: 0.1,
+      },
+    }),
+  },
+);
 
-- Choose a consistent and descriptive naming scheme for identifiers (e.g. brand-location)
-- Use the same identifier across environments (e.g. staging, prod) with different prefixes if needed
-- Store the merchant_id returned in the response securely — it is used in all future payment and QR creation calls
-
-## Response
-
-The API will respond with a JSON object containing the merchant’s unique ID, timestamps, and any validation errors if applicable.
-
-```json
-{
-  "id": "mch_a1b2c3d4",
-  "name": "Acme Retail",
-  "identifier": "acme-retail-01",
-  "created_at": "2025-08-06T10:15:00Z"
+if (!res.ok) {
+  const error = await res.json();
+  throw new Error(`Merchant creation failed: ${error.message}`);
 }
+
+const payload: CreateMerchantPayload = await res.json();
+const aggregatorMerchantIdentifier = payload.data.token;
+console.log('Aggregator merchant identifier', aggregatorMerchantIdentifier);
 ```
 
-Only registered merchants can create payments or generate QR codes using the Raast API.
+</CodeGroup>
+
+<Callout type="tip">Keep the returned `data.token` in your vault. Safepay refers to it as the `aggregator_merchant_identifier` when you create payments, QR codes, refunds, and payouts.</Callout>
+
+### Merchant lifecycle
+
+1. **Created** — Safepay receives your request and assigns an ID.
+2. **Pending checks** — KYC/KYB validations run. Provide documentation if requested.
+3. **Enabled** — Payment, QR, and payout endpoints accept this merchant.
+4. **Disabled** — Safepay can suspend a merchant; payment requests will fail until re-enabled.
+
+Re-use the `List merchants` and `Get merchant` endpoints to monitor these transitions during onboarding.

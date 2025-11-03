@@ -23,12 +23,12 @@
             ]
           },
           {
-            "group": "Concepts",
+            "group": "Integration guides",
             "pages": [
-              "concepts/merchant",
-              "concepts/payment",
-              "concepts/qr_code",
-              "concepts/refunds"
+              "guides/overview",
+              "guides/raast-integration-journey",
+              "guides/payment-lifecycle",
+              "guides/payout-lifecycle"
             ]
           },
           {
@@ -38,7 +38,22 @@
               "use-cases/rtp_now",
               "use-cases/rtp_later",
               "use-cases/dynamic_qr",
-              "use-cases/static_qr"
+              "use-cases/static_qr",
+              "use-cases/payouts"
+            ]
+          },
+          {
+            "group": "Concepts",
+            "pages": [
+              "concepts/aggregator",
+              "concepts/merchant",
+              "concepts/raast-merchants",
+              "concepts/payment-types",
+              "concepts/account-validation",
+              "concepts/payment",
+              "concepts/qr_code",
+              "concepts/refunds",
+              "concepts/webhooks"
             ]
           }
         ]

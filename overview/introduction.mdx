@@ -1,15 +1,31 @@
 ---
 title: 'Introduction'
-description: ''
+description: 'Overview of Safepay Raast and the building blocks you need to move money.'
+sidebar:
+  order: 1
 ---
 
-Safepay’s Raast APIs are designed to help aggregators, merchants, and fintech platforms accept and process real-time payments using Pakistan’s Raast instant payment network.
+Safepay Raast lets aggregators move money across Pakistan’s instant payment network on behalf of their merchants. This documentation is organized to get you production-ready quickly while keeping implementation details explicit.
 
-This documentation covers:
-- How to get started with a Safepay Aggregator account
-- Requesting and using access keys
-- Creating merchants and initiating payments
-- Generating and using QR codes (static and dynamic)
-- Handling refunds and best practices
+### Why Safepay Raast
 
-Use this documentation as a step-by-step guide to implement the full payment lifecycle with Safepay and Raast.
+- **Manage many merchants** — Create and supervise multiple [aggregator merchants](/concepts/merchant) under a single [aggregator](/concepts/aggregator) account.
+- **Instant pay-ins** — Collect funds using [RTP Now, RTP Later, Dynamic QR, or Static QR](/concepts/payment-types) flows.
+- **Instant payouts** — Disburse funds to vendors or beneficiaries with the same credentials.
+- **Validation utilities** — Confirm payer and beneficiary details before executing transactions.
+
+### Integration path
+
+1. [Request aggregator access](/overview/create-aggregator) and receive your `{{aggregator_id}}`.
+2. [Secure your aggregator secret key](/overview/request-access-key) (`X-SFPY-AGGREGATOR-SECRET-KEY`).
+3. [Create aggregator merchants](/concepts/merchant) and link them to [Raast merchants](/concepts/raast-merchants).
+4. Follow the [Raast integration journey](/guides/raast-integration-journey) to issue payments, QRs, and payouts.
+5. Subscribe to [webhooks](/concepts/webhooks) for asynchronous status updates.
+
+### Environments
+
+Use the Sandbox base URL (`https://dev.api.getsafepay.com/raastwire`) while integrating. Production lives at `https://api.getsafepay.com/raastwire`. Both environments require the same path structure: `/v1/aggregators/{{aggregator_id}}/...`.
+
+### What’s next
+
+Jump into the [Quickstart](/overview/quickstart) to send your first payment, then explore the [API reference](/api-reference) when you are ready to automate credential rotation, payouts, and reporting.

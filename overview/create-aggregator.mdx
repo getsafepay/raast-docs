@@ -1,29 +1,31 @@
 ---
-title: 'Create Aggregator Account'
-description: ''
+title: 'Create aggregator account'
+description: 'Request a Safepay Raast aggregator and receive your IDs.'
+sidebar:
+  order: 3
 ---
 
-To access Safepay's Raast API, you must first be onboarded as an Aggregator. Aggregators are top-level accounts that manage merchants, issue access credentials, and initiate payments.
+Start by requesting an aggregator account. Without it you cannot create merchants, payments, or payouts.
 
-There is no self-serve option for creating Aggregator accounts. All requests must be manually approved by the Safepay team.
+<Steps>
+  <Step title="Prepare your request">
+    Gather your legal business name, website, primary contact, expected monthly Raast volume, and a brief description of your use case.
+  </Step>
+  <Step title="Email Safepay">
+    Send the details to [support@getsafepay.com](mailto:support@getsafepay.com) with the subject `Aggregator Access Request`.
+  </Step>
+  <Step title="Safepay review">
+    Our team evaluates your application, performs preliminary compliance checks, and provisions an aggregator if approved.
+  </Step>
+  <Step title="Receive credentials">
+    You receive your `{{aggregator_id}}`, an initial `{{secret_key}}`, and onboarding guidance for next steps.
+  </Step>
+</Steps>
 
-## How to Request an Aggregator Account
+<Callout type="info">If you need multiple environments, mention Sandbox and Production in your initial request so Safepay can issue separate secret keys.</Callout>
 
-To begin:
+### After approval
 
-1. Email support@getsafepay.com
-2. Use the subject: Aggregator Access Request
-3. Provide the following details in your message:
-    - Legal Business Name
-    - Business Website (if applicable)
-    - Primary Contact Name & Email
-    - Expected payment volume per month
-    - Use case summary (who are your merchants, what type of payments you plan to enable)
-
-Safepay will evaluate your request and respond with:
-
-- A confirmation of account creation
-- Your first API access key (see Request Access Key)
-- A test environment if needed
-
-Once onboarded, you’ll have access to the full API suite to manage merchants and initiate transactions.
+1. Store the provided secret key in your secret manager.
+2. Follow [Manage aggregator secret keys](/overview/request-access-key) to rotate or create additional keys.
+3. Create your first merchant using the [Quickstart](/overview/quickstart).

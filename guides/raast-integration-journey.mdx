@@ -1,0 +1,51 @@
+---
+title: 'Raast integration journey'
+description: 'End-to-end flow from aggregator onboarding to accepting payments and payouts.'
+sidebar:
+  order: 2
+---
+
+Use this journey as your checklist. It strings together the core concepts, guides, and API calls you need to enable Safepay Raast for your business.
+
+<Steps>
+  <Step title="Get aggregator access">
+    Request access, receive your [aggregator](/concepts/aggregator), and secure the first `{{secret_key}}`.
+  </Step>
+  <Step title="Create aggregator merchants">
+    Link each business you serve to a [Raast merchant](/concepts/raast-merchants) when creating an [aggregator merchant](/concepts/merchant).
+  </Step>
+  <Step title="Complete KYC/KYB">
+    Safepay validates documentation. Expect same-day approval when the Raast merchant is already onboarded; otherwise provide additional paperwork.
+  </Step>
+  <Step title="Enable payment initiation">
+    Choose your [payment type](/concepts/payment-types) and follow the respective [use case](/use-cases/overview).
+  </Step>
+  <Step title="Handle webhooks and reconciliation">
+    Subscribe to [webhooks](/concepts/webhooks), poll when necessary, and reconcile using the reporting APIs.
+  </Step>
+  <Step title="Roll out payouts (optional)">
+    Once pay-ins are live, add [instant payouts](/use-cases/payouts) for beneficiaries.
+  </Step>
+</Steps>
+
+### Merchant and Raast merchant linkage
+
+| Scenario | Action |
+| --- | --- |
+| Raast merchant already exists in Safepay registry | Use `raast_merchant_id` from [Raast merchants](/concepts/raast-merchants) when creating your aggregator merchant. |
+| New business entity | Submit documentation so Safepay can create a Raast merchant. Expect longer KYC/KYB timelines. |
+
+<Callout type="info">A single Raast merchant can link to multiple aggregators. This lets merchants work with different platforms simultaneously.</Callout>
+
+### Payment orchestration cheat sheet
+
+- **RTP Now** — Collect once the customer approves immediately. Ideal for cashback or just-in-time payouts.
+- **RTP Later** — Give customers more time to approve. Use when invoices can be paid hours or days later.
+- **Dynamic QR** — Create per transaction at checkout; you know the amount but not the payer until settlement.
+- **Static QR** — Post a reusable QR. Track incoming payments using amount and metadata.
+
+### Operational readiness
+
+- Automate webhook retries and reconciliation dashboards.
+- Use [account validation utilities](/concepts/account-validation) to prevent bad debtor or beneficiary data.
+- Rotate aggregator keys using the [Access Keys API](/overview/request-access-key) before go-live.

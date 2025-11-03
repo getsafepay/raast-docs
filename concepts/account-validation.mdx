@@ -1,0 +1,84 @@
+---
+title: 'Account validation utilities'
+description: 'Use title fetch and account information APIs to confirm debtor details before initiating Raast payments.'
+sidebar:
+  order: 5
+---
+
+Reduce payment failures by validating customer bank details before submitting RTP or payout requests. Safepay exposes two utility endpoints under your aggregator:
+
+| Endpoint | Purpose | Key request parameters |
+| --- | --- | --- |
+| [GET /title-fetch](/api-reference/utilities/title-fetch) | Returns the registered account title for a Raast IBAN. | `iban` (query) |
+| [GET /account-info](/api-reference/utilities/read-account-info) | Retrieves metadata for an IBAN or alias, optionally combining title fetch. | `iban` or `alias_*` params; `with_title_fetch` flag |
+
+<Callout type="tip">Call these endpoints before RTP or payout operations to ensure the payer or beneficiary details are valid. Cache responses briefly to avoid extra latency.</Callout>
+
+### Title fetch example
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/title-fetch?iban={{customer_iban}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const res = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/title-fetch?iban=${encodeURIComponent(customerIban)}`,
+  {
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+  },
+);
+
+if (!res.ok) {
+  throw new Error(`Title fetch failed with status ${res.status}`);
+}
+
+const titlePayload: {
+  iban: string;
+  title: string;
+  bank: string;
+  verified_at: string;
+} = await res.json();
+```
+
+</CodeGroup>
+
+### Account info + alias lookup
+
+Use the `account-info` endpoint when you only have the customer’s Raast alias.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/account-info?alias_type=RAAST_ID&alias_value={{customer_alias}}&with_title_fetch=true" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const accountInfoResponse = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/account-info?alias_type=RAAST_ID&alias_value=${encodeURIComponent(customerAlias)}&with_title_fetch=true`,
+  {
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+  },
+);
+
+if (!accountInfoResponse.ok) {
+  throw new Error(`Account info lookup failed: ${accountInfoResponse.status}`);
+}
+
+const accountInfo: {
+  iban?: string;
+  alias_type?: 'RAAST_ID' | 'PHONE' | 'EMAIL';
+  alias_value?: string;
+  title?: string;
+  bank?: string;
+} = await accountInfoResponse.json();
+```
+
+</CodeGroup>

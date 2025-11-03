@@ -1,0 +1,31 @@
+---
+title: 'Payment types'
+description: 'Choose between RTP Now, RTP Later, Dynamic QR, and Static QR based on debtor details and user experience.'
+sidebar:
+  order: 4
+---
+
+Safepay supports four Raast payment initiation modes. Each differs in how much you know about the customer up front and how quickly they must act. Use the matrix below to decide which one fits your experience.
+
+| Type | When to use | Need debtor info? | Need amount upfront? | Customer action window |
+| --- | --- | --- | --- | --- |
+| RTP Now | Instant disbursements (cashback, refunds, rewards). | Yes — provide IBAN or Raast ID. | Yes. | Minutes; customer acts immediately. |
+| RTP Later | Invoices with delayed approval. | Yes — provide IBAN or Raast ID. | Yes. | Hours or days; configurable expiry. |
+| Dynamic QR | Point-of-sale or checkout flows with known amount. | No — Safepay shares payer details in the webhook. | Yes. | Customer scans and pays immediately. |
+| Static QR | Reusable QR displayed on signage or invoices. | No. | No — payer enters the amount. | Open-ended; multiple payments allowed. |
+
+<Callout type="tip">All payment types emit webhook notifications. Integrate [webhooks](/concepts/webhooks) alongside any polling to update customer-facing UIs promptly.</Callout>
+
+### Lifecycle summary
+
+- **RTP Now** — create payment → customer approves in their banking app → Safepay notifies you → present confirmation or retry.
+- **RTP Later** — same as RTP Now but allows customers more time; offer a manual refresh option in your UI.
+- **Dynamic QR** — generate per order; Safepay returns payer identifiers once settled.
+- **Static QR** — generate once; reconcile incoming payments by comparing amount and optional memo fields.
+
+### Implementation guides
+
+- [Create Request To Pay (now)](/use-cases/rtp_now)
+- [Create Request To Pay (later)](/use-cases/rtp_later)
+- [Create dynamic QR](/use-cases/dynamic_qr)
+- [Create static QR](/use-cases/static_qr)

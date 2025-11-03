@@ -1,0 +1,84 @@
+---
+title: 'Payment lifecycle guide'
+description: 'Understand how Safepay Raast processes RTP and QR payments end to end.'
+sidebar:
+  order: 3
+---
+
+Every Raast payment is asynchronous. Use this guide to reason about customer experience, backend orchestration, and webhook handling for each flow.
+
+## RTP Now
+
+<Steps>
+  <Step title="Create the payment">
+    Call `POST /v1/aggregators/{{aggregator_id}}/payments` with `type: "RTP_NOW"`, debtor details, amount, and a unique `request_id`.
+  </Step>
+  <Step title="Poll or wait for webhook">
+    Your frontend polls your backend, which either polls Safepay or waits for a webhook event.
+  </Step>
+  <Step title="Customer approves or rejects">
+    Their bank sends a push notification prompting approval.
+  </Step>
+  <Step title="Safepay forwards the status">
+    Webhooks contain the final decision; update your systems and UI accordingly.
+  </Step>
+  <Step title="Acknowledge outcome">
+    Show a success page on accept or prompt the customer to retry on reject.
+  </Step>
+</Steps>
+
+## RTP Later
+
+<Steps>
+  <Step title="Create the payment">
+    Submit the same endpoint with `type: "RTP_LATER"` and any desired expiry settings.
+  </Step>
+  <Step title="Expose refresh options">
+    Customers may take longer to act, so offer manual refresh buttons or background polling.
+  </Step>
+  <Step title="Await customer action">
+    Their bank notification may arrive hours later.
+  </Step>
+  <Step title="Process Safepay webhook">
+    When the result arrives, mark the invoice paid or keep it outstanding.
+  </Step>
+  <Step title="Reconcile">
+    Update accounting systems; allow retriable submissions using the same `request_id` if needed.
+  </Step>
+</Steps>
+
+## Dynamic QR
+
+<Steps>
+  <Step title="Generate QR per transaction">
+    Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: "DYNAMIC"` and the amount.
+  </Step>
+  <Step title="Display to the customer">
+    Render the QR on your POS or checkout screen.
+  </Step>
+  <Step title="Customer scans and pays">
+    The banking app handles authentication. You do not know the debtor until the webhook arrives.
+  </Step>
+  <Step title="Safepay notifies you">
+    Webhooks include payer details so you can issue receipts and reconcile.
+  </Step>
+</Steps>
+
+## Static QR
+
+<Steps>
+  <Step title="Create once">
+    Call `POST /v1/aggregators/{{aggregator_id}}/qrs` without specifying an amount. Store the QR for reuse.
+  </Step>
+  <Step title="Customer scans and enters amount">
+    They type the amount in their banking app.
+  </Step>
+  <Step title="Safepay notifies you per payment">
+    Use the webhook payload to match against the expected amount. Static QRs can receive multiple payments.
+  </Step>
+  <Step title="Reconcile partial payments">
+    Handle cases where the customer underpays or overpays compared to your invoice.
+  </Step>
+</Steps>
+
+<Callout type="tip">Combine webhooks with periodic polling of `GET /payments` when building dashboards; polling is still helpful if your webhook endpoint is temporarily unavailable.</Callout>

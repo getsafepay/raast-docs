@@ -1,85 +1,113 @@
 ---
-title: 'Create Static QR'
-description: 'Generate a reusable QR code linked to a merchant for recurring Raast payments'
+title: 'Create static QR'
+description: 'Generate a reusable QR code tied to a Raast merchant.'
 ---
 
-Static QR codes are linked to a specific merchant’s Raast alias or IBAN and are ideal for recurring, fixed, or location-based payments. Once created, they can be reused indefinitely.
+Static QR codes are reusable. They identify your aggregator merchant but leave amount and payer details open, making them ideal for countertop displays and printed invoices.
 
-Common use cases include:
+## Flow summary
 
-- In-store payment displays
-- Utility bill payments
-- Subscriptions or donations
-- Freelancers or service providers with a fixed receiving account
+1. Capture the `aggregator_merchant_identifier` for the location or business line.
+2. Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: STATIC`.
+3. Render the returned `data.code` and share it digitally or physically.
+4. Reconcile payments by matching webhook payloads or listing QR payments.
 
-## Characteristics of Static QRs
+## Static QR
 
-| Feature         | Static QR                          |
-|------------------|-------------------------------------|
-| Reusable         | ✅ Yes                              |
-| Encodes metadata | ❌ No (no order ID or amount)       |
-| Tied to merchant | ✅ Yes                              |
-| Ideal for        | POS, invoices, countertop displays  |
+<Tabs>
+  <Tab title="Request Fields">
 
-<Note>Static QRs do not carry transaction metadata. Any reconciliation must be done using the actual payment object.</Note>
+<ParamField path="type" type="string" required>
+  Set to `STATIC` for reusable codes.
+</ParamField>
+<ParamField path="aggregator_merchant_identifier" type="string" required>
+  Token returned from merchant creation (`data.token`).
+</ParamField>
+<ParamField path="request_id" type="string">
+  Recommended to prevent duplicate QR creation on retries.
+</ParamField>
 
-## API Example
+  </Tab>
+  <Tab title="API Example">
 
-```bash title="Create Static QR" expandable
-curl -X POST https://api.getsafepay.com/v1/qr \
-  -H "Authorization: Bearer <ACCESS_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/qrs" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
     "type": "STATIC",
-    "merchant_id": "mch_84ef70dbad2e4900"
+    "aggregator_merchant_identifier": "{{aggregator_merchant_identifier}}",
+    "request_id": "{{request_id}}"
   }'
 ```
 
-## Request Fields
+```typescript TypeScript
+const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
+if (!aggregatorMerchantIdentifier) {
+  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
+}
 
-<Fields>
-  <Field name="type" type="string" required="true">Must be set to `"STATIC"`</Field>
-  <Field name="merchant_id" type="string" required="true">The ID of the merchant generating the QR</Field>
-</Fields>
+const staticQrResponse = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/qrs`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+    body: JSON.stringify({
+      type: 'STATIC',
+      aggregator_merchant_identifier: aggregatorMerchantIdentifier,
+      request_id: crypto.randomUUID(),
+    }),
+  },
+);
 
-## Sample Response
+if (!staticQrResponse.ok) {
+  const errorPayload = await staticQrResponse.json();
+  throw new Error(`Static QR failed: ${staticQrResponse.status} ${errorPayload.message}`);
+}
 
-```json title="Static QR Response"
+type CreateQrPayload = {
+  api_version: string;
+  data: {
+    token: string;
+    code: string;
+    type: 'STATIC' | 'DYNAMIC';
+    aggregator_merchant_id: string;
+    created_at: string;
+  };
+};
+
+const staticQrPayload: CreateQrPayload = await staticQrResponse.json();
+console.log('Reusable QR code', staticQrPayload.data.code);
+```
+
+</CodeGroup>
+
+  </Tab>
+  <Tab title="Sample Response">
+
+```json
 {
-  "qr_type": "STATIC",
-  "qr_data": "000201010211...63043ABF",
-  "created_at": "2025-08-06T17:03:00Z"
+  "api_version": "v1",
+  "data": {
+    "token": "qr_4076ad61-75cf-44a3-97a1-b66643ea3bf2",
+    "aggregator_merchant_id": "am_be454a50-7612-4dc6-a97e-284ebbe7ae93",
+    "type": "STATIC",
+    "code": "000201010211...",
+    "created_at": "2025-04-28T10:26:48Z"
+  }
 }
 ```
 
-* The `qr_data` field contains an EMVCo-compliant QR payload that can be rendered into a scannable image.
-* This QR can be printed or displayed for offline or in-store transactions.
+  </Tab>
+</Tabs>
 
-<Tip>Static QR payloads are shorter and simpler than dynamic QR, and do not change per transaction.</Tip>
+## Rendering tips
 
-## Rendering the QR
-
-Use a standard QR code library to turn `qr_data` into an image or SVG:
-
-```tsx title="React Example"
-import QRCode from 'qrcode.react'
-
-<QRCode value={qrData} size={200} />
-```
-
-You can also convert it to a downloadable PNG or display it on web/POS systems.
-
-## Best Practices
-
-* Assign a unique static QR per merchant location if needed
-* Educate staff or customers on which QR to scan for which account
-* Combine with printed instructions or display templates
-* Monitor all payments made to the merchant ID for attribution
-
-<Note>Static QRs do not expire and can be reused across sessions. If you need one-time or metadata-specific payments, use dynamic QR instead.</Note>
-
-## Related Guides
-
-* [Concepts: QR Code](/concepts/qr_code)
-* [Create Dynamic QR](/use_cases/create_dynamic_qr)
-* [Initiate Payment Now](/use_cases/create_rtp_now)
+- Feed `data.code` to any QR generation library (`qrcode.react`, `qr-image`, etc.).
+- Print the QR with usage instructions or embed it in digital invoices.
+- Use [`GET /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}/payments`](/api-reference#get-/v1/aggregators/-raast-aggregator-id-/qrs/-qr-id-/payments) to list transactions tied to this QR.

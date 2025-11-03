@@ -1,40 +1,89 @@
 ---
-title: 'Request Access Key'
-description: ''
+title: 'Manage aggregator secret keys'
+description: 'Securely handle the credentials that authenticate your Raast API calls.'
+sidebar:
+  order: 4
 ---
 
-Once your Aggregator account is approved by Safepay, you will be issued an access key. This key is a sensitive credential used to authenticate all API calls made to the Raast system.
+Safepay issues an aggregator secret key (`{{secret_key}}`) after approving your account. All API requests must include it in the `X-SFPY-AGGREGATOR-SECRET-KEY` header.
 
-## Access Key Format
+### Key format
 
-Access keys are long alphanumeric strings similar to:
-
-```mdx
-spk_live_4f3c98b1c84f42b8a82108cfdb2e45f6
+```
+sk_live_c66a5b38-0ce1-4f83-8d72-57b8f91a8762
 ```
 
-This key must be included in the `Authorization` header of every API request:
+### Best practices
 
-```bash
-curl -X GET https://api.getsafepay.com/v1/payments \
-  -H "Authorization: Bearer spk_live_4f3c98b1c84f42b8a82108cfdb2e45f6"
+<Steps>
+  <Step title="Store in a secret manager">
+    Use AWS Secrets Manager, HashiCorp Vault, or your platform’s equivalent. Restrict read permissions to the services that call Safepay.
+  </Step>
+  <Step title="Rotate regularly">
+    Rotate keys every 90 days or sooner when staff changes. You can create overlapping keys to achieve zero-downtime rotation.
+  </Step>
+  <Step title="Separate by workload">
+    Issue unique keys for payouts vs pay-ins so you can revoke one without disrupting the other.
+  </Step>
+</Steps>
+
+### Create or rotate keys via API
+
+Use the Access Keys API to automate issuance.
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/keys" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "name": "payouts-service",
+    "is_active": true
+  }'
 ```
 
-## Key Management Best Practices
+```typescript TypeScript
+type CreateAccessKeyPayload = {
+  api_version: string;
+  data: {
+    token: string;
+    secret: string;
+    name: string;
+    is_active: boolean;
+  };
+};
 
-Safepay follows industry-standard security practices and recommends you do the same:
+const res = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/keys`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+    body: JSON.stringify({
+      name: 'payouts-service',
+      is_active: true,
+    }),
+  },
+);
 
-- **Keep your access key secret**: Store it in a secure location like AWS Secrets Manager, HashiCorp Vault, or a secure environment variable store.
-- **Avoid hardcoding**: Never hardcode the key in your codebase or frontend assets.
-- **Use different keys for dev/test/prod**: Request separate keys for each environment.
-- **Rotate keys periodically**: You may request key rotation by emailing support@getsafepay.com
+if (!res.ok) {
+  throw new Error(`Key creation failed: ${res.status}`);
+}
 
-## Lost or Compromised Key
+const payload: CreateAccessKeyPayload = await res.json();
+const accessKey = payload.data.token;
+const secretKey = payload.data.secret;
+```
 
-If your access key is lost, exposed, or compromised:
+</CodeGroup>
 
-- Immediately contact support@getsafepay.com
-- Your old key will be revoked
-- A new one will be issued with minimal disruption
+<Callout type="warning">Always revoke compromised keys immediately using [Delete access key](/api-reference#delete-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-) and issue replacements.</Callout>
 
-All API requests will fail with a `401 Unauthorized` error if your key is invalid or expired.
+### Header usage reminder
+
+```
+X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}
+```

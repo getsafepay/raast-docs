@@ -1,86 +1,156 @@
 ---
-title: 'Create Real-Time Payment (Now)'
-description: 'Initiate an immediate push payment from a merchant to a customer IBAN using the Raast API'
+title: 'Create Request To Pay (now)'
+description: 'Initiate an RTP_NOW payment that prompts the customer immediately.'
 ---
 
-This guide walks you through initiating a real-time payment using the Raast API. The flow assumes the merchant already exists and the aggregator has a valid access key.
+Use this recipe to collect funds instantly. Submit a Request To Pay payload with the debtor’s identifier, then wait for the customer to approve inside their banking app.
 
-Use this pattern when you want to push funds instantly from a merchant to a customer’s account — for example, for cashback, rewards, disbursements, or refunds outside the refund API.
+## Flow summary
 
-## Flow Summary
+1. Retrieve an `aggregator_merchant_identifier` from the merchant creation response.
+2. Validate debtor details with the [account validation utilities](/concepts/account-validation).
+3. Call `POST /v1/aggregators/{{aggregator_id}}/payments` with `type: RTP_NOW`.
+4. Monitor webhooks (and optionally poll) to surface the final payment status.
 
-1. Authenticate with your access key
-2. Create a payment via `/v1/payments`
-3. Monitor the status transition: `INITIATED` → `PROCESSING` → `SETTLED` or `FAILED`
-4. Optionally handle errors or retry with the same `request_id` (idempotent)
+## RTP now
 
-## API Example
+<Tabs>
+  <Tab title="Request Fields">
 
-```bash title="Create Payment Now" expandable
-curl -X POST https://api.getsafepay.com/v1/payments \
-  -H "Authorization: Bearer <ACCESS_KEY>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "merchant_id": "mch_a1b2c3d4",
-    "amount": 5000,
-    "debitor_iban": "PK36SCBL0000001123456702",
-    "order_id": "CASHBACK-2025-001",
-    "request_id": "c278d1ff-98a7-4d24-9f12-4cb26dfb7dd0"
+<ParamField path="request_id" type="string" required>
+  UUID that enforces idempotency. Reuse only when retrying the exact same payload.
+</ParamField>
+<ParamField path="amount" type="integer" required>
+  Amount in paisa (PKR minor units). `94000` represents PKR 940.00.
+</ParamField>
+<ParamField path="aggregator_merchant_identifier" type="string" required>
+  Token returned in `data.token` when you created the merchant.
+</ParamField>
+<ParamField path="order_id" type="string" required>
+  Merchant reference echoed in responses and webhooks.
+</ParamField>
+<ParamField path="type" type="string" required>
+  Must be `RTP_NOW` for immediate Request To Pay flows.
+</ParamField>
+<ParamField path="expiry_in_minutes" type="integer">
+  Required for RTP Now payments. Valid range 1–180 minutes.
+</ParamField>
+<ParamField path="debitor_iban" type="string">
+  Provide when charging a known IBAN. At least one of `debitor_iban`, `debitor_raast_id`, or `debitor_vault_token` must be supplied.
+</ParamField>
+<ParamField path="debitor_raast_id" type="string">
+  Supply when requesting payment via a Raast alias (for example, phone number). One of the debtor identifiers is required.
+</ParamField>
+<ParamField path="debitor_vault_token" type="string">
+  Reference to a stored payment method for repeat customers. One of the debtor identifiers is required.
+</ParamField>
+
+  </Tab>
+  <Tab title="API Example">
+
+Set `{{base_url}}` to either `https://dev.api.getsafepay.com/raastwire` (sandbox) or `https://api.getsafepay.com/raastwire` (production).
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "request_id": "{{request_id}}",
+    "amount": 94000,
+    "aggregator_merchant_identifier": "{{aggregator_merchant_identifier}}",
+    "order_id": "ORDER-RAAST-001",
+    "type": "RTP_NOW",
+    "expiry_in_minutes": 45,
+    "debitor_iban": "PK89SCBL0000001234651601"
   }'
 ```
 
-<Warning>Make sure the IBAN is validated and active. Payments to incorrect or closed IBANs will fail.</Warning>
+```typescript TypeScript
+const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
+if (!aggregatorMerchantIdentifier) {
+  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
+}
 
-## Parameters
+const rtpResponse = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payments`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+    body: JSON.stringify({
+      request_id: crypto.randomUUID(),
+      amount: 94000,
+      aggregator_merchant_identifier: aggregatorMerchantIdentifier,
+      order_id: 'ORDER-RAAST-001',
+      type: 'RTP_NOW',
+      expiry_in_minutes: 45,
+      debitor_iban: 'PK89SCBL0000001234651601',
+    }),
+  },
+);
 
-<Fields>
-  <Field name="merchant_id" type="string" required="true">ID of the merchant sending the payment</Field>
-  <Field name="amount" type="integer" required="true">Amount in paisa (e.g. 5000 = PKR 50.00)</Field>
-  <Field name="debitor_iban" type="string" required="true">Customer's IBAN that will receive the funds</Field>
-  <Field name="order_id" type="string" required="false">Optional order or reference number for internal tracking</Field>
-  <Field name="request_id" type="string" required="true">Unique UUID to enforce idempotency across retries</Field>
-</Fields>
+if (!rtpResponse.ok) {
+  const errorPayload = await rtpResponse.json();
+  throw new Error(`RTP request failed: ${rtpResponse.status} ${errorPayload.message}`);
+}
 
-## Sample Success Response
+type CreatePaymentPayload = {
+  api_version: string;
+  data: {
+    token: string;
+    status: 'P_INITIATED' | 'P_RECEIVED' | 'P_FAILED' | 'P_REJECTED' | 'P_SETTLED';
+    request_id: string;
+    order_id: string;
+    trace_reference?: string;
+    msg_id?: string;
+    created_at: string;
+  };
+};
 
-```json title="Success Response"
+const paymentPayload: CreatePaymentPayload = await rtpResponse.json();
+console.log('Payment token', paymentPayload.data.token);
+```
+
+</CodeGroup>
+
+  </Tab>
+  <Tab title="Sample Response">
+
+```json
 {
-  "id": "pm_cdfce1218e144e0ea71ef308e3f11f59",
-  "status": "INITIATED",
-  "amount": 5000,
-  "merchant_id": "mch_a1b2c3d4",
-  "debitor_iban": "PK36SCBL0000001123456702",
-  "order_id": "CASHBACK-2025-001",
-  "created_at": "2025-08-06T14:02:00Z"
+  "api_version": "v1",
+  "data": {
+    "message": "RTP created successfully",
+    "token": "pm_f531c5eb-5c49-40d6-8ac5-012cfd1b24c1",
+    "msg_id": "IG2Y50ORB7BE2OLEW0HDVJUIP9QGTL1V6WS",
+    "trace_reference": "aa22cc9b-3f55-4613-86cf-9641f11902d1",
+    "uetr": "8df9cc1f-77b2-47e4-9a8b-a3050bee6972",
+    "status": "P_INITIATED",
+    "order_id": "ORDER-RAAST-001",
+    "request_id": "{{request_id}}",
+    "created_at": "2025-06-26T10:58:17Z"
+  }
 }
 ```
 
-## Monitoring Payment Status
+  </Tab>
+</Tabs>
 
-You can monitor the status of the payment by polling:
+## Monitor status
 
-```bash title="Check Payment Status"
-curl -X GET https://api.getsafepay.com/v1/payments/pm_cdfce1218e144e0ea71ef308e3f11f59 \
-  -H "Authorization: Bearer <ACCESS_KEY>"
+```bash
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments/{{payment_token}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
 ```
 
-Or use webhook events to get notified asynchronously (see [Webhook Setup](/concepts/webhooks)).
+Combine polling with webhooks so your UI updates as soon as the customer accepts or rejects the request.
 
-## Handling Errors
+## Troubleshooting
 
-Common errors include:
-
-* Invalid or inactive IBAN
-* Insufficient permissions on merchant account
-* Reuse of `request_id` with different parameters
-
-Always inspect the response message and retry using the same `request_id` only if the error was network-related.
-
-<Note>A payment can only be initiated by an existing merchant using a valid access key.</Note>
-
-## Related Guides
-
-* [Merchant Concept](/concepts/merchant)
-* [Refunds](/concepts/refund)
-* [Webhooks](/concepts/webhooks)
-* [Create Dynamic QR](/use_cases/create_dynamic_qr)
+- **Invalid debtor details** — Use the validation utilities before sending the RTP.
+- **Expired request** — Regenerate the RTP with a fresh `request_id` and `expiry_in_minutes`.
+- **Duplicate payload** — Reusing a `request_id` with different parameters returns an idempotency error; retry with the same body.
