@@ -621,6 +621,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
 
   /v1/aggregators/{raast-aggregator-id}/account-info:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
     get:
       tags:
         - Utilities
@@ -629,37 +631,13 @@ paths:
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - name: iban
-          in: query
-          required: false
-          description: IBAN to fetch account information for; optional when alias parameters are supplied
-          schema:
-            type: string
-          example: PK91ALFH0005001007079203
-        - name: with_title_fetch
-          in: query
-          required: false
-          description: When true, include account title details in the response
-          schema:
-            type: boolean
-          example: true
-        - name: alias_type
-          in: query
-          required: false
-          description: Alias type used for lookup; only MOBILE is supported currently
-          schema:
-            type: string
-            enum:
-              - MOBILE
-          example: MOBILE
-        - name: alias_value
-          in: query
-          required: false
-          description: Alias value to resolve; must be provided when alias_type is supplied
-          schema:
-            type: string
-          example: 03472840476
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
+        - $ref: "#/components/parameters/AccountInfoIbanParam"
+        - $ref: "#/components/parameters/AccountInfoWithTitleFetchParam"
+        - $ref: "#/components/parameters/AccountInfoAliasTypeParam"
+        - $ref: "#/components/parameters/AccountInfoAliasValueParam"
+      requestBody:
+        $ref: "#/components/requestBodies/AccountInfoRequest"
       responses:
         "200":
           $ref: "#/components/responses/AccountInfoResponse"
@@ -864,6 +842,44 @@ components:
         type: string
         example: PK46MPBL0101017140572181
       example: PK46MPBL0101017140572181
+    AccountInfoIbanParam:
+      name: iban
+      in: query
+      required: false
+      description: IBAN to fetch account information for; optional when alias parameters are supplied.
+      schema:
+        type: string
+        example: PK91ALFH0005001007079203
+      example: PK91ALFH0005001007079203
+    AccountInfoWithTitleFetchParam:
+      name: with_title_fetch
+      in: query
+      required: false
+      description: When true, include account title details in the response.
+      schema:
+        type: boolean
+        example: true
+      example: true
+    AccountInfoAliasTypeParam:
+      name: alias_type
+      in: query
+      required: false
+      description: Alias type used for lookup; only MOBILE is supported currently.
+      schema:
+        type: string
+        enum:
+          - MOBILE
+        example: MOBILE
+      example: MOBILE
+    AccountInfoAliasValueParam:
+      name: alias_value
+      in: query
+      required: false
+      description: Alias value to resolve; must be provided when alias_type is supplied.
+      schema:
+        type: integer
+        example: 3472840476
+      example: 3472840476
     LimitQueryParam:
       name: limit
       in: query
@@ -1748,6 +1764,27 @@ components:
             Change AccessKey Name:
               value:
                 name: Updated Access Key
+    AccountInfoRequest:
+      description: Optional body parameters for account info lookups.
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Additional filters to supply when resolving account information.
+            properties:
+              iban:
+                type: string
+                description: IBAN to fetch account information for; optional when alias parameters are supplied.
+                example: PK91ALFH0005001007079203
+              with_title_fetch:
+                type: boolean
+                description: When true, include account title details in the response.
+                example: true
+          examples:
+            AccountInfoBody:
+              value:
+                iban: PK91ALFH0005001007079203
+                with_title_fetch: true
     CreateMerchant:
       description: Request to create a merchant linked to an aggregator
       content:
