@@ -114,6 +114,7 @@ paths:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreateMerchantResponse"
@@ -129,6 +130,7 @@ paths:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - $ref: "#/components/parameters/MerchantListLimitParam"
         - $ref: "#/components/parameters/MerchantListOffsetParam"
         - $ref: "#/components/parameters/MerchantListEnabledParam"
@@ -1291,6 +1293,8 @@ components:
         rate_card_id:
           type: string
           description: Identifier of the underlying rate definition template
+        ratecard_kind:
+          $ref: "#/components/schemas/RateCardKind"
         fixed_rate:
           type: integer
           description: Fixed transaction fee in paisa when applicable
@@ -1307,6 +1311,15 @@ components:
           $ref: "#/components/schemas/Timestamp"
         updated_at:
           $ref: "#/components/schemas/Timestamp"
+    RateCardKind:
+      type: string
+      description: "Enumerated rate card strategy where numeric Raast values map to constants (0: RateCardKind_unspecified, 1: RateCardKind_variable, 2: RateCardKind_fixed, 3: RateCardKind_blend)."
+      enum:
+        - RateCardKind_unspecified
+        - RateCardKind_variable
+        - RateCardKind_fixed
+        - RateCardKind_blend
+      example: RateCardKind_fixed
     Merchant:
       type: object
       description: Merchant resource created under an aggregator for Raast transactions
@@ -1847,19 +1860,22 @@ components:
                 description: Rate configuration Safepay applies to Raast transactions
                 properties:
                   ratecard_kind:
-                    type: string
-                    description: Pricing strategy type that controls how the rate card is evaluated
-                    enum:
-                      - fixed
+                    $ref: "#/components/schemas/RateCardKind"
                   fixed_rate:
                     type: integer
                     description: Fixed per-transaction fee in paisa when using a fixed rate card
+                  variable_rate:
+                    type: number
+                    description: Percentage fee applied to the transaction amount
+                  tax_region:
+                    type: string
+                    description: Region for which the tax rate applies
                   tax_rate:
                     type: number
                     description: Applicable tax rate expressed as a fraction (e.g., 0.1 for 10%)
                 required:
                   - ratecard_kind
-                  - fixed_rate
+                  - tax_rate
             required:
               - merchant_external_id
               - iban
@@ -1875,8 +1891,9 @@ components:
                 enabled: true
                 raast_merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
                 rate_card:
-                  ratecard_kind: fixed
+                  ratecard_kind: RateCardKind_fixed
                   fixed_rate: 3000
+                  tax_region: PK
                   tax_rate: 0.1
     UpdateMerchant:
       description: Request to update an existing aggregator merchant
