@@ -129,36 +129,11 @@ paths:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
-        - name: limit
-          in: query
-          required: false
-          example: 10
-          schema:
-            type: string
-        - name: offset
-          in: query
-          required: false
-          example: 0
-          schema:
-            type: string
-        - name: enabled
-          in: query
-          required: false
-          example: true
-          schema:
-            type: string
-        - name: merchant_identifiers
-          in: query
-          required: false
-          example: am_1234567890
-          schema:
-            type: string
-        - name: names
-          in: query
-          required: false
-          example: Test Merchant
-          schema:
-            type: string
+        - $ref: "#/components/parameters/MerchantListLimitParam"
+        - $ref: "#/components/parameters/MerchantListOffsetParam"
+        - $ref: "#/components/parameters/MerchantListEnabledParam"
+        - $ref: "#/components/parameters/MerchantListIdentifiersParam"
+        - $ref: "#/components/parameters/MerchantListNamesParam"
       responses:
         "200":
           $ref: "#/components/responses/ListMerchantsResponse"
@@ -267,14 +242,17 @@ paths:
           $ref: "#/components/responses/Unauthorized"
 
   /v1/aggregators/{raast-aggregator-id}/payments:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
     post:
       tags:
         - Payments
-      summary: Create RTP Now or Later
+      summary: Create RTP
+      description: Create an RTP Now or Later Payment.
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreatePaymentResponse"
@@ -286,85 +264,105 @@ paths:
       tags:
         - Payments
       summary: List Payments
+      description: Filter payments using the supported query parameters.
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - name: limit
           in: query
           required: false
+          description: Maximum number of payments to return in the result set.
           example: 10
           schema:
             type: string
         - name: offset
           in: query
           required: false
+          description: Number of payments to skip before starting the result set.
           example: 0
           schema:
             type: string
         - name: aggregator_merchant_id
           in: query
           required: false
+          description: Filter by Safepay aggregator merchant identifier.
           example: am_1234567890
           schema:
             type: string
         - name: order_id
           in: query
           required: false
+          description: Filter by the merchant supplied order identifier.
           example: O_12345
           schema:
             type: string
         - name: request_id
           in: query
           required: false
+          description: Filter by the client generated idempotent request identifier.
           example: mMqCEa7Vajgtuu1VSXz4k8ri4R3
           schema:
             type: string
         - name: trace_reference
           in: query
           required: false
+          description: Filter by the trace reference assigned during processing.
           example: bADGhCLmi8f7j9FeRDe3IuyQjCzlM34eZsGS1
           schema:
             type: string
         - name: msg_id
           in: query
           required: false
+          description: Filter by the Raast network message identifier.
           example: dmNP1FtMPEQEjvFRJSMZI1VpWohKubU8yV6o2
           schema:
             type: string
         - name: pmt_inf_id
           in: query
           required: false
+          description: Filter by the payment information identifier from the Raast message.
           example: sTvT4lBvWPHWXw7Y44msStMB
           schema:
             type: string
         - name: uetr
           in: query
           required: false
+          description: Filter by the Unique End-to-end Transaction Reference (UETR).
           example: ee942c2e9854960d
           schema:
             type: string
         - name: status
           in: query
           required: false
-          example:
+          description: Filter by the payment status.
+          example: P_RECEIVED
           schema:
             type: string
             enum:
-              - P_REJECTED
               - P_INITIATED
+              - P_RECEIVED
+              - P_CANCELLED
+              - P_REJECTED
+              - P_FAILED
               - P_AUTHORIZED
+              - P_REVERSED
               - P_CAPTURED
+              - P_SETTLED
+              - P_PARTIALLY_REFUNDED
               - P_REFUNDED
         - name: type
           in: query
           required: false
+          description: Filter by the payment type.
           example: RTP_LATER
           schema:
             type: string
             enum:
               - RTP_NOW
               - RTP_LATER
+              - STATIC_QR
+              - DYNAMIC_QR
       responses:
         "200":
           $ref: "#/components/responses/ListPaymentsResponse"
@@ -672,6 +670,14 @@ components:
         type: string
         example: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
       description: The unique identifier for the aggregator
+    AggregatorSecretKeyHeader:
+      name: X-SFPY-AGGREGATOR-SECRET-KEY
+      in: header
+      required: false
+      description: API key issued to the aggregator; supply when authenticating programmatic requests.
+      schema:
+        type: string
+        example: sk_live_c66a5b38-0ce1-4f83-8d72-57b8f91a8762
     AccessKeyIdParam:
       name: access-key-id
       in: path
@@ -688,6 +694,46 @@ components:
         type: string
         example: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
       description: The unique identifier for the merchant
+    MerchantListLimitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "10"
+      description: Maximum number of merchants to return in a single page
+    MerchantListOffsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "0"
+      description: Cursor offset used for pagination
+    MerchantListEnabledParam:
+      name: enabled
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "true"
+      description: Filter merchants by their enabled status
+    MerchantListIdentifiersParam:
+      name: merchant_identifiers
+      in: query
+      required: false
+      schema:
+        type: string
+        example: am_1234567890
+      description: Comma-separated list of merchant identifiers to match
+    MerchantListNamesParam:
+      name: names
+      in: query
+      required: false
+      schema:
+        type: string
+        example: Test Merchant
+      description: Comma-separated list of merchant names to match
     RaastMerchantIdParam:
       name: raast-merchant-id
       in: path
@@ -1153,30 +1199,42 @@ components:
           $ref: "#/components/schemas/Timestamp"
     TransactionLogs:
       type: object
+      description: Event log generated for a payment lifecycle transition.
       properties:
         id:
           type: string
+          description: Identifier of the transaction log entry.
         type:
           type: string
+          description: Classification of the logged event.
         payment_id:
           type: string
+          description: Identifier of the payment linked to the event.
         status:
           type: string
+          description: Payment status recorded by this log entry.
         refund_id:
           type: string
+          description: Refund identifier when the log entry references a refund.
         settlement_id:
           type: string
+          description: Settlement identifier when the log entry references settlement activity.
         txn_desc:
           type: string
+          description: Human-readable description of the event.
         addtl_info:
           type: string
+          description: Additional information provided for the event.
         token:
           type: string
+          description: Public token assigned to the log entry.
         timestamp:
           type: string
           format: date-time
+          description: ISO-8601 timestamp captured for the event.
         iso_msg_type:
           type: string
+          description: Raast ISO message type associated with this event.
     QRCode:
       type: object
       properties:
@@ -1201,67 +1259,163 @@ components:
           format: date-time
     Payment:
       type: object
+      description: Payment record returned by Safepay aggregator APIs.
       properties:
+        id:
+          type: string
+          description: Internal identifier for the payment record.
         token:
           type: string
+          description: Public token that uniquely identifies the payment.
         aggregator_id:
           type: string
-          description: Aggregator identifier that owns the payment
+          description: Aggregator identifier that owns the payment.
         aggregator_merchant_id:
           type: string
+          description: Aggregator merchant on whose behalf the payment was initiated.
         qr_code_id:
           type: string
+          description: Identifier of the QR code associated with the payment.
         order_id:
           type: string
+          description: Merchant-supplied order identifier for the payment.
         type:
           type: string
+          description: Indicates how the payment request was initiated.
+          enum:
+            - RTP_NOW
+            - RTP_LATER
+            - STATIC_QR
+            - DYNAMIC_QR
         amount:
           type: string
+          description: Payment amount expressed as a string to preserve formatting.
         status:
           type: string
+          description: Current status of the payment.
+          enum:
+            - P_INITIATED
+            - P_RECEIVED
+            - P_CANCELLED
+            - P_REJECTED
+            - P_FAILED
+            - P_AUTHORIZED
+            - P_REVERSED
+            - P_CAPTURED
+            - P_SETTLED
+            - P_PARTIALLY_REFUNDED
+            - P_REFUNDED
         uetr:
           type: string
+          description: Unique End-to-end Transaction Reference assigned by Raast.
         trace_reference:
           type: string
+          description: Trace reference identifier used for reconciliation.
         msg_id:
           type: string
+          description: Raast network message identifier for the payment.
         instr_id:
           type: string
+          description: Instruction identifier from the Raast message payload.
         end_to_end_id:
           type: string
+          description: End-to-end identifier recorded for the payment.
         pmt_inf_id:
           type: string
+          description: Payment information identifier from the Raast message.
         request_id:
           type: string
+          description: Client-supplied idempotency identifier.
         msg_created_at:
           type: string
+          description: Timestamp captured in the Raast message associated with the payment.
+        expires_at:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          description: Expiry timestamp for the payment request.
+          nullable: true
+        created_at:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          description: Timestamp when the payment record was created.
+        updated_at:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          description: Timestamp when the payment record was last updated.
         txn_logs:
           type: array
+          description: Lifecycle events generated for the payment.
           items:
             $ref: "#/components/schemas/TransactionLogs"
         payment_parties:
           type: array
-          description: Participant records involved in the payment lifecycle
+          description: Participant records involved in the payment lifecycle.
           items:
             $ref: "#/components/schemas/PaymentParty"
         debitor:
+          type: object
+          description: Debitor metadata when available.
           nullable: true
         qr_code:
-          $ref: "#/components/schemas/QRCode"
+          allOf:
+            - $ref: "#/components/schemas/QRCode"
+          description: QR code details associated with the payment when available.
+          nullable: true
         aggregator_merchant:
-          $ref: "#/components/schemas/Merchant"
+          allOf:
+            - $ref: "#/components/schemas/Merchant"
+          description: Aggregator merchant details when linked to the payment.
+          nullable: true
         refunds:
           type: array
+          description: Refunds applied to the payment.
           items:
             $ref: "#/components/schemas/Refund"
         settlement:
+          type: object
+          description: Settlement information for the payment when applicable.
           nullable: true
-        expires_at:
-          $ref: "#/components/schemas/Timestamp"
+    PaymentCreationResult:
+      type: object
+      description: Data returned when an RTP request is created successfully.
+      properties:
+        message:
+          type: string
+          description: Human-readable confirmation message from the API.
+        token:
+          type: string
+          description: Public token representing the newly created payment.
+        msg_id:
+          type: string
+          description: Raast network message identifier assigned to the request.
+        trace_reference:
+          type: string
+          description: Trace reference generated for reconciliation.
+        uetr:
+          type: string
+          description: Unique End-to-end Transaction Reference associated with the payment.
+        status:
+          type: string
+          description: Initial status assigned to the payment after creation.
+          enum:
+            - P_INITIATED
+            - P_RECEIVED
+            - P_CANCELLED
+            - P_REJECTED
+            - P_FAILED
+            - P_AUTHORIZED
+            - P_REVERSED
+            - P_CAPTURED
+            - P_SETTLED
+            - P_PARTIALLY_REFUNDED
+            - P_REFUNDED
+        order_id:
+          type: string
+          description: Merchant order identifier echoed back in the response.
         created_at:
-          $ref: "#/components/schemas/Timestamp"
-        updated_at:
-          $ref: "#/components/schemas/Timestamp"
+          type: string
+          format: date-time
+          description: Timestamp when the payment was created in the Safepay platform.
     Refund:
       type: object
       properties:
@@ -1485,14 +1639,14 @@ components:
         application/json:
           schema:
             type: object
-            description: Merchant creation payload specifying identifiers and rate configuration
+            description: Merchant creation payload specifying identifiers and pricing configuration
             properties:
               merchant_external_id:
                 type: string
                 description: Client-supplied identifier that remains stable across Safepay integrations
               iban:
                 type: string
-                description: Raast-settlement IBAN used for merchant payouts
+                description: Settlement IBAN used for Raast payouts
               name:
                 type: string
                 description: Merchant display name
@@ -1571,14 +1725,6 @@ components:
                   variable_rate:
                     type: number
                     description: Fractional fee applied to the transaction amount
-                required:
-                  - fixed_rate
-                  - tax_rate
-            required:
-              - name
-              - enabled
-              - iban
-              - rate_card
           examples:
             Update Merchant:
               value:
@@ -1596,58 +1742,86 @@ components:
         application/json:
           schema:
             type: object
+            description: RTP creation payload encapsulating amount, merchant, and debitor details.
             properties:
               request_id:
                 type: string
+                description: Client-supplied idempotency identifier for the RTP request.
               amount:
                 type: integer
-              debitor_iban:
-                type: string
+                description: Payment amount in the smallest currency unit (PKR).
               aggregator_merchant_identifier:
                 type: string
+                description: Identifier for the merchant on whose behalf the RTP is initiated.
               order_id:
                 type: string
+                description: Merchant order identifier associated with the RTP.
               type:
                 type: string
-              expiry_in_days:
-                type: integer
+                description: Indicates whether the RTP should be processed immediately or scheduled.
+                enum:
+                  - RTP_NOW
+                  - RTP_LATER
               expiry_in_minutes:
                 type: integer
+                description: Minutes until the RTP NOW request expires; must be between 1 and 180.
+                minimum: 1
+                maximum: 180
+              expiry_in_days:
+                type: integer
+                description: Days until the RTP LATER request expires; must be between 1 and 40.
+                minimum: 1
+                maximum: 40
+              debitor_raast_id:
+                type: string
+                description: Raast alias for the debitor (for example, a mobile number).
+              debitor_vault_token:
+                type: string
+                description: Token referencing a stored debitor payment instrument in the vault.
+              debitor_iban:
+                type: string
+                description: Debitor IBAN for direct account routing.
             required:
               - request_id
               - amount
-              - debitor_iban
               - aggregator_merchant_identifier
               - order_id
               - type
+            oneOf:
+              - required:
+                  - debitor_raast_id
+              - required:
+                  - debitor_vault_token
+              - required:
+                  - debitor_iban
           examples:
-            Create RTP Now With Expiry:
-              value:
-                request_id: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
-                amount: 34000
-                debitor_iban: PK89SCBL0000001234651601
-                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
-                order_id: test_nowExpiry
-                type: RTP_NOW
-                expiry_in_minutes: 100
-            Create RTP Later With Expiry:
-              value:
-                request_id: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
-                amount: 5000
-                debitor_iban: PK89SCBL0000001234651601
-                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
-                order_id: test_iban_later
-                type: RTP_LATER
-                expiry_in_days: 12
             Create RTP Now with Raast Alias:
               value:
-                request_id: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
-                amount: 34000
+                request_id: "c69aa27b-7b42-448b-af73-963bef1c5e42"
+                amount: 94000
                 debitor_raast_id: "03202296111"
-                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
-                order_id: test_nowExpiry
+                aggregator_merchant_identifier: am_d7fd05ea-8613-4038-afd7-4275f29110f5
+                order_id: order_raast_id
                 type: RTP_NOW
                 expiry_in_minutes: 100
+            Create RTP Now with IBAN:
+              value:
+                request_id: "7a1b5307-4fe2-41a7-8bde-55c17de88f3d"
+                amount: 32000
+                debitor_iban: PK89SCBL0000001234651601
+                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                order_id: order_now_iban
+                type: RTP_NOW
+                expiry_in_minutes: 45
+            Create RTP Later with Vault Token:
+              value:
+                request_id: "3f7392b4-78c4-47a5-9fbc-9c74fc021970"
+                amount: 22000
+                debitor_vault_token: lock_441d2a6f-5aea-4e0e-a7c8-48cae1273e66
+                aggregator_merchant_identifier: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                order_id: order_paylater_token
+                type: RTP_LATER
+                expiry_in_days: 7
     CreatePayout:
       description: Request to initiate a payout
       content:
@@ -1845,7 +2019,7 @@ components:
                   message:
                     example: Resource already exists
     InternalError:
-      description: Internal Error
+      description: Internal server error response
       headers:
         Content-Length:
           $ref: "#/components/headers/ContentLengthHeader"
@@ -1854,14 +2028,14 @@ components:
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorResponse"
-              - type: object
-                properties:
-                  code:
-                    example: error.internal_server_error
-                  message:
-                    example: rpc error code Internal desc = something went wrong
+            $ref: "#/components/schemas/ApiErrorEnvelope"
+          examples:
+            InternalServerError:
+              value:
+                api_version: v1
+                error:
+                  code: error.internal_server_error
+                  message: rpc error code Internal desc = something went wrong
     NotAcceptable:
       description: Not Acceptable
       headers:
@@ -2261,15 +2435,42 @@ components:
                   data:
                     type: object
                     properties:
-                      count:
-                        type: integer
-                        example: 1
-                        description: Total number of merchants
-                      keys:
+                      merchants:
                         type: array
-                        description: List of merchants
+                        description: List of merchants returned for the requested page
                         items:
                           $ref: "#/components/schemas/Merchant"
+                      count:
+                        type: string
+                        description: Total number of merchants matching the filters applied
+                        example: "2"
+          examples:
+            List Merchants:
+              value:
+                api_version: v1
+                data:
+                  merchants:
+                    - id: "39"
+                      token: am_c1460543-4a10-473c-b60b-60218326d1b1
+                      name: test co type1
+                      aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                      merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
+                      merchant_external_id: sec_0c3de397-441f-471f-bcd7-b6d948e1c307
+                      bank_account_id: acc_a17a478a-f7cd-448b-9753-5729a6f237ad
+                      enabled: false
+                      created_at: "2025-07-24T07:11:31Z"
+                      updated_at: "2025-07-25T06:31:25Z"
+                    - id: "44"
+                      token: am_d7fd05ea-8613-4038-afd7-4275f29110f5
+                      name: TestingMerchant
+                      aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                      merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
+                      merchant_external_id: sec_0c3de397-441f-471f-bcd7-b6d948e1c307
+                      bank_account_id: acc_a17a478a-f7cd-448b-9753-5729a6f237ad
+                      enabled: true
+                      created_at: "2025-05-21T09:36:42.586176361Z"
+                      updated_at: "2025-05-21T09:36:42.586185862Z"
+                  count: "2"
     ListRaastMerchantsResponse:
       description: This response contains Raast merchant directory records
       headers:
@@ -2438,7 +2639,7 @@ components:
                     updated_at: "2025-07-24T07:11:31Z"
                     tax_rate: 0
     CreatePaymentResponse:
-      description: This response contains details of a payment
+      description: Response envelope returned after a payment request is accepted.
       headers:
         Content-Length:
           $ref: "#/components/headers/ContentLengthHeader"
@@ -2452,9 +2653,22 @@ components:
               - type: object
                 properties:
                   data:
-                    $ref: "#/components/schemas/Payment"
+                    $ref: "#/components/schemas/PaymentCreationResult"
+          examples:
+            PaymentCreated:
+              value:
+                api_version: v1
+                data:
+                  message: RTP created successfully
+                  token: pm_f531c5eb-5c49-40d6-8ac5-012cfd1b24c1
+                  msg_id: IG2Y50ORB7BE2OLEW0HDVJUIP9QGTL1V6WS
+                  trace_reference: aa22cc9b-3f55-4613-86cf-9641f11902d1
+                  uetr: 8df9cc1f-77b2-47e4-9a8b-a3050bee6972
+                  status: P_REJECTED
+                  order_id: NewPayNow1
+                  created_at: "2025-06-26T10:58:17Z"
     ListPaymentsResponse:
-      description: This response contains a paginated list of payments linked to a merchant
+      description: Paginated list of payments linked to a merchant
       headers:
         Content-Length:
           $ref: "#/components/headers/ContentLengthHeader"
@@ -2469,16 +2683,54 @@ components:
                 properties:
                   data:
                     type: object
+                    description: Paginated payment collection payload.
                     properties:
                       count:
-                        type: integer
-                        example: 1
-                        description: Total number of payments
-                      keys:
+                        type: string
+                        example: "605"
+                        description: Total number of payments matching the supplied filters.
+                      payments:
                         type: array
-                        description: List of payments
+                        description: List of payments matching the supplied filters.
                         items:
                           $ref: "#/components/schemas/Payment"
+          examples:
+            PaymentsListing:
+              value:
+                api_version: v1
+                data:
+                  payments:
+                    - id: "644"
+                      token: pm_f37a10dd-c530-4d86-8483-be473e820578
+                      aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                      order_id: has_3320
+                      type: DYNAMIC_QR
+                      amount: "250"
+                      status: P_REJECTED
+                      uetr: e3391812-f9f5-4feb-bd6d-60698e9b662f
+                      trace_reference: ce08b498-376c-41dd-b32b-f814441c4507
+                      msg_id: FE0PMU5HHKKPF4S7PLR20M8HKBYI57WAUV5
+                      pmt_inf_id: 9545TGYRG0F6DCQEF2ZH7UCOCU57FUNYDL9
+                      request_id: 6a049190-3595-47cb-8603-7e310c3adb15
+                      expires_at: "2025-06-27T06:47:34Z"
+                      created_at: "2025-06-27T06:45:35Z"
+                      updated_at: "2025-06-27T06:48:33Z"
+                    - id: "643"
+                      token: pm_49707018-026f-4159-8b1a-da0e3b482cbb
+                      aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                      order_id: order03330
+                      type: RTP_LATER
+                      amount: "22000"
+                      status: P_INITIATED
+                      uetr: 8fe838bb-57f7-4488-8198-b7b240eac83c
+                      trace_reference: 5041299c-c5bd-4ac0-b3f8-b6131f15c55f
+                      msg_id: 54QMCJLI7UATICTM1MZYPXESGMJ5O5TXUSX
+                      pmt_inf_id: LWMEZ7RUGR92H0TJKMUSKOCC381NK9Z2K8C
+                      request_id: 8f20f196-e1c9-46b7-9b41-67f17baa7438
+                      expires_at: "2025-07-03T11:21:23Z"
+                      created_at: "2025-06-26T11:21:23Z"
+                      updated_at: "2025-06-26T11:21:23Z"
+                  count: "605"
     FindPaymentResponse:
       description: This response contains details of a payment
       headers:
