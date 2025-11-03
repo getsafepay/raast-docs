@@ -195,49 +195,43 @@ paths:
         $ref: "#/components/requestBodies/UpdateMerchant"
 
   /v1/aggregators/{raast-aggregator-id}/raast-merchants:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
     get:
       tags:
         - Raast Merchants
       summary: List Raast Merchants
-      description: Retrieve Raast merchant records accessible to the aggregator
+      description: Find all the available Raast merchants available on Safepay. Link your desired merchant with a Raast merchant to process payments for them
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - name: limit
-          in: query
-          required: false
-          description: Maximum number of Raast merchants to return
-          example: 10
-          schema:
-            type: string
-        - name: offset
-          in: query
-          required: false
-          description: Cursor offset for pagination
-          example: 0
-          schema:
-            type: string
-        - name: status
-          in: query
-          required: false
-          description: Filter Raast merchants by onboarding status
-          schema:
-            type: string
-            enum:
-              - Active
-              - Suspended
-          example: Active
-        - name: names
-          in: query
-          required: false
-          description: Filter by comma-separated list of Raast merchant names
-          example: Lazer Sports,Testing Merchant
-          schema:
-            type: string
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
+        - $ref: "#/components/parameters/RaastMerchantListLimitParam"
+        - $ref: "#/components/parameters/RaastMerchantListOffsetParam"
+        - $ref: "#/components/parameters/RaastMerchantListStatusParam"
+        - $ref: "#/components/parameters/RaastMerchantListNameParam"
       responses:
         "200":
           $ref: "#/components/responses/ListRaastMerchantsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/raast-merchants/{raast-merchant-id}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/RaastMerchantIdParam"
+    get:
+      tags:
+        - Raast Merchants
+      summary: Read Raast Merchant
+      description: Explore a Raast merchant in detail.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
+      responses:
+        "200":
+          $ref: "#/components/responses/FindRaastMerchantResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -880,6 +874,46 @@ components:
         type: integer
         example: 3472840476
       example: 3472840476
+    RaastMerchantListLimitParam:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of Raast merchants to return in the current page.
+      schema:
+        type: string
+        example: "10"
+      example: "10"
+    RaastMerchantListOffsetParam:
+      name: offset
+      in: query
+      required: false
+      description: Number of Raast merchant records to skip before starting the result set.
+      schema:
+        type: string
+        example: "0"
+      example: "0"
+    RaastMerchantListStatusParam:
+      name: status
+      in: query
+      required: false
+      description: Filter Raast merchants by onboarding status.
+      schema:
+        type: string
+        enum:
+          - Active
+          - Inactive
+          - Suspended
+        example: Active
+      example: Active
+    RaastMerchantListNameParam:
+      name: name
+      in: query
+      required: false
+      description: Filter Raast merchants by name.
+      schema:
+        type: string
+        example: Raast-Saphir-Merch
+      example: Raast-Saphir-Merch
     LimitQueryParam:
       name: limit
       in: query
@@ -2638,6 +2672,25 @@ components:
                       created_at: "2025-05-21T09:36:42.586176361Z"
                       updated_at: "2025-05-21T09:36:42.586185862Z"
                   count: "2"
+    FindRaastMerchantResponse:
+      description: This response contains a single Raast merchant record
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/RaastMerchant"
+          examples:
+            FindRaastMerchantSecretKey:
+              $ref: "#/components/examples/FindRaastMerchantSecretKey"
     ListRaastMerchantsResponse:
       description: This response contains Raast merchant directory records
       headers:
@@ -2664,64 +2717,8 @@ components:
                         type: string
                         description: Total number of Raast merchants matching the filter
           examples:
-            List Raast Merchants:
-              value:
-                api_version: v1
-                data:
-                  merchants:
-                    - id: "4"
-                      token: mer_dd0aa205-5b38-4691-bf1e-d30524c5be97
-                      partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
-                      raast_record_id: "478619"
-                      status: Suspended
-                      uid_type: NTN
-                      uid_value: "4220111082020"
-                      name: Lazer Sports
-                      document_type: NTN
-                      document_number: "4220111082026"
-                      address_details:
-                        country: PK
-                        city: Karachi
-                        state_province_region: Sindh
-                        address_line: Federal.B. Area
-                      contact_details:
-                        mobile_number: "+923001234926"
-                        email: testingbyHas@gesafepay.com
-                      additional_details:
-                        dba: The best business 001
-                        mcc: "5633"
-                        lat: ""
-                        long: ""
-                      additional_details_private: {}
-                      created_at: "2025-03-13T09:13:23Z"
-                      updated_at: "2025-09-02T06:15:35Z"
-                    - id: "3"
-                      token: mer_94e3e994-1479-4dee-a2f0-9d3f14c5ca7e
-                      partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
-                      raast_record_id: "478477"
-                      status: Active
-                      uid_type: NTN
-                      uid_value: "4220111082025"
-                      name: Lazer Sports
-                      document_type: NTN
-                      document_number: "4220111082025"
-                      address_details:
-                        country: PK
-                        city: Karachi
-                        state_province_region: Karachi
-                        address_line: Saima royal residency
-                      contact_details:
-                        mobile_number: "+923001234567"
-                        email: ausmani@gesafepay.com
-                      additional_details:
-                        dba: The best business 001
-                        mcc: "5613"
-                        lat: ""
-                        long: ""
-                      additional_details_private: {}
-                      created_at: "2025-03-05T09:32:13Z"
-                      updated_at: "2025-03-05T09:32:26Z"
-                  count: "2"
+            ListRaastMerchantsSecretKey:
+              $ref: "#/components/examples/ListRaastMerchantsSecretKey"
     FindMerchantResponse:
       description: This response contains details of a merchant
       headers:
@@ -3376,6 +3373,304 @@ components:
               aggregator_merchant: null
               refunds: []
               settlement: null
+    FindRaastMerchantSecretKey:
+      description: Example response when reading a Raast merchant using the secret key header
+      value:
+        api_version: v1
+        data:
+          id: "32"
+          token: mer_2cab1524-805d-4a09-8e51-924ddf3f43ea
+          partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+          raast_record_id: "483177"
+          status: Active
+          uid_type: NTN
+          uid_value: "33225247896001"
+          name: Raast-Saphir-Merch
+          document_type: NTN
+          document_number: "33225247896001"
+          address_details:
+            country: PK
+            city: Karachi
+            state_province_region: Sindh
+            address_line: h193c1 street
+          contact_details:
+            mobile_number: "+9233330226445"
+            email: sapphire.bus@gmail.com
+          additional_details:
+            dba: The best business 101
+            mcc: "9032"
+            lat: ""
+            long: ""
+          additional_details_private: {}
+          created_at: "2025-09-12T07:06:06Z"
+          updated_at: "2025-09-12T10:46:06Z"
+    ListRaastMerchantsSecretKey:
+      description: Example response when listing Raast merchants with the secret key header
+      value:
+        api_version: v1
+        data:
+          merchants:
+            - id: "32"
+              token: mer_2cab1524-805d-4a09-8e51-924ddf3f43ea
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "483177"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225247896001"
+              name: Raast-Saphir-Merch
+              document_type: NTN
+              document_number: "33225247896001"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: h193c1 street
+              contact_details:
+                mobile_number: "+9233330226445"
+                email: sapphire.bus@gmail.com
+              additional_details:
+                dba: The best business 101
+                mcc: "9032"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-09-12T07:06:06Z"
+              updated_at: "2025-09-12T10:46:06Z"
+            - id: "31"
+              token: mer_68d6a9d0-525e-4d53-9050-b8ee7bb58a59
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "483174"
+              status: Inactive
+              uid_type: NTN
+              uid_value: "33225247890479"
+              name: Hel-Saphire
+              document_type: NTN
+              document_number: "33225247890479"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: h193c1 street
+              contact_details:
+                mobile_number: "+9233330226445"
+                email: testing1702@gmail.com
+              additional_details:
+                dba: The best business 200
+                mcc: "0030"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-09-12T06:25:31Z"
+              updated_at: "2025-09-12T06:25:31Z"
+            - id: "30"
+              token: mer_dccb8cd9-3b5d-473d-a12e-71816f009f14
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: ""
+              status: ""
+              uid_type: NTN
+              uid_value: "33225247890509"
+              name: Blue Wave
+              document_type: NTN
+              document_number: "33225247890509"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Punjab
+                address_line: h193c1 street
+              contact_details:
+                mobile_number: "+9233330224921"
+                email: testing.dev@gmail.com
+              additional_details:
+                dba: The best business 201
+                mcc: "0030"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-09-11T09:58:19Z"
+              updated_at: "2025-09-11T09:58:19Z"
+            - id: "29"
+              token: mer_2e741c64-e205-4efb-ac49-7388bb991c28
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "483008"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225247890212"
+              name: Express
+              document_type: NTN
+              document_number: "33225247890212"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh-1
+                address_line: Block-11 Federal.B. Area
+              contact_details:
+                mobile_number: "+923001234302"
+                email: testing1702@gmail.com
+              additional_details:
+                dba: The best business 200
+                mcc: "5490"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-09-04T08:18:21Z"
+              updated_at: "2025-09-10T05:58:27Z"
+            - id: "28"
+              token: mer_c95a9e5b-7626-468a-b06b-1ebc92fb0290
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "483007"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225247890499"
+              name: Saphire
+              document_type: NTN
+              document_number: "33225247890499"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: h193c1 street
+              contact_details:
+                mobile_number: "+9233330226445"
+                email: testing1702@gmail.com
+              additional_details:
+                dba: The best business 200
+                mcc: "0030"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-09-04T07:18:03Z"
+              updated_at: "2025-09-04T08:04:45Z"
+            - id: "27"
+              token: mer_fa5e8121-1b60-4b8f-969f-8e9d2594df74
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "482975"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225244890211"
+              name: SFPY RAAST
+              document_type: NTN
+              document_number: "33225244890211"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: Also somewhere over there
+              contact_details:
+                mobile_number: "+9233330226445"
+                email: suleman.shishmahal@gmail.com
+              additional_details:
+                dba: Testing SPFY RAAST
+                mcc: "3434"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-09-02T08:16:56Z"
+              updated_at: "2025-09-03T11:07:07Z"
+            - id: "26"
+              token: mer_47a61ae8-c5a8-4734-b73a-421ce42b3dc6
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "482953"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225247840432"
+              name: Safepay RAAST MR
+              document_type: NTN
+              document_number: "33225247840432"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: Somewhere over there
+              contact_details:
+                mobile_number: "+9233330226445"
+                email: sshishmahal@getsafepay.com
+              additional_details:
+                dba: Safepay RAAST
+                mcc: "3434"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-09-02T05:28:30Z"
+              updated_at: "2025-09-02T05:34:00Z"
+            - id: "25"
+              token: mer_63b32978-8af7-41b8-88fc-d027be766f77
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "482791"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225247899613"
+              name: fat_merchant
+              document_type: NTN
+              document_number: "33225247899613"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: random street
+              contact_details:
+                mobile_number: "+9233330226892"
+                email: fat.dev@gmail.com
+              additional_details:
+                dba: The business 890
+                mcc: "5865"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-08-20T09:08:49Z"
+              updated_at: "2025-08-20T09:09:16Z"
+            - id: "24"
+              token: mer_d5de390d-93c6-4f4d-b77e-112b080be2e8
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "482757"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225247899907"
+              name: ssh_merchant
+              document_type: NTN
+              document_number: "33225247899907"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: random street
+              contact_details:
+                mobile_number: "+9233330226892"
+                email: ssh.dev@gmail.com
+              additional_details:
+                dba: The business 009
+                mcc: "5865"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-08-18T10:40:48Z"
+              updated_at: "2025-08-28T09:09:06Z"
+            - id: "23"
+              token: mer_5c31f8a9-2720-4f7a-9eb3-57241cfed288
+              partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+              raast_record_id: "482591"
+              status: Active
+              uid_type: NTN
+              uid_value: "33225247892403"
+              name: rashid_merchant
+              document_type: NTN
+              document_number: "33225247892403"
+              address_details:
+                country: PK
+                city: Karachi
+                state_province_region: Sindh
+                address_line: random street
+              contact_details:
+                mobile_number: "+9233330226007"
+                email: rashid.dev@gmail.com
+              additional_details:
+                dba: The business 110
+                mcc: "5879"
+                lat: ""
+                long: ""
+              additional_details_private: {}
+              created_at: "2025-08-08T11:09:51Z"
+              updated_at: "2025-08-11T10:26:32Z"
+          count: "27"
 
 tags:
   - name: Aggregators
