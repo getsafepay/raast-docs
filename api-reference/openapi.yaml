@@ -30,35 +30,10 @@ paths:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
-        - name: limit
-          in: query
-          required: false
-          example: 10
-          schema:
-            type: integer
-            default: "10"
-            minimum: 0
-            maximum: 100
-        - name: offset
-          in: query
-          required: false
-          example: 0
-          schema:
-            type: integer
-            default: "0"
-            minimum: 0
-        - name: names
-          in: query
-          required: false
-          example: "Test API Key"
-          schema:
-            type: string
-        - name: is_active
-          in: query
-          required: false
-          example: "true"
-          schema:
-            type: string
+        - $ref: "#/components/parameters/LimitQueryParam"
+        - $ref: "#/components/parameters/OffsetQueryParam"
+        - $ref: "#/components/parameters/AccessKeyNamesParam"
+        - $ref: "#/components/parameters/AccessKeyIsActiveParam"
       responses:
         "200":
           $ref: "#/components/responses/ListAccessKeysResponse"
@@ -713,6 +688,14 @@ components:
         type: string
         example: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
       description: The unique identifier for the merchant
+    RaastMerchantIdParam:
+      name: raast-merchant-id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: mer_2cab1524-805d-4a09-8e51-924ddf3f43ea
+      description: The unique identifier for the Raast merchant
     PaymentIdParam:
       name: payment-id
       in: path
@@ -737,10 +720,55 @@ components:
         type: string
         example: qr_7e26f9be-f59d-4025-8e17-9fc398d16230
       description: The unique identifier for the QR code
+    LimitQueryParam:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of records to return in the current page
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 100
+        default: 10
+        example: 10
+      example: 10
+    OffsetQueryParam:
+      name: offset
+      in: query
+      required: false
+      description: Number of records to skip before collecting the result set
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+        example: 0
+      example: 0
+    AccessKeyNamesParam:
+      name: names
+      in: query
+      required: false
+      description: Filter keys by a comma-separated list of name fragments
+      schema:
+        type: string
+        example: Primary Key,Backup Key
+      example: Primary Key,Backup Key
+    AccessKeyIsActiveParam:
+      name: is_active
+      in: query
+      required: false
+      description: Filter keys by active status using true or false
+      schema:
+        type: string
+        enum:
+          - true
+          - false
+        example: true
+      example: true
   schemas:
     Timestamp:
       type: string
       format: date-time
+      description: ISO 8601 timestamp in UTC
       example: 2025-03-13T09:12:34Z
     StandardResponse:
       type: object
@@ -753,6 +781,31 @@ components:
         data:
           type: object
           description: Contains the response data
+    ErrorResponse:
+      type: object
+      description: Standard error response structure
+      properties:
+        code:
+          type: string
+          description: Error code identifying the type of error
+        message:
+          type: string
+          description: Human-readable error message
+    ApiErrorEnvelope:
+      type: object
+      description: Error wrapper that includes the API version and error metadata
+      properties:
+        api_version:
+          type: string
+          description: Indicates the API version associated with the response
+          example: v1
+        error:
+          description: Structured error details describing why the request failed
+          allOf:
+            - $ref: "#/components/schemas/ErrorResponse"
+          example:
+            code: error.unauthorized_access
+            message: partner access key is required in request header
     TitleFetchResult:
       type: object
       description: Raast account title lookup result
@@ -826,84 +879,87 @@ components:
           $ref: "#/components/schemas/Timestamp"
         updated_at:
           $ref: "#/components/schemas/Timestamp"
-    ErrorResponse:
-      type: object
-      description: Standard error response structure
-      properties:
-        code:
-          type: string
-          description: Error code identifying the type of error
-        message:
-          type: string
-          description: Human-readable error message
     Aggregator:
       type: object
+      description: Aggregator resource containing configuration and linked access keys
       properties:
         token:
           type: string
+          description: Public token assigned to the aggregator
+          example: agg_tok_2b42c4d0
         partner_id:
           type: string
+          description: Partner identifier associated with the aggregator account
+          example: partner_123456
         bank_account_id:
           type: string
+          description: Identifier of the default settlement bank account
+          example: ba_2cab1524-805d-4a09-8e51-924ddf3f43ea
         name:
           type: string
+          description: Human-readable name of the aggregator
+          example: Example Aggregator
         is_active:
           type: boolean
+          description: Indicates whether the aggregator is currently active
+          example: true
         vault_enabled:
           type: boolean
-        webhook_url:
-          type: string
-        webhook_secret:
-          type: string
+          description: Specifies if Safepay vault features are enabled for the aggregator
+          example: true
         keys:
           type: array
+          description: Collection of access keys associated with the aggregator
           items:
-            type: object
-            properties:
-              id:
-                type: string
-              token:
-                type: string
-              key_id:
-                type: string
-              aggregator_id:
-                type: string
-              is_active:
-                type: boolean
-              name:
-                type: string
-              secret:
-                type: string
-              created_at:
-                type: string
-                format: date-time
-              updated_at:
-                type: string
-                format: date-time
+            $ref: "#/components/schemas/AccessKey"
         created_at:
-          $ref: "#/components/schemas/Timestamp"
+          description: Timestamp indicating when the aggregator was created
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
         updated_at:
-          $ref: "#/components/schemas/Timestamp"
+          description: Timestamp indicating the last update to the aggregator
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
     AccessKey:
       type: object
+      description: Access key credential used to authenticate aggregator API requests
       properties:
+        id:
+          type: string
+          description: Internal identifier for the access key
+          example: ak_da8f1c10-346a-4be8-895a-b6187a9a9662
         token:
           type: string
+          description: Public token that represents the access key
+          example: ak_tok_fede37a6
         key_id:
           type: string
+          description: External identifier for the key exposed to clients
+          example: key_live_e111f1c10
         aggregator_id:
           type: string
-          description: Aggregator identifier that owns the payment
+          description: Aggregator identifier that owns the access key
+          example: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
         is_active:
           type: boolean
+          description: Indicates whether the key can be used for authentication
+          example: true
         name:
           type: string
+          description: Friendly label assigned to the access key
+          example: Primary Production Key
         secret:
           type: string
+          description: Secret value issued for the key; only returned on creation or rotation
+          example: sk_live_uMPN7cX2b1
         created_at:
-          $ref: "#/components/schemas/Timestamp"
+          description: Timestamp indicating when the key was provisioned
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
         updated_at:
-          $ref: "#/components/schemas/Timestamp"
+          description: Timestamp indicating the last update applied to the key
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
     BankAccount:
       type: object
       properties:
@@ -1382,11 +1438,16 @@ components:
         application/json:
           schema:
             type: object
+            description: Defines the attributes required to create a new access key
             properties:
               is_active:
                 type: boolean
+                description: Indicates whether the newly created access key should be enabled immediately
+                example: true
               name:
                 type: string
+                description: Human-readable label that helps distinguish this access key
+                example: Developer Access Key
             required:
               - is_active
               - name
@@ -1401,11 +1462,16 @@ components:
         application/json:
           schema:
             type: object
+            description: Fields that can be modified on an existing access key
             properties:
               is_active:
                 type: boolean
+                description: Toggle indicating whether the key should be active
+                example: false
               name:
                 type: string
+                description: Updated label for the access key
+                example: Updated Access Key
           examples:
             Disable AccessKey:
               value:
@@ -1734,14 +1800,14 @@ components:
       content:
         application/json:
           schema:
-            allOf:
-              - $ref: "#/components/schemas/ErrorResponse"
-              - type: object
-                properties:
-                  code:
-                    example: error.unauthorized_access
-                  message:
-                    example: partner access key is required in request header
+            $ref: "#/components/schemas/ApiErrorEnvelope"
+          examples:
+            Unauthorized:
+              value:
+                api_version: v1
+                error:
+                  code: error.unauthorized_access
+                  message: partner access key is required in request header
     NotFound:
       description: Resource not found
       headers:
@@ -1829,7 +1895,31 @@ components:
               - type: object
                 properties:
                   data:
+                    description: Aggregator resource found for the supplied identifier
                     $ref: "#/components/schemas/Aggregator"
+          examples:
+            AggregatorFound:
+              value:
+                api_version: v1
+                data:
+                  token: agg_tok_2b42c4d0
+                  partner_id: partner_123456
+                  bank_account_id: ba_2cab1524-805d-4a09-8e51-924ddf3f43ea
+                  name: Example Aggregator
+                  is_active: true
+                  vault_enabled: true
+                  keys:
+                    - id: ak_da8f1c10-346a-4be8-895a-b6187a9a9662
+                      token: ak_tok_fede37a6
+                      key_id: key_live_e111f1c10
+                      aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                      is_active: true
+                      name: Primary Production Key
+                      secret: sk_live_uMPN7cX2b1
+                      created_at: 2025-05-19T11:19:12Z
+                      updated_at: 2025-06-25T06:17:59Z
+                  created_at: 2025-04-01T08:00:00Z
+                  updated_at: 2025-04-15T09:30:00Z
     ListAccessKeysResponse:
       description: This response contains a paginated list of access keys linked to an aggregator
       headers:
@@ -1846,6 +1936,7 @@ components:
                 properties:
                   data:
                     type: object
+                    description: Paginated collection of access keys
                     properties:
                       count:
                         type: integer
@@ -1856,6 +1947,22 @@ components:
                         description: List of access keys
                         items:
                           $ref: "#/components/schemas/AccessKey"
+          examples:
+            AccessKeysListed:
+              value:
+                api_version: v1
+                data:
+                  count: 1
+                  keys:
+                    - id: ak_da8f1c10-346a-4be8-895a-b6187a9a9662
+                      token: ak_tok_fede37a6
+                      key_id: key_live_e111f1c10
+                      aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                      is_active: true
+                      name: Primary Production Key
+                      secret: sk_live_uMPN7cX2b1
+                      created_at: 2025-05-19T11:19:12Z
+                      updated_at: 2025-06-25T12:29:14Z
     CreateAccessKeyResponse:
       description: This response contains details of an access key
       headers:
@@ -1871,7 +1978,22 @@ components:
               - type: object
                 properties:
                   data:
+                    description: Newly created access key resource
                     $ref: "#/components/schemas/AccessKey"
+          examples:
+            AccessKeyCreated:
+              value:
+                api_version: v1
+                data:
+                  id: ak_cf0f7821-32f5-4c66-8e86-0d5e2bb8b6b9
+                  token: ak_tok_b758ad9a
+                  key_id: key_live_a31b23f0
+                  aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  is_active: true
+                  name: Developer Access Key
+                  secret: sk_live_GZc5k9mT0n
+                  created_at: 2025-05-19T11:19:12Z
+                  updated_at: 2025-05-19T11:19:12Z
     UpdateAccessKeyResponse:
       description: This response contains details of an access key
       headers:
