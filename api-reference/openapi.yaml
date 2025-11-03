@@ -583,48 +583,37 @@ paths:
           $ref: "#/components/responses/BadRequest"
 
   /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}/payments:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/QRIdParam"
     get:
       tags:
         - QRs
       summary: List payments
+      description: Retrieve a paginated list of payments made against a QR code
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/QRIdParam"
-        - name: limit
-          in: query
-          required: false
-          example: 10
-          schema:
-            type: string
-        - name: offset
-          in: query
-          required: false
-          example: 0
-          schema:
-            type: string
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
+        - $ref: "#/components/parameters/QRPaymentListLimitParam"
+        - $ref: "#/components/parameters/QRPaymentListOffsetParam"
       responses:
         "200":
           $ref: "#/components/responses/ListPaymentsForQRCodeResponse"
 
   /v1/aggregators/{raast-aggregator-id}/title-fetch:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
     get:
       tags:
-        - Utlities
+        - Utilities
       summary: Title Fetch
       description: Retrieve account title metadata for a Raast IBAN
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - name: iban
-          in: query
-          required: true
-          description: IBAN to fetch the registered account title for
-          schema:
-            type: string
-          example: PK46MPBL0101017140572181
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
+        - $ref: "#/components/parameters/TitleFetchIbanParam"
       responses:
         "200":
           $ref: "#/components/responses/TitleFetchResponse"
@@ -634,7 +623,7 @@ paths:
   /v1/aggregators/{raast-aggregator-id}/account-info:
     get:
       tags:
-        - Utlities
+        - Utilities
       summary: Read Account Info
       description: Retrieve Raast account metadata using an IBAN or alias lookup
       security:
@@ -848,6 +837,33 @@ components:
         type: string
         example: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
       description: Optional aggregator merchant identifier used when deleting a QR code
+    QRPaymentListLimitParam:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of payments to return for the QR code.
+      schema:
+        type: string
+        example: "10"
+      example: "10"
+    QRPaymentListOffsetParam:
+      name: offset
+      in: query
+      required: false
+      description: Number of payments to skip before starting the result set.
+      schema:
+        type: string
+        example: "0"
+      example: "0"
+    TitleFetchIbanParam:
+      name: iban
+      in: query
+      required: false
+      description: IBAN to fetch the registered account title for.
+      schema:
+        type: string
+        example: PK46MPBL0101017140572181
+      example: PK46MPBL0101017140572181
     LimitQueryParam:
       name: limit
       in: query
@@ -3128,7 +3144,7 @@ components:
             DynamicQR:
               $ref: "#/components/examples/FindQRDynamic"
     ListPaymentsForQRCodeResponse:
-      description: This response contains a paginated list of payments linked to a QR Code
+      description: This response returns the dynamic QR payments for the requested QR code.
       headers:
         Content-Length:
           $ref: "#/components/headers/ContentLengthHeader"
@@ -3143,16 +3159,24 @@ components:
                 properties:
                   data:
                     type: object
+                    description: Container for the payments returned for the QR code.
                     properties:
+                      payments:
+                        type: array
+                        description: Payments referencing the QR code.
+                        items:
+                          $ref: "#/components/schemas/Payment"
                       count:
-                        type: integer
-                        example: 1
-                        description: Total number of payments
-                  keys:
-                    type: array
-                    description: List of payments
-                    items:
-                      $ref: "#/components/schemas/Payment"
+                        type: string
+                        description: Total number of payments matching the filters
+                        example: "7"
+                    required:
+                      - payments
+                required:
+                  - data
+          examples:
+            QRPayments:
+              $ref: "#/components/examples/ListQRPayments"
   examples:
     FindQRStatic:
       description: Static QR code response example
@@ -3284,6 +3308,37 @@ components:
                     context_specific_data:
                       - tag: "01"
                         value: b4a6d0a7-1a9a-42e5-8793-ae9acb9b19ac
+    ListQRPayments:
+      description: Example response when listing payments tied to a QR code
+      value:
+        api_version: v1
+        data:
+          payments:
+            - id: "631"
+              token: pm_3442e2b7-caec-4d63-bbed-f443aa9b8237
+              aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+              qr_code_id: qr_d47b3462-4208-40f1-9994-e7bf8b8a16d8
+              order_id: SCB200
+              type: DYNAMIC_QR
+              amount: "20000"
+              status: P_REJECTED
+              uetr: a66171ef-b247-4cdf-971e-886d45d2b9a0
+              trace_reference: 90c4831d-e6d7-491e-a5f9-5f92c7cd1073
+              msg_id: H1KMBBKXMARBF3EEP5HATG27BHIAZ3GIH2J
+              instr_id: 1b548b244d094b83b30e0791367bc7ce
+              end_to_end_id: a66171efb2474cdf971e886d45d2b9a0
+              pmt_inf_id: WLJAG10SD4YYFQTQQ2XPJAV8OIG0NAPJR62
+              request_id: 144bf8a6-9c20-4082-805f-fe2648860db5
+              msg_created_at: "2025-06-26 08:32:42."
+              expires_at: "2025-06-26T11:32:42Z"
+              created_at: "2025-06-26T08:32:42Z"
+              updated_at: "2025-06-26T11:33:57Z"
+              txn_logs: []
+              debitor: null
+              qr_code: null
+              aggregator_merchant: null
+              refunds: []
+              settlement: null
 
 tags:
   - name: Aggregators
@@ -3293,4 +3348,4 @@ tags:
   - name: Payments
   - name: Refunds
   - name: QRs
-  - name: Utlities
+  - name: Utilities
