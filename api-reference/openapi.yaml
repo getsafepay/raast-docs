@@ -368,29 +368,34 @@ paths:
           $ref: "#/components/responses/ListPaymentsResponse"
 
   /v1/aggregators/{raast-aggregator-id}/payments/{payment-id}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/PaymentIdParam"
     get:
       tags:
         - Payments
       summary: Find Payment
+      description: Explore a payment in detail.
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/PaymentIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindPaymentResponse"
 
   /v1/aggregators/{raast-aggregator-id}/payout:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
     post:
       tags:
         - Payments
-      summary: Initiate Payout
+      summary: Payout
       description: Initiate a Raast payout to credit a beneficiary IBAN
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       requestBody:
         $ref: "#/components/requestBodies/CreatePayout"
       responses:
@@ -402,12 +407,28 @@ paths:
           $ref: "#/components/responses/InternalError"
 
   /v1/aggregators/{raast-aggregator-id}/refunds:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
     post:
       tags:
         - Refunds
       summary: Create Refund
+      description: |-
+        ## Creating Refund Requests
+
+        ### Key Guidelines
+
+        - When initiating a refund, ensure all **required fields** are included.
+        - The `reason` field must be one of the **predefined reason types** listed below.
+
+        | Reason Type | Description |
+        | --- | --- |
+        | `TechnicalProblem` | Refund due to a technical or system issue. |
+        | `CustomerRequest` | Refund requested by the customer. |
+        | `FraudDetected` | Refund initiated due to suspected fraud. |
+        | `DuplicatePayment` | Refund due to accidental duplicate transaction. |
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreateRefundResponse"
@@ -419,9 +440,23 @@ paths:
       tags:
         - Refunds
       summary: List Refunds
+      description: |-
+        # List Refunds
+
+        This endpoint supports filtering refund details based on the following parameters:
+
+        | Name | Description |
+        | --- | --- |
+        | `limit` | Maximum number of records to return. Default: `10`. |
+        | `offset` | Number of records to skip for pagination. Default: `0`. |
+        | `payment_ids` | Filter refunds by one or more payment IDs (comma-separated). |
+        | `direction` | Sort order of results. Allowed values: `ASC` (ascending) or `DESC` (descending). Default is usually `DESC`. |
+
+        See the examples attached to the response schema for a representative payload.
       security:
         - apiKey: []
       parameters:
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
         - name: limit
           in: query
           required: false
@@ -449,7 +484,6 @@ paths:
             enum:
               - ASC
               - DESC
-        - $ref: "#/components/parameters/AggregatorIdParam"
       responses:
         "200":
           $ref: "#/components/responses/ListRefundsResponse"
@@ -457,15 +491,21 @@ paths:
           $ref: "#/components/responses/InternalError"
 
   /v1/aggregators/{raast-aggregator-id}/refunds/{refund-id}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/RefundIdParam"
     get:
       tags:
         - Refunds
       summary: Find Refund
+      description: |-
+        # Read Refund
+
+        Reference the response examples to inspect how static and failure states are represented.
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/RefundIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindRefundResponse"
@@ -473,14 +513,17 @@ paths:
           $ref: "#/components/responses/InternalError"
 
   /v1/aggregators/{raast-aggregator-id}/qrs:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
     post:
       tags:
-        - QR Codes
+        - QRs
       summary: Create QR
+      description: Create a static or dynamic QR code
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/CreateQRCodeResponse"
@@ -488,33 +531,17 @@ paths:
         $ref: "#/components/requestBodies/CreateQRCode"
     get:
       tags:
-        - QR Codes
-      summary: List QR Codes
+        - QRs
+      summary: List QRs
+      description: Retrieve a paginated list of QR codes. It supports pagination and filtering by `aggregator_merchant_id` and `type`. If no `type` is specified, it defaults to `STATIC`
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - name: type
-          in: query
-          required: false
-          example: STATIC
-          schema:
-            type: string
-            enum:
-              - STATIC
-              - DYNAMIC
-        - name: limit
-          in: query
-          required: false
-          example: 10
-          schema:
-            type: string
-        - name: offset
-          in: query
-          required: false
-          example: 0
-          schema:
-            type: string
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
+        - $ref: "#/components/parameters/QRListAggregatorMerchantIdParam"
+        - $ref: "#/components/parameters/QRListTypeParam"
+        - $ref: "#/components/parameters/QRListLimitParam"
+        - $ref: "#/components/parameters/QRListOffsetParam"
       responses:
         "200":
           $ref: "#/components/responses/ListQRCodesResponse"
@@ -522,15 +549,18 @@ paths:
           $ref: "#/components/responses/Unauthorized"
 
   /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/QRIdParam"
     get:
       tags:
-        - QR Codes
+        - QRs
       summary: Find QR
+      description: Explore a QR code in detail
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/QRIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindQRCodeResponse"
@@ -538,13 +568,14 @@ paths:
           $ref: "#/components/responses/Unauthorized"
     delete:
       tags:
-        - QR Codes
-      summary: Delete QR Codes
+        - QRs
+      summary: Delete QRs
+      description: Delete a QR code that is previously issued.
       security:
         - apiKey: []
       parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/QRIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeaderRequired"
+        - $ref: "#/components/parameters/QRDeleteAggregatorMerchantIdParam"
       responses:
         "200":
           $ref: "#/components/responses/StandardSuccess"
@@ -554,7 +585,7 @@ paths:
   /v1/aggregators/{raast-aggregator-id}/qrs/{qr-id}/payments:
     get:
       tags:
-        - QR Codes
+        - QRs
       summary: List payments
       security:
         - apiKey: []
@@ -678,6 +709,14 @@ components:
       schema:
         type: string
         example: sk_live_c66a5b38-0ce1-4f83-8d72-57b8f91a8762
+    AggregatorSecretKeyHeaderRequired:
+      name: X-SFPY-AGGREGATOR-SECRET-KEY
+      in: header
+      required: true
+      description: API key issued to the aggregator; required when deleting QR codes.
+      schema:
+        type: string
+        example: sk_live_c66a5b38-0ce1-4f83-8d72-57b8f91a8762
     AccessKeyIdParam:
       name: access-key-id
       in: path
@@ -766,6 +805,49 @@ components:
         type: string
         example: qr_7e26f9be-f59d-4025-8e17-9fc398d16230
       description: The unique identifier for the QR code
+    QRListAggregatorMerchantIdParam:
+      name: aggregator_merchant_id
+      in: query
+      required: false
+      schema:
+        type: string
+        example: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
+      description: Filter QR codes by Safepay aggregator merchant identifier
+    QRListTypeParam:
+      name: type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - STATIC
+          - DYNAMIC
+        example: STATIC
+      description: Limit results to QR codes of the given type
+    QRListLimitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "10"
+      description: Maximum number of QR codes to include in the response
+    QRListOffsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "0"
+      description: Number of QR codes to skip before starting the result set
+    QRDeleteAggregatorMerchantIdParam:
+      name: aggregator_merchant_id
+      in: query
+      required: false
+      schema:
+        type: string
+        example: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
+      description: Optional aggregator merchant identifier used when deleting a QR code
     LimitQueryParam:
       name: limit
       in: query
@@ -1564,27 +1646,44 @@ components:
                           type: string
     QRCodeDetailed:
       type: object
+      description: Detailed QR code payload including EMVCo metadata for static and dynamic QR representations.
       properties:
+        id:
+          type: string
+          description: Internal identifier assigned to the QR code record.
         token:
           type: string
+          description: Public token referencing the QR code.
         aggregator_merchant_id:
           type: string
+          description: Identifier of the aggregator merchant that owns the QR code.
         type:
           type: string
+          description: Indicates whether the QR code is STATIC or DYNAMIC.
         code:
           type: string
+          description: Complete EMVCo QR string that can be rendered for scanning.
         terminal_label:
           type: string
+          description: Optional terminal label encoded in the QR code.
         reference_label:
           type: string
+          description: Optional reference label encoded in the QR code.
         is_deleted:
           type: boolean
+          description: Flag indicating whether the QR code has been revoked or deleted.
         code_details:
-          $ref: "#/components/schemas/EMVCoDetails"
+          allOf:
+            - $ref: "#/components/schemas/EMVCoDetails"
+          description: Parsed EMVCo details extracted from the QR string.
         created_at:
-          $ref: "#/components/schemas/Timestamp"
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          description: Timestamp when the QR code was created.
         expired_at:
-          $ref: "#/components/schemas/Timestamp"
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          description: Timestamp when the QR code expires, when applicable.
   requestBodies:
     CreateAccessKey:
       description: Request to create a new access key
@@ -1864,6 +1963,11 @@ components:
                 type: integer
               reason:
                 type: string
+                enum:
+                  - TechnicalProblem
+                  - CustomerRequest
+                  - FraudDetected
+                  - DuplicatePayment
               addtl_info:
                 type: string
               debitor_iban:
@@ -1889,17 +1993,26 @@ components:
         application/json:
           schema:
             type: object
+            description: Parameters accepted when generating a QR code
             properties:
               type:
                 type: string
+                description: QR code type to create; accepts STATIC or DYNAMIC
               aggregator_merchant_identifier:
                 type: string
+                description: Identifier of the aggregator merchant the QR code belongs to
               request_id:
                 type: string
+                description: Optional idempotency key provided by the client
               order_id:
                 type: string
+                description: Merchant-supplied order reference for dynamic QR codes
               amount:
                 type: integer
+                description: Optional amount to embed in the QR code for dynamic payments
+              expiry_in_minutes:
+                type: integer
+                description: Optional expiry window in minutes for dynamic QR codes; defaults to 180 when omitted
             required:
               - type
               - aggregator_merchant_identifier
@@ -1915,6 +2028,7 @@ components:
                 order_id: "033301"
                 request_id: "749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30"
                 amount: 1200
+                expiry_in_minutes: 180
   responses:
     StandardSuccess:
       description: Successful operation
@@ -2747,6 +2861,94 @@ components:
                 properties:
                   data:
                     $ref: "#/components/schemas/Payment"
+          examples:
+            PaymentFound:
+              value:
+                api_version: v1
+                data:
+                  id: "644"
+                  token: pm_f37a10dd-c530-4d86-8483-be473e820578
+                  aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                  qr_code_id: qr_503d916b-9ad5-44aa-8d41-1ad656882f7f
+                  order_id: has_3320
+                  type: DYNAMIC_QR
+                  amount: "250"
+                  status: P_REJECTED
+                  uetr: e3391812-f9f5-4feb-bd6d-60698e9b662f
+                  trace_reference: ce08b498-376c-41dd-b32b-f814441c4507
+                  msg_id: FE0PMU5HHKKPF4S7PLR20M8HKBYI57WAUV5
+                  instr_id: INSTR-88921
+                  end_to_end_id: E2E-09771234
+                  pmt_inf_id: 9545TGYRG0F6DCQEF2ZH7UCOCU57FUNYDL9
+                  request_id: 6a049190-3595-47cb-8603-7e310c3adb15
+                  msg_created_at: "2025-06-27T06:45:35Z"
+                  expires_at: "2025-06-27T06:47:34Z"
+                  created_at: "2025-06-27T06:45:35Z"
+                  updated_at: "2025-06-27T06:48:33Z"
+                  txn_logs:
+                    - id: "2980"
+                      type: PAYMENT_STATUS
+                      payment_id: "644"
+                      status: P_REJECTED
+                      refund_id: rfd_0f4a653e-cc5c-4fe3-9f3c-5b2ec518de66
+                      settlement_id: stl_1b9f5df3-ae17-4e56-9c58-0f0c594dfbf4
+                      txn_desc: Payment rejected by beneficiary bank.
+                      addtl_info: OTP verification failed at issuer bank.
+                      token: log_b2cb6f9b-4960-4b58-b0f4-91a2c0d1c177
+                      timestamp: "2025-06-27T06:48:33Z"
+                      iso_msg_type: pacs.002
+                  debitor: null
+                  qr_code:
+                    id: "148"
+                    token: qr_3b4a02f2-4e7b-4de1-90a6-0213767b7b8b
+                    aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                    type: DYNAMIC
+                    code: "00020101021226370012PKSAFEPAKISTAN0117PM_f37a10dd"
+                    terminal_label: TL-839201
+                    reference_label: RL-3242
+                    is_deleted: false
+                    created_at: "2025-06-20T05:44:11Z"
+                  aggregator_merchant:
+                    id: "92"
+                    token: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                    name: Lazer Sports
+                    aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                    merchant_id: mer_2cab1524-805d-4a09-8e51-924ddf3f43ea
+                    merchant_external_id: lazersports-001
+                    bank_account_id: ba_cda15b62-26cc-4ae2-aa4b-4173846c1f18
+                    enabled: true
+                    created_at: "2025-06-10T07:14:03Z"
+                    updated_at: "2025-06-27T06:48:33Z"
+                    raast_merchant:
+                      id: "501"
+                      token: rm_b8a45764-3100-4e1e-90fa-3f918a8dac5d
+                      partner_id: partner_4321
+                      raast_record_id: RAAST123456
+                      status: Active
+                      uid_type: NTN
+                      uid_value: "1234567-8"
+                      name: Lazer Sports Pvt Ltd
+                      document_type: NTN
+                      document_number: 1234567-8
+                      address_details:
+                        country: PK
+                        city: Karachi
+                        state_province_region: Sindh
+                        address_line: 221B Baker Street
+                      contact_details:
+                        mobile_number: "+923001112233"
+                        email: contact@lazersports.pk
+                      additional_details:
+                        dba: Lazer Sports
+                        mcc: "5411"
+                        lat: "24.8607"
+                        long: "67.0011"
+                      additional_details_private: {}
+                      created_at: "2025-04-01T08:21:55Z"
+                      updated_at: "2025-06-15T11:12:45Z"
+                  refunds: []
+                  settlement: null
     CreateRefundResponse:
       description: This response contains details of a refund
       headers:
@@ -2805,6 +3007,27 @@ components:
                 properties:
                   data:
                     $ref: "#/components/schemas/Refund"
+          examples:
+            RefundFound:
+              value:
+                api_version: v1
+                data:
+                  id: "1"
+                  token: "rfd_2dd0b5e5-ee12-4ff9-b76d-ef915ea496f3"
+                  payment_id: "pm_54b6bcee-aa58-454d-aed9-ce97d6bdd797"
+                  amount: "500"
+                  type: "FULL_REFUND"
+                  reason: "TechnicalProblem"
+                  addtl_info: "Cancelation due to technical problem."
+                  status: "R_FAILED"
+                  trace_reference: "f8cdffe4-cdf1-4f1a-a509-5c2fdfa95809"
+                  msg_id: "F3CJ6HG8UPVYPQBBN286T86Y988MUF95TXQ"
+                  return_id: "F3CJ6HG8UPVYPQBBN286T86Y988MUF95TXQ"
+                  request_id: "ad16c519-a18c-493c-a402-f3bf4cb7f3c1"
+                  msg_created_at: "2025-05-20 16:10:53."
+                  settle_at: null
+                  created_at: "2025-05-20T11:10:53Z"
+                  updated_at: "2025-05-20T11:10:54Z"
     CreateQRCodeResponse:
       description: This response contains details of a QR Code
       headers:
@@ -2821,6 +3044,20 @@ components:
                 properties:
                   data:
                     $ref: "#/components/schemas/QRCode"
+          examples:
+            QRCodeCreated:
+              value:
+                api_version: v1
+                data:
+                  id: "4"
+                  token: qr_4076ad61-75cf-44a3-97a1-b66643ea3bf2
+                  aggregator_merchant_id: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
+                  type: DYNAMIC
+                  code: "0002010102122876003285bc899c1dd443e3b3beb24631aef0930108SAFEPAYZ0224PK08ALFH00050010086764445207343434353035865406100.005802PK5921Timeless Designs Code6006Lahore62130509order12348476003285bc899c1dd443e3b3beb24631aef09301367b165d5f-01df-4bfe-81b4-bef010df9"
+                  terminal_label: ""
+                  reference_label: ""
+                  is_deleted: false
+                  created_at: "2025-04-28T10:26:48Z"
     ListQRCodesResponse:
       description: This response contains a paginated list of QR Codes linked to a merchant
       headers:
@@ -2838,15 +3075,31 @@ components:
                   data:
                     type: object
                     properties:
-                      count:
-                        type: integer
-                        example: 1
-                        description: Total number of QR Codes
-                      keys:
+                      qr_codes:
                         type: array
-                        description: List of QR Codes
+                        description: List of QR codes returned in the result set
                         items:
                           $ref: "#/components/schemas/QRCode"
+                      count:
+                        type: string
+                        description: Total number of QR codes matching the filters
+                        example: "7"
+          examples:
+            QRCodeList:
+              value:
+                api_version: v1
+                data:
+                  qr_codes:
+                    - id: "4"
+                      token: qr_4076ad61-75cf-44a3-97a1-b66643ea3bf2
+                      aggregator_merchant_id: am_be454a50-7612-4dc6-a97e-284ebbe7ae93
+                      type: DYNAMIC
+                      code: "0002010102122876003285bc899c1dd443e3b3beb24631aef0930108SAFEPAYZ0224PK08ALFH00050010086764445207343434353035865406100.005802PK5921Timeless Designs Code6006Lahore62130509order12348476003285bc899c1dd443e3b3beb24631aef09301367b165d5f-01df-4bfe-81b4-bef010df9"
+                      terminal_label: ""
+                      reference_label: ""
+                      is_deleted: false
+                      created_at: "2025-04-28T10:26:48Z"
+                  count: "7"
     FindQRCodeResponse:
       description: This response contains details of a QR Code
       headers:
@@ -2862,7 +3115,18 @@ components:
               - type: object
                 properties:
                   data:
-                    $ref: "#/components/schemas/QRCodeDetailed"
+                    type: object
+                    description: Container for the requested QR code resource.
+                    properties:
+                      qr_code:
+                        $ref: "#/components/schemas/QRCodeDetailed"
+                    required:
+                      - qr_code
+          examples:
+            StaticQR:
+              $ref: "#/components/examples/FindQRStatic"
+            DynamicQR:
+              $ref: "#/components/examples/FindQRDynamic"
     ListPaymentsForQRCodeResponse:
       description: This response contains a paginated list of payments linked to a QR Code
       headers:
@@ -2884,11 +3148,142 @@ components:
                         type: integer
                         example: 1
                         description: Total number of payments
-                      keys:
-                        type: array
-                        description: List of payments
-                        items:
-                          $ref: "#/components/schemas/Payment"
+                  keys:
+                    type: array
+                    description: List of payments
+                    items:
+                      $ref: "#/components/schemas/Payment"
+  examples:
+    FindQRStatic:
+      description: Static QR code response example
+      value:
+        api_version: v1
+        data:
+          qr_code:
+            id: "47"
+            token: qr_e46d5205-1e40-4d5f-943c-af90bd0d5670
+            aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+            type: STATIC
+            code: "00020101021128760032749fe6ce91f94f6a9df2ec6ae9f75a300108SAFEPAYZ0224PK84HABB01640300501285945204563353035865802PK5912Lazer Sports6007Karachi62480520D19DKFNMVCT2M8CERIJ00720D19DKFNMVCT2M8CERIIG89360032e46d52051e404d5f943caf90bd0d567063040DCD"
+            terminal_label: D19DKFNMVCT2M8CERIIG
+            reference_label: D19DKFNMVCT2M8CERIJ0
+            is_deleted: false
+            created_at: "2025-06-18T15:24:46Z"
+            code_details:
+              payload_format_indicator: "01"
+              point_of_initiation_method: "11"
+              merchant_category_code: "5633"
+              transaction_currency: "586"
+              transaction_amount: ""
+              country_code: PK
+              merchant_name: Lazer Sports
+              merchant_city: Karachi
+              postal_code: ""
+              tip_or_convenience_indicator: ""
+              convenience_fixed_fee: ""
+              convenience_percentage_fee: ""
+              crc: "0DCD"
+              additional_data_field_template:
+                bill_number: ""
+                store_label: ""
+                loyalty_label: ""
+                customer_label: ""
+                reference_label: D19DKFNMVCT2M8CERIJ0
+                terminal_label: D19DKFNMVCT2M8CERIIG
+                transaction_purpose: ""
+                additional_consumer_request: ""
+                country_code: ""
+                rfu_for_emvco: []
+                payment_system_specific: []
+              merchant_information_language_template: null
+              merchant_account_information:
+                - tag: "28"
+                  value:
+                    globally_unique_identifier:
+                      tag: "00"
+                      value: "749fe6ce91f94f6a9df2ec6ae9f75a30"
+                    payment_network_specific:
+                      - tag: "01"
+                        value: SAFEPAYZ
+                      - tag: "02"
+                        value: PK84HABB0164030050128594
+              rfu_for_emvco: []
+              unreserved_templates:
+                - tag: "89"
+                  value:
+                    globally_unique_identifier:
+                      tag: "00"
+                      value: e46d52051e404d5f943caf90bd0d5670
+                    context_specific_data: []
+    FindQRDynamic:
+      description: Dynamic QR code response example
+      value:
+        api_version: v1
+        data:
+          qr_code:
+            id: "58"
+            token: qr_7775775d-d4ba-4db9-ab92-2b9f252b0813
+            aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+            type: DYNAMIC
+            code: "00020101021228760032b8319f0295b746968f99477bc0eaf3390108SAFEPAYZ0224PK84HABB016403005012859452045633530358654040.015802PK5912Lazer Sports6007Karachi62100506DQR10089360032b4a6d0a71a9a42e58793ae9acb9b19ac84760032b8319f0295b746968f99477bc0eaf3390136b4a6d0a7-1a9a-42e5-8793-ae9acb9b19ac63040870"
+            terminal_label: ""
+            reference_label: ""
+            is_deleted: false
+            created_at: "2025-06-23T06:47:08Z"
+            code_details:
+              payload_format_indicator: "01"
+              point_of_initiation_method: "12"
+              merchant_category_code: "5633"
+              transaction_currency: "586"
+              transaction_amount: "0.01"
+              country_code: PK
+              merchant_name: Lazer Sports
+              merchant_city: Karachi
+              postal_code: ""
+              tip_or_convenience_indicator: ""
+              convenience_fixed_fee: ""
+              convenience_percentage_fee: ""
+              crc: "0870"
+              additional_data_field_template:
+                bill_number: ""
+                store_label: ""
+                loyalty_label: ""
+                customer_label: ""
+                reference_label: DQR100
+                terminal_label: ""
+                transaction_purpose: ""
+                additional_consumer_request: ""
+                country_code: ""
+                rfu_for_emvco: []
+                payment_system_specific: []
+              merchant_information_language_template: null
+              merchant_account_information:
+                - tag: "28"
+                  value:
+                    globally_unique_identifier:
+                      tag: "00"
+                      value: b8319f0295b746968f99477bc0eaf339
+                    payment_network_specific:
+                      - tag: "01"
+                        value: SAFEPAYZ
+                      - tag: "02"
+                        value: PK84HABB0164030050128594
+              rfu_for_emvco: []
+              unreserved_templates:
+                - tag: "89"
+                  value:
+                    globally_unique_identifier:
+                      tag: "00"
+                      value: b4a6d0a71a9a42e58793ae9acb9b19ac
+                    context_specific_data: []
+                - tag: "84"
+                  value:
+                    globally_unique_identifier:
+                      tag: "00"
+                      value: b8319f0295b746968f99477bc0eaf339
+                    context_specific_data:
+                      - tag: "01"
+                        value: b4a6d0a7-1a9a-42e5-8793-ae9acb9b19ac
 
 tags:
   - name: Aggregators
@@ -2897,5 +3292,5 @@ tags:
   - name: Raast Merchants
   - name: Payments
   - name: Refunds
-  - name: QR Codes
+  - name: QRs
   - name: Utlities
