@@ -152,6 +152,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/MerchantIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/FindMerchantResponse"
@@ -168,6 +169,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/MerchantIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/EmptySuccess"
@@ -182,6 +184,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/AggregatorIdParam"
         - $ref: "#/components/parameters/MerchantIdParam"
+        - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
         "200":
           $ref: "#/components/responses/UpdateMerchantsResponse"
@@ -409,20 +412,7 @@ paths:
       tags:
         - Refunds
       summary: Create Refund
-      description: |-
-        ## Creating Refund Requests
-
-        ### Key Guidelines
-
-        - When initiating a refund, ensure all **required fields** are included.
-        - The `reason` field must be one of the **predefined reason types** listed below.
-
-        | Reason Type | Description |
-        | --- | --- |
-        | `TechnicalProblem` | Refund due to a technical or system issue. |
-        | `CustomerRequest` | Refund requested by the customer. |
-        | `FraudDetected` | Refund initiated due to suspected fraud. |
-        | `DuplicatePayment` | Refund due to accidental duplicate transaction. |
+      description: Issue a refund against a payment
       parameters:
         - $ref: "#/components/parameters/AggregatorSecretKeyHeader"
       responses:
@@ -436,19 +426,7 @@ paths:
       tags:
         - Refunds
       summary: List Refunds
-      description: |-
-        # List Refunds
-
-        This endpoint supports filtering refund details based on the following parameters:
-
-        | Name | Description |
-        | --- | --- |
-        | `limit` | Maximum number of records to return. Default: `10`. |
-        | `offset` | Number of records to skip for pagination. Default: `0`. |
-        | `payment_ids` | Filter refunds by one or more payment IDs (comma-separated). |
-        | `direction` | Sort order of results. Allowed values: `ASC` (ascending) or `DESC` (descending). Default is usually `DESC`. |
-
-        See the examples attached to the response schema for a representative payload.
+      description: Retrieve a paginated list of refunds that have been issued
       security:
         - apiKey: []
       parameters:
@@ -494,10 +472,7 @@ paths:
       tags:
         - Refunds
       summary: Find Refund
-      description: |-
-        # Read Refund
-
-        Reference the response examples to inspect how static and failure states are represented.
+      description: Explore a refund in detail.
       security:
         - apiKey: []
       parameters:
@@ -2161,9 +2136,8 @@ components:
                 properties:
                   data:
                     type: object
-                    properties:
-                      message:
-                        example: success
+                    description: Empty payload structure returned for successful operations without additional data
+                    example: {}
     BadRequest:
       description: Bad request
       headers:
@@ -2752,6 +2726,9 @@ components:
                 properties:
                   data:
                     $ref: "#/components/schemas/Merchant"
+          examples:
+            Find Merchant:
+              $ref: "#/components/examples/FindMerchant"
     UpdateMerchantsResponse:
       description: This response contains details of a merchant
       headers:
@@ -2773,52 +2750,55 @@ components:
               value:
                 api_version: v1
                 data:
-                  id: "39"
-                  token: am_c1460543-4a10-473c-b60b-60218326d1b1
-                  name: test co type1
+                  id: "4"
+                  token: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                  name: Lazer Sports
                   aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
-                  merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
-                  merchant_external_id: sec_0c3de397-441f-471f-bcd7-b6d948e1c307
-                  bank_account_id: acc_a17a478a-f7cd-448b-9753-5729a6f237ad
-                  enabled: false
-                  created_at: "2025-07-24T07:11:31Z"
-                  updated_at: "2025-07-25T06:31:25Z"
+                  merchant_id: mer_dd0aa205-5b38-4691-bf1e-d30524c5be97
+                  merchant_external_id: sec_0e84768c-048e-4946-9066-ea199fec7722
+                  bank_account_id: acc_c03a57cb-a616-42a7-b1dc-de473217a558
+                  enabled: true
+                  created_at: "2025-03-13T09:13:25Z"
+                  updated_at: "2025-06-03T11:44:56Z"
                   raast_merchant:
-                    id: "10"
-                    token: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
+                    id: "4"
+                    token: mer_dd0aa205-5b38-4691-bf1e-d30524c5be97
                     partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
-                    raast_record_id: "480776"
-                    status: Active
+                    raast_record_id: "478619"
+                    status: Inactive
                     uid_type: NTN
-                    uid_value: "33225247890431"
-                    name: TestHasMerchant
+                    uid_value: "4220111082020"
+                    name: Lazer Sports
                     document_type: NTN
-                    document_number: "33225247890431"
+                    document_number: "4220111082026"
                     address_details:
                       country: PK
-                      city: Lahore
-                      state_province_region: Punjab
-                      address_line: h193c1 saddiq
+                      city: Karachi
+                      state_province_region: Sindh
+                      address_line: Federal.B. Area
                     contact_details:
-                      mobile_number: "+9233330226445"
-                      email: testing1702@gmail.com
+                      mobile_number: "+923001234926"
+                      email: testingbyHas@gesafepay.com
                     additional_details:
                       dba: The best business 001
-                      mcc: "3434"
+                      mcc: "5633"
                       lat: ""
                       long: ""
                     additional_details_private: {}
-                    created_at: "2025-05-21T09:36:41Z"
-                    updated_at: "2025-07-24T07:07:13Z"
+                    created_at: "2025-03-13T09:13:23Z"
+                    updated_at: "2025-06-03T11:44:56Z"
                   rate_card:
-                    id: "39"
-                    token: mrc_20d3f00e-6e1a-4aa6-bb1c-d9a12afb95b6
-                    aggregator_merchant_id: am_c1460543-4a10-473c-b60b-60218326d1b1
-                    connector_id: conn_af8e9b08-85f3-48f8-845d-23362e51c7b9
-                    rate_card_id: rc_8a9fd9cf-f054-4c5e-bd77-7410f876edb7
-                    created_at: "2025-07-24T07:11:31Z"
-                    updated_at: "2025-07-24T07:11:31Z"
+                    id: "23"
+                    token: mrc_50f44cfa-7fc4-4111-82db-84233aeb7d04
+                    aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+                    connector_id: conn_c05caf8c-1f8d-4e58-bcfd-833531500693
+                    rate_card_id: rc_4a61062c-c3a7-4dee-8199-f122eb9d90d3
+                    ratecard_kind: RateCardKind_fixed
+                    created_at: "2025-03-13T09:13:23Z"
+                    updated_at: "2025-06-03T11:44:57Z"
+                    fixed_rate: "40000"
                     tax_rate: 0
+                    tax_region: ""
     CreatePaymentResponse:
       description: Response envelope returned after a payment request is accepted.
       headers:
@@ -3359,6 +3339,76 @@ components:
                     context_specific_data:
                       - tag: "01"
                         value: b4a6d0a7-1a9a-42e5-8793-ae9acb9b19ac
+    FindMerchant:
+      description: Aggregator merchant lookup response example
+      value:
+        api_version: v1
+        data:
+          id: "4"
+          token: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+          name: Lazer Sports
+          aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+          merchant_id: mer_dd0aa205-5b38-4691-bf1e-d30524c5be97
+          merchant_external_id: sec_0e84768c-048e-4946-9066-ea199fec7722
+          bank_account_id: acc_c03a57cb-a616-42a7-b1dc-de473217a558
+          enabled: true
+          created_at: "2025-03-13T09:13:25Z"
+          updated_at: "2025-06-03T11:44:56Z"
+          bank_account:
+            id: "11"
+            token: acc_c03a57cb-a616-42a7-b1dc-de473217a558
+            vault_token: lock_464309f2-572f-493f-8272-e503277b06fd
+            title: SYED MUHAMMAD HAQANI
+            iban: PK84HABB0164030050128594
+            redacted_iban: PK84HABB************8594
+            hashed_iban: TAQswoYYIJaiPH15TAS5+tnFe7yDOK0kWP2wgSXwi7k=
+            servicer: HABBPKKARTG
+            bank: ""
+            depositor_id: dep_31b1166f-de14-4e66-ba4a-2a321ca55a77
+            owner: raast
+            kind: 5
+            version: v1
+            created_at: "2025-03-13T09:12:35Z"
+            updated_at: "2025-03-13T09:12:35Z"
+          raast_merchant:
+            id: "4"
+            token: mer_dd0aa205-5b38-4691-bf1e-d30524c5be97
+            partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+            raast_record_id: "478619"
+            status: Inactive
+            uid_type: NTN
+            uid_value: "4220111082020"
+            name: Lazer Sports
+            document_type: NTN
+            document_number: "4220111082026"
+            address_details:
+              country: PK
+              city: Karachi
+              state_province_region: Sindh
+              address_line: Federal.B. Area
+            contact_details:
+              mobile_number: "+923001234926"
+              email: testingbyHas@gesafepay.com
+            additional_details:
+              dba: The best business 001
+              mcc: "5633"
+              lat: ""
+              long: ""
+            additional_details_private: {}
+            created_at: "2025-03-13T09:13:23Z"
+            updated_at: "2025-06-03T11:44:56Z"
+          rate_card:
+            id: "23"
+            token: mrc_50f44cfa-7fc4-4111-82db-84233aeb7d04
+            aggregator_merchant_id: am_749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30
+            connector_id: conn_c05caf8c-1f8d-4e58-bcfd-833531500693
+            rate_card_id: rc_4a61062c-c3a7-4dee-8199-f122eb9d90d3
+            ratecard_kind: RateCardKind_fixed
+            created_at: "2025-03-13T09:13:23Z"
+            updated_at: "2025-06-03T11:44:57Z"
+            fixed_rate: "40000"
+            tax_rate: 0
+            tax_region: ""
     ListQRPayments:
       description: Example response when listing payments tied to a QR code
       value:
