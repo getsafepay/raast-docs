@@ -586,6 +586,145 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  # add alias section
+  /v1/aggregators/{{raast-aggregator-id}}/aliases:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+        tags:
+        - Aliases
+        summary: List aliases
+        description: Retrieve a paginated list of aliases created. It supports pagination, filtering by `alias_type`, `status`, `merchant_identifier`, `start_date` and `expiration_date`.
+        security:
+        - apiKey: []
+        parameters:
+        - name: limit
+          in: query
+          required: false
+          example: 10
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          required: false
+          example: 0
+          schema:
+            type: integer
+        - name: alias_type
+          in: query
+          required: false
+          example: TILL_CODE
+          schema:
+            type: string
+            enum:
+              - TILL_CODE
+        - name: status
+          in: query
+          required: false
+          description: Filter aliases by status.
+          example: Active
+          schema:
+            type: string
+            enum:
+              - Active
+              - Suspended
+        - name: merchant_identifier
+          in: query
+          required: false
+          example: mer_553dad9b-3984-4131-8842-84983e922351
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          required: false
+          example: 2028-10-10
+          schema: 
+            type: string
+            format: date
+        - name: expiration_date
+          in: query
+          required: false
+          example: 2033-11-10
+          schema: 
+            type: string
+            format: date
+        responses:
+        "200":
+          $ref: "#/components/responses/ListAliasResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/alias/{alias-id}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/AliasIdParam"
+    get:
+      tags:
+        - Aliases
+      summary: Find Alias
+      description: Explore alias in detail
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/FindAliasResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/title-fetch/alias:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Aliases
+      summary: Title Fetch Alias
+      description: Retrieve account title metadata for a Raast Alias
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AliasTypeParam"
+        - $ref: "#/components/parameters/AliasValueParam"
+        - $ref: "#/components/parameters/AliasWithTitleFetchParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/AliasTitleFetchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # add ledger section
+  /v1/aggregators/{{raast-aggregator-id}}/ledger/accounts:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Ledgers
+      summary: Find External Aggregator Ledger Account 
+      description: Explore ledger account in detail
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/FindAggregatorLedgerAccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{{raast-aggregator-id}}/merchants/{aggregator-merchant-id}/ledger/accounts:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/MerchantIdParam"
+    get:
+      tags:
+        - Ledgers
+      summary: Find External Merchant Ledger Account 
+      description: Explore ledger account in detail
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/FindMerchantLedgerAccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
 components:
   securitySchemes:
     apiKey:
@@ -822,6 +961,33 @@ components:
         type: integer
         example: 3472840476
       example: 3472840476
+    AliasTypeParam:
+      name: type
+      in: query
+      required: false
+      description: Alias type used for lookup; only TILL_CODE is supported currently.
+      schema:
+        type: string
+        example: TILL_CODE
+      example: TILL_CODE
+    AliasValueParam:
+      name: value
+      in: query
+      required: false
+      description: Alias value to resolve; must be provided when alias_type is supplied.
+      schema:
+        type: integer
+        example: 541732040
+      example: 541732040
+    AliasWithTitleFetchParam:
+      name: with_title_fetch
+      in: query
+      required: false
+      description: When true, include account title details in the response.
+      schema:
+        type: boolean
+        example: true
+      example: true
     RaastMerchantListLimitParam:
       name: limit
       in: query
@@ -906,6 +1072,14 @@ components:
           - false
         example: true
       example: true
+    AliasIdParam:
+      name: alias-id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: als_962c42c4-06a1-482f-a227-970453f29eb9
+      description: The unique identifier for the alias
   schemas:
     Timestamp:
       type: string
@@ -1364,6 +1538,92 @@ components:
         created_at:
           type: string
           format: date-time
+    Alias:
+      type: object
+      description: Raast alias record
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        merchant_id:
+          type: string
+        alias_type:
+          type: string
+          description: Type of alias (e.g., TILL_CODE)
+        alias_value:
+          type: string
+          description: The alias value (e.g., 541732040)
+        status:
+          type: string
+          description: Current status of the alias (e.g., Active, Suspended)
+        start_date:
+          type: string
+          format: date
+          description: Start date for the alias validity
+        expiration_date:
+          type: string
+          format: date
+          description: Expiration date for the alias validity
+        opening_date:
+          type: string
+          format: date
+          description: Opening date of the alias
+        closing_date:
+          type: string
+          format: date
+          description: Closing date of the alias
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        alias_record_id:
+          type: string
+          description: Raast alias record identifier
+    LedgerAccount:
+      type: object
+      description: ledger account record
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+        account_type:
+          type: string
+        account_name:
+          type: string
+        normal_balance:
+          type: string
+        balance:
+          type: string
+        currency:
+          type: string
+        running_balance:
+          type: string
+        vault_token:
+          type: string
+        bank_acct_id:
+          type: string
+          description: Identifier of the associated bank account
+        external_partner_id:
+          type: string
+          description: External partner identifier
+        external_aggregator_id:
+          type: string
+          description: External aggregator identifier
+        external_merchant_id:
+          type: string
+          description: External merchant identifier (may be empty)
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the ledger account was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the ledger account was last updated
     Payment:
       type: object
       description: Payment record returned by Safepay aggregator APIs.
@@ -2387,6 +2647,37 @@ components:
                   statusCode: 0
                   acctitle: "Title-1 1007079203"
                   acctype: Account
+    AliasTitleFetchResponse:
+      description: This response contains account title details fetched from Raast for an alias
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AccountInfo"
+          examples:
+            Alias Title Fetch:
+              value:
+                api_version: v1
+                data:
+                  iban: "PK62ABPA0010000222380218"
+                  type: "ALIAS_TYPE_UNSPECIFIED"
+                  currency: "PKR"
+                  servicer_member_id: "SAFEPAYZ"
+                  name: "Raast-Saphir-Merch"
+                  is_default: true
+                  dba: "The best business 101"
+                  mcc: "9032"
+                  account_title: ""
+                  account_type: ""
     AccountInfoResponse:
       description: This response contains Raast account information details
       headers:
@@ -3179,6 +3470,159 @@ components:
           examples:
             QRPayments:
               $ref: "#/components/examples/ListQRPayments"
+    ListAliasResponse:
+      description: This response contains a paginated list of aliases
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      alias:
+                        type: array
+                        description: List of aliases returned in the result set
+                        items:
+                          $ref: "#/components/schemas/Alias"
+                      count:
+                        type: string
+                        description: Total number of aliases matching the filters
+                        example: "4"
+          examples:
+            AliasList:
+              value:
+                api_version: v1
+                data:
+                  alias:
+                    - id: "5"
+                      token: als_3b5bbe1d-350e-4a33-9b0d-63386f87a328
+                      merchant_id: mer_553dad9b-3984-4131-8842-84983e922351
+                      alias_type: TILL_CODE
+                      alias_value: "541661038"
+                      status: Active
+                      start_date: "2026-01-06"
+                      expiration_date: "2036-01-06"
+                      opening_date: "2026-01-06"
+                      closing_date: "2036-01-06"
+                      created_at: "2026-01-06T09:27:14Z"
+                      updated_at: "2026-01-06T09:27:14Z"
+                      alias_record_id: "464449"
+                  count: "4"
+    FindAliasResponse:
+      description: This response contains details of an alias
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Alias"
+          examples:
+            AliasFound:
+              value:
+                api_version: v1
+                data:
+                  id: "2"
+                  token: als_962c42c4-06a1-482f-a227-970453f29eb9
+                  merchant_id: mer_63b32978-8af7-41b8-88fc-d027be766f77
+                  aggregator_merchant_id: am_01fa1fd6-d8aa-47c7-a4c3-a1ac0a76ae36
+                  alias_type: TILL_CODE
+                  alias_value: "542185757"
+                  status: Active
+                  start_date: "2025-08-20"
+                  expiration_date: "2035-08-20"
+                  opening_date: "2025-08-20"
+                  closing_date: "2035-08-20"
+                  created_at: "2025-08-20T09:47:27Z"
+                  updated_at: "2025-08-25T11:46:52Z"
+                  alias_record_id: "448589"
+    FindAggregatorLedgerAccountResponse:
+      description: This response contains details of an external aggregator ledger account
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/LedgerAccount"
+          examples:
+            LedgerAccountFound:
+              value:
+                api_version: v1
+                data:
+                  id: "3"
+                  token: acct_a4a2ecaa-5d14-4330-970b-89c0d5c30934
+                  account_type: ACCT_AGGREGATOR
+                  account_name: DLocal
+                  normal_balance: SIDE_CREDIT
+                  balance: "0"
+                  currency: PKR
+                  running_balance: "0"
+                  vault_token: lock_81f9c5db-3e7b-47f1-80b6-a1de8a762de8
+                  bank_acct_id: acc_ff3555cc-149a-4883-9945-401170d0480d
+                  external_partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+                  external_aggregator_id: agg_10951914-7e84-40e9-9693-19a22c8ede89
+                  external_merchant_id: ""
+                  created_at: "2025-10-26T21:39:39Z"
+                  updated_at: "2025-12-16T18:39:17Z"
+    FindMerchantLedgerAccountResponse:
+      description: This response contains details of an external merchant ledger account
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/LedgerAccount"
+          examples:
+            MerchantLedgerAccountFound:
+              value:
+                api_version: v1
+                data:
+                  id: "47"
+                  token: acct_9f23cbf6-8645-4599-b677-85f83175c3f2
+                  account_type: ACCT_MERCHANT
+                  account_name: "Ali Aggre-Merch"
+                  normal_balance: SIDE_CREDIT
+                  balance: "1060"
+                  currency: PKR
+                  running_balance: "0"
+                  vault_token: lock_25d98436-1eea-4d0b-a9df-8f124631b25a
+                  bank_acct_id: acc_831f36c0-97d2-4bd2-ae36-e36025f48ef4
+                  external_partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+                  external_aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  external_merchant_id: am_27211e51-3e1e-4462-b0a5-138e62d265e6
+                  created_at: "2026-01-06T09:28:11Z"
+                  updated_at: "2026-01-06T09:28:11Z"
   examples:
     FindQRStatic:
       description: Static QR code response example
@@ -3719,3 +4163,5 @@ tags:
   - name: Refunds
   - name: QRs
   - name: Utilities
+  - name: Aliases
+  - name: Ledgers
