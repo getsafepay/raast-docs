@@ -725,6 +725,99 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  # add webhook section
+  /v1/aggregators/{{raast-aggregator-id}}/webhooks:
+    post:
+      tags:
+        - Webhooks
+      summary: Create Webhook
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/CreateWebhookResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      requestBody:
+        $ref: "#/components/requestBodies/CreateWebhook"
+    get:
+      tags:
+        - Webhooks
+      summary: List Webhooks
+      description: Retrieve a paginated list of webhook endpoints.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/WebhookListLimitParam"
+        - $ref: "#/components/parameters/WebhookListOffsetParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/ListWebhookResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{{raast-aggregator-id}}/webhooks/{{webhook-id}}:
+    parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/WebhookIdParam"
+    put:
+      tags:
+        - Webhooks
+      summary: Update Webhook
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/UpdateWebhookResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      requestBody:
+        $ref: "#/components/requestBodies/UpdateWebhook" 
+    delete: 
+      tags:
+       - Webhooks
+      summary: Delete Webhook
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/EmptySuccess"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    get: 
+      tags:
+        - Webhooks
+      summary: Find Webhook
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/FindWebhookResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"     
+
+  /v1/aggregators/{{raast-aggregator-id}}/webhooks/{{webhook-id}}/rotate:
+    put:
+      tags:
+        - Webhooks
+      summary: Rotate Webhook
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/AggregatorIdParam"
+        - $ref: "#/components/parameters/WebhookIdParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/RotateWebhookResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+      requestBody:
+        $ref: "#/components/requestBodies/RotateWebhook"   
+
+# add webhook deliveries
+
 components:
   securitySchemes:
     apiKey:
@@ -1080,6 +1173,30 @@ components:
         type: string
         example: als_962c42c4-06a1-482f-a227-970453f29eb9
       description: The unique identifier for the alias
+    WebhookIdParam:
+      name: webhook-id
+      in: path
+      required: true
+      schema:
+        type: string
+        example: wh_be2d4ee4-96b0-4104-92b2-95237fd3aa16
+      description: The unique identifier for the webhook
+    WebhookListLimitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "10"
+      description: Maximum number of webhook endpoints to include in the response
+    WebhookListOffsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "0"
+      description: Number of webhook endpoints to skip before starting the result set
   schemas:
     Timestamp:
       type: string
@@ -1606,24 +1723,18 @@ components:
           type: string
         bank_acct_id:
           type: string
-          description: Identifier of the associated bank account
         external_partner_id:
           type: string
-          description: External partner identifier
         external_aggregator_id:
           type: string
-          description: External aggregator identifier
         external_merchant_id:
           type: string
-          description: External merchant identifier (may be empty)
         created_at:
           type: string
           format: date-time
-          description: Timestamp when the ledger account was created
         updated_at:
           type: string
           format: date-time
-          description: Timestamp when the ledger account was last updated
     Payment:
       type: object
       description: Payment record returned by Safepay aggregator APIs.
@@ -1969,6 +2080,35 @@ components:
           allOf:
             - $ref: "#/components/schemas/Timestamp"
           description: Timestamp when the QR code expires, when applicable.
+    Webhook:
+      type: object
+      properties:
+        token:
+          type: string
+        aggregator_id:
+          type: string
+        url:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+        event_filter_json:
+          type: string
+        secret:
+          type: string
+        secret_version:
+          type: integer 
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        secret_rotated_at:
+          type: string
+          format: date-time
+
   requestBodies:
     CreateAccessKey:
       description: Request to create a new access key
@@ -2339,6 +2479,74 @@ components:
                 request_id: "749fe6ce-91f9-4f6a-9df2-ec6ae9f75a30"
                 amount: 1200
                 expiry_in_minutes: 180
+    CreateWebhook:
+      description: Request to create a webhook endpoint
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Parameters for creating a webhook endpoint
+            properties:
+              url:
+                type: string
+                description: The URL where webhook events will be sent
+                example: https://github.com/HasCold
+              description:
+                type: string
+                description: Optional description for the webhook endpoint
+                example: this is testing url endpoint
+              event_types:
+                type: array
+                description: List of event types to subscribe to
+                items:
+                  type: string
+                example: ["payment.created"]
+              enabled:
+                type: boolean
+                description: Whether the webhook endpoint should be enabled immediately
+                example: true
+            required:
+              - url
+              - event_types
+          examples:
+            Create Webhook:
+              value:
+                url: https://github.com/HasCold
+                description: this is testing url endpoint
+                event_types: ["payment.created"]
+                enabled: true
+      UpdateWebhook:
+      description: Request to update a webhook endpoint
+      content:
+        application/json:
+          schema:
+            type: object
+            description: Parameters for the webhook modification
+            properties:
+              url:
+                type: string
+                description: The URL where webhook events will be sent
+                example: https://github.com/HasCold
+              description:
+                type: string
+                description: Optional description for the webhook endpoint
+                example: this is testing url endpoint
+              event_types:
+                type: array
+                description: List of event types to subscribe to
+                items:
+                  type: string
+                example: ["payment.created", "payment.refunded"]
+              enabled:
+                type: boolean
+                example: true
+          examples:
+            Update Webhook:
+              value:
+                url: https://github.com/HasCold
+                description: this is testing url endpoint
+                event_types: ["payment.created", "payment.refunded"]
+                enabled: true
   responses:
     StandardSuccess:
       description: Successful operation
@@ -3568,7 +3776,7 @@ components:
                   data:
                     $ref: "#/components/schemas/LedgerAccount"
           examples:
-            LedgerAccountFound:
+            AggregatorLedgerAccountFound:
               value:
                 api_version: v1
                 data:
@@ -3623,6 +3831,221 @@ components:
                   external_merchant_id: am_27211e51-3e1e-4462-b0a5-138e62d265e6
                   created_at: "2026-01-06T09:28:11Z"
                   updated_at: "2026-01-06T09:28:11Z"
+    CreateWebhookResponse:
+      description: This response contains details of a Webhook
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      endpoint:
+                        $ref: "#/components/schemas/Webhook"
+                      secret:
+                        type: string
+                        example: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
+                    required:
+                      - endpoint
+                      - secret
+          examples:
+            WebhookCreated:
+              value:
+                api_version: v1
+                data:
+                  endpoint:
+                    token: wh_f52d84b4-a140-4a3a-b707-80644232e926
+                    aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                    url: https://github.com/HasCold
+                    description: this is testing url endpoint
+                    enabled: true
+                    event_filter_json: '["payment.created"]'
+                    created_at: "2025-12-02T12:48:35.416597859Z"
+                    updated_at: "2025-12-02T12:48:35.416597859Z"
+                    secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
+                    secret_version: 1
+                    secret_rotated_at: "2025-12-02T12:48:35.416597859Z"
+                  secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
+    UpdateWebhookResponse:
+      description: This response contains details of a Webhook
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      endpoint:
+                        $ref: "#/components/schemas/Webhook"
+                    required:
+                      - endpoint
+          examples:
+            WebhookUpdated:
+              value:
+                api_version: v1
+                data:
+                  endpoint:
+                    token: wh_f52d84b4-a140-4a3a-b707-80644232e926
+                    aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                    url: https://github.com/HasCold
+                    description: this is the testing url
+                    enabled: true
+                    event_filter_json: '["payment.created","payment.authorized"]'
+                    created_at: "2025-12-02T12:48:35Z"
+                    updated_at: "2025-12-02T12:53:10.338063178Z"
+                    secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
+                    secret_version: 1
+                    secret_rotated_at: "2025-12-02T12:48:35Z"
+    RotateWebhookResponse:
+      description: This response contains details of a Webhook
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      endpoint:
+                        $ref: "#/components/schemas/Webhook"
+                      secret:
+                        type: string
+                        description: The rotated webhook secret
+                      rotated_at:
+                        type: string
+                        format: date-time
+                        description: Timestamp when the secret was rotated
+                    required:
+                      - endpoint
+                      - secret
+                      - rotated_at
+          examples:
+            WebhookRotated:
+              value:
+                api_version: v1
+                data:
+                  endpoint:
+                    token: wh_f52d84b4-a140-4a3a-b707-80644232e926
+                    aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                    url: https://github.com/HasCold
+                    description: this is the testing url
+                    enabled: true
+                    event_filter_json: '["payment.created","payment.authorized"]'
+                    created_at: "2025-12-02T12:48:35Z"
+                    updated_at: "2025-12-03T08:45:13.869665886Z"
+                    secret: "s3UvEYcNaKdLD0pOCEOjy0e6XMszyuj/DIFEJRwIkHA="
+                    secret_version: 3
+                    secret_rotated_at: "2025-12-03T08:45:13.867701713Z"
+                  secret: "s3UvEYcNaKdLD0pOCEOjy0e6XMszyuj/DIFEJRwIkHA="
+                  rotated_at: "2025-12-03T08:45:13.867701713Z"
+    FindWebhookResponse: 
+      description: This response contains details of a Webhook
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      endpoint:
+                        $ref: "#/components/schemas/Webhook"
+                    required:
+                      - endpoint
+          examples:
+            WebhookFound:
+              value:
+                api_version: v1
+                data:
+                  endpoint:
+                    token: wh_f52d84b4-a140-4a3a-b707-80644232e926
+                    aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                    url: https://github.com/HasCold
+                    description: this is the testing url
+                    enabled: true
+                    event_filter_json: '["payment.created","payment.authorized"]'
+                    created_at: "2025-12-02T12:48:35Z"
+                    updated_at: "2025-12-02T12:53:10.338063178Z"
+                    secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
+                    secret_version: 1
+                    secret_rotated_at: "2025-12-02T12:48:35Z"
+    ListWebhookResponse:
+      description: This response contains a paginated list of webhook endpoints
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    description: Paginated collection of webhook endpoints
+                    properties:
+                      endpoints:
+                        type: array
+                        description: List of webhook endpoints returned in the result set
+                        items:
+                          $ref: "#/components/schemas/Webhook"
+                      count:
+                        type: string
+                        example: "1"
+                    required:
+                      - endpoints
+                      - count
+          examples:
+            WebhookList:
+              value:
+                api_version: v1
+                data:
+                  endpoints:
+                    - token: wh_f52d84b4-a140-4a3a-b707-80644232e926
+                      aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                      url: https://github.com/HasCold
+                      description: this is the testing url
+                      enabled: true
+                      event_filter_json: '["payment.created","payment.authorized"]'
+                      created_at: "2025-12-02T12:48:35Z"
+                      updated_at: "2025-12-02T12:53:10Z"
+                      secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
+                      secret_version: 1
+                      secret_rotated_at: "2025-12-02T12:48:35Z"
+                  count: "1"
   examples:
     FindQRStatic:
       description: Static QR code response example
@@ -4165,3 +4588,4 @@ tags:
   - name: Utilities
   - name: Aliases
   - name: Ledgers
+  - name: Webhooks
