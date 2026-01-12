@@ -974,7 +974,6 @@ paths:
           $ref: "#/components/responses/ListWebhookDeliveryResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
-
 components:
   securitySchemes:
     apiKey:
