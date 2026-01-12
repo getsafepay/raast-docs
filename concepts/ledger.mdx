@@ -1,0 +1,34 @@
+---
+title: 'Ledger accounts'
+description: 'Safepay-managed ledger accounts that track balances for Raast aggregators and merchants.'
+sidebar:
+  order: 4
+---
+
+Safepay operates a double-entry ledger for Raast activity. Each aggregator and merchant is mapped to one or more ledger accounts that hold their operational balance, settlement deltas, and fee/tax accruals. These accounts are owned and maintained by Safepay, but you reference them when reading balances or triggering payouts.
+
+Ledger accounts are not bank accounts themselves—they are a real-time representation of what Safepay owes or is owed, backed by settlement runs to your bank account.
+
+| Field | Description |
+| --- | --- |
+| `id` | Internal numeric identifier for the ledger account. |
+| `token` | Public, unique ledger account token you reference in APIs. |
+| `account_type` | Type of account (`ACCT_SYSTEM`, `ACCT_MDR_FEE`, `ACCT_MERCHANT`, `ACCT_AGGREGATOR`, tax accounts). |
+| `account_name` | Human-readable label for the account (for example, `Acme Raast settlement`). |
+| `normal_balance` | Natural balance side for the account (`SIDE_DEBIT` or `SIDE_CREDIT`), used for applying entries. |
+| `currency` | ISO 4217 currency code (for example, `PKR`). |
+| `balance` | Current settled balance in minor units (for example, paisa). |
+| `running_balance` | Balance including pending/soon-to-settle activity, if applicable. |
+| `external_partner_id` | Reference to the upstream partner in Raast Wire. |
+| `external_aggregator_id` | Your aggregator identifier, used to link the account to your integration. |
+| `external_merchant_id` | Aggregator merchant identifier when the account is merchant-scoped. |
+| `vault_token` | Token referencing the encrypted bank account that receives payouts. |
+| `bank_acct_id` | Identifier of the bank account in Raast Wire. |
+| `created_at` | Timestamp when the ledger account was created. |
+| `updated_at` | Timestamp of the latest ledger update. |
+
+### Mapping workflow
+
+1. Query **List ledger accounts** (for example, `List ledger accounts` in the API reference) to see existing accounts for your aggregator and merchants.
+2. Store the returned `token` in your system; this is the stable reference you use when reading balances or troubleshooting settlements.
+3. Use **Read aggregator ledger account** or **Read aggregator merchant ledger accounts** when you need to reconcile your internal balances with Safepay’s ledger.
