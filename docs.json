@@ -53,7 +53,8 @@
               "concepts/payment",
               "concepts/qr_code",
               "concepts/refunds",
-              "concepts/webhooks"
+              "concepts/webhooks",
+              "concepts/ledger"
             ]
           }
         ]

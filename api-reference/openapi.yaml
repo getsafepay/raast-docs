@@ -351,6 +351,48 @@ paths:
               - RTP_LATER
               - STATIC_QR
               - DYNAMIC_QR
+        - name: payment_id
+          in: query
+          required: false
+          description: Filter by the payment identifier.
+          example: pm_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+          schema:
+            type: string
+        - name: qr_code_id
+          in: query
+          required: false
+          description: Filter by the QR code identifier associated with the payment.
+          example: qr_503d916b-9ad5-44aa-8d41-1ad656882f7f
+          schema:
+            type: string
+        - name: end_to_end_id
+          in: query
+          required: false
+          description: Filter by the end-to-end identifier recorded for the payment.
+          example: E2E-09771234
+          schema:
+            type: string
+        - name: instr_id
+          in: query
+          required: false
+          description: Filter by the instruction identifier from the Raast message payload.
+          example: INSTR-88921
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          required: false
+          description: Filter payments created on or after this date (UNIX timestamp).
+          example: 1735689600
+          schema:
+            type: integer
+        - name: end_date
+          in: query
+          required: false
+          description: Filter payments created on or before this date (UNIX timestamp).
+          example: 1767225600
+          schema:
+            type: integer
       responses:
         "200":
           $ref: "#/components/responses/ListPaymentsResponse"
@@ -425,12 +467,93 @@ paths:
           example: 0
           schema:
             type: string
-        - name: payment_ids
+        - name: payment_id
           in: query
           required: false
-          example: pm_2288490a
+          description: Filter refunds by one or more payment identifiers.
+          example:
+            - pm_2288490a
           schema:
-            type: string
+            type: array
+            items:
+              type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter refunds by one or more statuses.
+          example:
+            - R_COMPLETED
+            - R_FAILED
+            - R_INITIATED
+            - R_CANCELED
+          schema:
+            type: array
+            items:
+              type: string
+        - name: trace_reference
+          in: query
+          required: false
+          description: Filter refunds by one or more trace references.
+          example:
+            - 90c4831d-e6d7-491e-a5f9-5f92c7cd1073
+          schema:
+            type: array
+            items:
+              type: string
+        - name: msg_id
+          in: query
+          required: false
+          description: Filter refunds by one or more Raast message identifiers.
+          example:
+            - H1KMBBKXMARBF3EEP5HATG27BHIAZ3GIH2J
+          schema:
+            type: array
+            items:
+              type: string
+        - name: return_id
+          in: query
+          required: false
+          description: Filter refunds by one or more return identifiers.
+          example:
+            - rtn_12345
+          schema:
+            type: array
+            items:
+              type: string
+        - name: request_id
+          in: query
+          required: false
+          description: Filter refunds by one or more client request identifiers.
+          example:
+            - 6a049190-3595-47cb-8603-7e310c3adb15
+          schema:
+            type: array
+            items:
+              type: string
+        - name: refund_id
+          in: query
+          required: false
+          description: Filter refunds by one or more refund identifiers.
+          example:
+            - rfd_7e26f9be-f59d-4025-8e17-9fc398d16230
+          schema:
+            type: array
+            items:
+              type: string
+        - name: start_date
+          in: query
+          required: false
+          description: Filter refunds created on or after this UNIX timestamp.
+          example: 1735689600
+          schema:
+            type: integer
+        - name: end_date
+          in: query
+          required: false
+          description: Filter refunds created on or before this UNIX timestamp.
+          example: 1767225600
+          schema:
+            type: integer
         - name: direction
           in: query
           required: false
@@ -586,18 +709,17 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  # add alias section
-  /v1/aggregators/{{raast-aggregator-id}}/aliases:
+  /v1/aggregators/{raast-aggregator-id}/aliases:
     parameters:
       - $ref: "#/components/parameters/AggregatorIdParam"
     get:
-        tags:
+      tags:
         - Aliases
-        summary: List aliases
-        description: Retrieve a paginated list of aliases created. It supports pagination, filtering by `alias_type`, `status`, `merchant_identifier`, `start_date` and `expiration_date`.
-        security:
+      summary: List aliases
+      description: Retrieve a paginated list of aliases created. It supports pagination, filtering by `alias_type`, `status`, `merchant_identifier`, `start_date` and `expiration_date`.
+      security:
         - apiKey: []
-        parameters:
+      parameters:
         - name: limit
           in: query
           required: false
@@ -648,7 +770,7 @@ paths:
           schema: 
             type: string
             format: date
-        responses:
+      responses:
         "200":
           $ref: "#/components/responses/ListAliasResponse"
         "401":
@@ -691,8 +813,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  # add ledger section
-  /v1/aggregators/{{raast-aggregator-id}}/ledger/accounts:
+  /v1/aggregators/{raast-aggregator-id}/ledger/accounts:
     parameters:
       - $ref: "#/components/parameters/AggregatorIdParam"
     get:
@@ -708,7 +829,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{{raast-aggregator-id}}/merchants/{aggregator-merchant-id}/ledger/accounts:
+  /v1/aggregators/{raast-aggregator-id}/merchants/{aggregator-merchant-id}/ledger/accounts:
     parameters:
       - $ref: "#/components/parameters/AggregatorIdParam"
       - $ref: "#/components/parameters/MerchantIdParam"
@@ -725,8 +846,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  # add webhook section
-  /v1/aggregators/{{raast-aggregator-id}}/webhooks:
+  /v1/aggregators/{raast-aggregator-id}/webhooks:
     post:
       tags:
         - Webhooks
@@ -758,10 +878,10 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
-  /v1/aggregators/{{raast-aggregator-id}}/webhooks/{{webhook-id}}:
+  /v1/aggregators/{raast-aggregator-id}/webhooks/{webhook-id}:
     parameters:
-        - $ref: "#/components/parameters/AggregatorIdParam"
-        - $ref: "#/components/parameters/WebhookIdParam"
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/WebhookIdParam"
     put:
       tags:
         - Webhooks
@@ -777,7 +897,7 @@ paths:
         $ref: "#/components/requestBodies/UpdateWebhook" 
     delete: 
       tags:
-       - Webhooks
+        - Webhooks
       summary: Delete Webhook
       security:
         - apiKey: []
@@ -798,7 +918,7 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"     
 
-  /v1/aggregators/{{raast-aggregator-id}}/webhooks/{{webhook-id}}/rotate:
+  /v1/aggregators/{raast-aggregator-id}/webhooks/{webhook-id}/rotate:
     put:
       tags:
         - Webhooks
@@ -813,10 +933,47 @@ paths:
           $ref: "#/components/responses/RotateWebhookResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
-      requestBody:
-        $ref: "#/components/requestBodies/RotateWebhook"   
 
-# add webhook deliveries
+  /v1/aggregators/{raast-aggregator-id}/webhooks/{endpoint}/deliveries/{delivery}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/WebhookEndpointParam"
+      - $ref: "#/components/parameters/WebhookDeliveryParam"
+    get:
+      tags:
+        - Webhooks
+      summary: Find Webhook Delivery
+      description: Retrieve a specific webhook delivery status and payload.
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/FindWebhookDeliveryResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /v1/aggregators/{raast-aggregator-id}/webhooks/{endpoint}/deliveries:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/WebhookEndpointParam"
+    get:
+      tags:
+        - Webhooks
+      summary: List Webhook Delivery
+      description: Retrieve a paginated list of webhook deliveries. It supports pagination, filtering by `status`, `type` and `event_id`.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/WebhookDeliveryListTypeParam"
+        - $ref: "#/components/parameters/WebhookDeliveryListEventIdParam"
+        - $ref: "#/components/parameters/WebhookDeliveryListStatusParam"
+        - $ref: "#/components/parameters/WebhookDeliveryListLimitParam"
+        - $ref: "#/components/parameters/WebhookDeliveryListOffsetParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/ListWebhookDeliveryResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
 
 components:
   securitySchemes:
@@ -1181,6 +1338,22 @@ components:
         type: string
         example: wh_be2d4ee4-96b0-4104-92b2-95237fd3aa16
       description: The unique identifier for the webhook
+    WebhookEndpointParam:
+      name: endpoint
+      in: path
+      required: true
+      schema:
+        type: string
+        example: wh_6b849c6f-c091-4ad3-b7a9-de06415c6db3
+      description: The unique identifier for the webhook endpoint
+    WebhookDeliveryParam:
+      name: delivery
+      in: path
+      required: true
+      schema:
+        type: string
+        example: whd_f35737a8-60d0-4d62-8259-9cade007570a
+      description: The unique identifier for the webhook delivery
     WebhookListLimitParam:
       name: limit
       in: query
@@ -1197,6 +1370,74 @@ components:
         type: string
         example: "0"
       description: Number of webhook endpoints to skip before starting the result set
+    WebhookDeliveryListLimitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "10"
+      description: Maximum number of Webhook deliveries to include in the response
+    WebhookDeliveryListOffsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: string
+        example: "0"
+      description: Number of Webhook deliveries to skip before starting the result set
+    WebhookDeliveryListStatusParam:
+      name: status
+      in: query
+      required: false
+      description: Filter Webhook deliveries by their status.
+      schema:
+        type: string
+        enum:
+          - WD_PENDING
+          - WD_DELIVERED
+          - WD_FAILED
+          - WD_DEAD
+        example: WD_DELIVERED
+      example: WD_DELIVERED
+    WebhookDeliveryListEventIdParam: 
+      name: event_id
+      in: query
+      required: false
+      description: Filter Webhook deliveries by event_id.
+      schema:
+        type: string
+        example: txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291
+    WebhookDeliveryListTypeParam:
+      name: type
+      in: query
+      required: false
+      schema:
+        type: string
+        enum:
+          - payment.created
+          - payment.pending_authorization
+          - payment.authorized
+          - payment.completed
+          - payment.settled
+          - payment.refunded
+          - payment.refund_partial
+          - payment.rejected
+          - payment.failed
+          - payment.reversed
+          - payment.voided
+          - settlement.created
+          - settlement.processing
+          - settlement.completed
+          - settlement.failed
+          - settlement.on_hold
+          - settlement.reversed
+          - refund.created
+          - refund.completed
+          - refund.failed
+          - refund.canceled
+        example: refund.created
+      description: Limit results to Webhook deliveries of the given type
   schemas:
     Timestamp:
       type: string
@@ -1336,10 +1577,17 @@ components:
           type: boolean
           description: Indicates whether the aggregator is currently active
           example: true
+        is_super:
+          type: boolean
+          description: Indicates whether the aggregator has super admin privileges
+          example: true
         vault_enabled:
           type: boolean
           description: Specifies if Safepay vault features are enabled for the aggregator
           example: true
+        bank_account:
+          description: Bank account resource associated with the aggregator when available
+          $ref: "#/components/schemas/BankAccount"
         keys:
           type: array
           description: Collection of access keys associated with the aggregator
@@ -2108,6 +2356,44 @@ components:
         secret_rotated_at:
           type: string
           format: date-time
+    WebhookDelivery:
+      type: object
+      description: Delivery attempt metadata for a webhook event.
+      properties:
+        token:
+          type: string
+          description: Public token representing the webhook delivery.
+        endpoint_token:
+          type: string
+          description: Identifier of the webhook endpoint this delivery was sent to.
+        aggregator_id:
+          type: string
+          description: Aggregator that owns the webhook endpoint.
+        event_id:
+          type: string
+          description: Event identifier associated with this delivery.
+        type:
+          type: string
+          description: Event type delivered.
+        payload_json:
+          type: string
+          description: Raw JSON payload delivered to the endpoint.
+        status:
+          type: string
+          description: Current status of the delivery attempt.
+        attempts:
+          type: integer
+          description: Number of attempts made to deliver the payload.
+        last_error:
+          type: string
+          description: Last error message if delivery failed.
+        next_attempt_at:
+          $ref: "#/components/schemas/Timestamp"
+          description: Timestamp for the next scheduled retry, if applicable.
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        delivered_at:
+          $ref: "#/components/schemas/Timestamp"
 
   requestBodies:
     CreateAccessKey:
@@ -2415,8 +2701,6 @@ components:
                 type: string
                 enum:
                   - TechnicalProblem
-                  - CustomerRequest
-                  - FraudDetected
                   - DuplicatePayment
               addtl_info:
                 type: string
@@ -2500,7 +2784,7 @@ components:
                 description: List of event types to subscribe to
                 items:
                   type: string
-                example: ["payment.created"]
+                example: ["payment.created", "payment.completed", "refund.completed", "refund.created", "settlement.processing", "settlement.completed"]
               enabled:
                 type: boolean
                 description: Whether the webhook endpoint should be enabled immediately
@@ -2515,7 +2799,7 @@ components:
                 description: this is testing url endpoint
                 event_types: ["payment.created"]
                 enabled: true
-      UpdateWebhook:
+    UpdateWebhook:
       description: Request to update a webhook endpoint
       content:
         application/json:
@@ -2707,24 +2991,51 @@ components:
               value:
                 api_version: v1
                 data:
-                  token: agg_tok_2b42c4d0
-                  partner_id: partner_123456
-                  bank_account_id: ba_2cab1524-805d-4a09-8e51-924ddf3f43ea
-                  name: Example Aggregator
+                  id: "2"
+                  token: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  partner_id: partner_ed4f0480-36c8-4a5a-8cd4-381bc4d83f2c
+                  bank_account_id: acc_c03a57cb-a616-42a7-b1dc-de473217a558
+                  name: DLocal
                   is_active: true
+                  is_super: true
                   vault_enabled: true
+                  bank_account:
+                    id: "11"
+                    token: acc_c03a57cb-a616-42a7-b1dc-de473217a558
+                    vault_token: lock_464309f2-572f-493f-8272-e503277b06fd
+                    title: JFIZG
+                    iban: PK85HABB0002157901170103
+                    redacted_iban: PK85HABB************0103
+                    hashed_iban: MioWSkE1a8HST07eqMVnfz/zZIzPFqhKGMIjDTOjPWc=
+                    servicer: HABBPKKARTG
+                    bank: ""
+                    depositor_id: dep_31b1166f-de14-4e66-ba4a-2a321ca55a77
+                    owner: raast
+                    kind: 5
+                    version: v1
+                    created_at: "2025-03-13T09:12:35Z"
+                    updated_at: "2025-12-04T13:22:23Z"
                   keys:
-                    - id: ak_da8f1c10-346a-4be8-895a-b6187a9a9662
-                      token: ak_tok_fede37a6
-                      key_id: key_live_e111f1c10
+                    - id: "2"
+                      token: ak_fa66e6f5-cd88-4d8a-8fe7-0eb1898d20a3
+                      key_id: key_452442dc-d6b3-4cbb-bcc6-8781ef2d3498
                       aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
                       is_active: true
-                      name: Primary Production Key
-                      secret: sk_live_uMPN7cX2b1
-                      created_at: 2025-05-19T11:19:12Z
-                      updated_at: 2025-06-25T06:17:59Z
-                  created_at: 2025-04-01T08:00:00Z
-                  updated_at: 2025-04-15T09:30:00Z
+                      name: Staging key
+                      secret: 18108aad30da06075e6f02fab3166926827538363842185faf6e3e694ea5d481
+                      created_at: "2025-03-13T09:12:51Z"
+                      updated_at: "2025-03-13T09:12:51Z"
+                    - id: "4"
+                      token: ak_da8f1c10-346a-4be8-895a-b6187a9a9662
+                      key_id: key_28d69595-4ae4-4645-b9d8-300fa5211845
+                      aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                      is_active: true
+                      name: prod key
+                      secret: 23052bb4602992643b8cd3aaee10a1054a5b071a2ecd3bf2e39ba5072ad3f4cd
+                      created_at: "2025-05-23T10:02:26Z"
+                      updated_at: "2025-08-05T12:51:05Z"
+                  created_at: "2025-03-13T09:12:34Z"
+                  updated_at: "2025-12-04T15:39:33Z"
     ListAccessKeysResponse:
       description: This response contains a paginated list of access keys linked to an aggregator
       headers:
@@ -3961,6 +4272,41 @@ components:
                     secret_rotated_at: "2025-12-03T08:45:13.867701713Z"
                   secret: "s3UvEYcNaKdLD0pOCEOjy0e6XMszyuj/DIFEJRwIkHA="
                   rotated_at: "2025-12-03T08:45:13.867701713Z"
+    FindWebhookDeliveryResponse:
+      description: This response contains details of a webhook delivery
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/WebhookDelivery"
+                required:
+                  - data
+          examples:
+            WebhookDeliveryFound:
+              value:
+                api_version: v1
+                data:
+                  token: wh_7f3c2d10
+                  endpoint_token: wh_ep_02c9b78d
+                  aggregator_id: agg_b12f8c30
+                  event_id: evt_8aa12f
+                  type: payment.succeeded
+                  payload_json: '{"id":"evt_8aa12f","object":"event"}'
+                  status: WD_DELIVERED
+                  attempts: 2
+                  last_error: ""
+                  next_attempt_at: "2025-12-15T09:05:00Z"
+                  created_at: "2025-12-15T09:00:00Z"
+                  delivered_at: "2025-12-15T09:00:04Z"
     FindWebhookResponse: 
       description: This response contains details of a Webhook
       headers:
@@ -4046,6 +4392,75 @@ components:
                       secret_version: 1
                       secret_rotated_at: "2025-12-02T12:48:35Z"
                   count: "1"
+    ListWebhookDeliveryResponse:
+      description: This response contains a paginated list of webhook deliveries.
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    description: Paginated collection of webhook deliveries
+                    properties:
+                      deliveries:
+                        type: array
+                        description: List of webhook deliveries returned in the result set
+                        items:
+                          $ref: "#/components/schemas/WebhookDelivery"
+                      count:
+                        type: string
+                        example: "1"
+                    required:
+                      - deliveries
+                      - count
+          examples:
+            WebhookDeliveryList:
+              value:
+                api_version: v1
+                data:
+                  deliveries:
+                    - token: whd_f35737a8-60d0-4d62-8259-9cade007570a
+                      endpoint_token: wh_6b849c6f-c091-4ad3-b7a9-de06415c6db3
+                      aggregator_id: agg_7f500b19-a5e4-4410-b334-5653367ebdf6
+                      event_id: txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291
+                      type: payment.rejected
+                      status: WD_DEAD
+                      attempts: 0
+                      last_error: "status 422"
+                      next_attempt_at: "2025-12-17T14:30:03Z"
+                      created_at: "2025-12-17T14:30:02Z"
+                      delivered_at: null
+                    - token: whd_3c67553a-54ff-4bf7-a2a4-a3db233fd4d8
+                      endpoint_token: wh_6b849c6f-c091-4ad3-b7a9-de06415c6db3
+                      aggregator_id: agg_7f500b19-a5e4-4410-b334-5653367ebdf6
+                      event_id: txnlog_1a574d66-9bdf-48ae-a858-802951c46705
+                      type: payment.completed
+                      status: WD_DEAD
+                      attempts: 0
+                      last_error: "status 422"
+                      next_attempt_at: "2025-12-17T12:00:48Z"
+                      created_at: "2025-12-17T12:00:47Z"
+                      delivered_at: null
+                    - token: whd_5521cdb9-fe09-4fa4-a63b-0c3637af7810
+                      endpoint_token: wh_6b849c6f-c091-4ad3-b7a9-de06415c6db3
+                      aggregator_id: agg_7f500b19-a5e4-4410-b334-5653367ebdf6
+                      event_id: txnlog_9b62b0e1-4493-45cd-a55d-11c37d60e6d2
+                      type: payment.created
+                      status: WD_DEAD
+                      attempts: 0
+                      last_error: "status 422"
+                      next_attempt_at: "2025-12-17T12:00:48Z"
+                      created_at: "2025-12-17T12:00:46Z"
+                      delivered_at: null
+                  count: "10"
   examples:
     FindQRStatic:
       description: Static QR code response example
