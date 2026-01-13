@@ -5,6 +5,8 @@ sidebar:
   order: 5
 ---
 
+import { Callout, CodeGroup } from '~/ui/components/Snippet'
+
 Reduce payment failures by validating customer bank details before submitting RTP or payout requests. Safepay exposes two utility endpoints under your aggregator:
 
 | Endpoint | Purpose | Key request parameters |
@@ -13,6 +15,7 @@ Reduce payment failures by validating customer bank details before submitting RT
 | [GET /account-info](/api-reference/utilities/read-account-info) | Retrieves metadata for an IBAN or alias, optionally combining title fetch. | `iban` or `alias_*` params; `with_title_fetch` flag |
 
 <Callout type="tip">Call these endpoints before RTP or payout operations to ensure the payer or beneficiary details are valid. Cache responses briefly to avoid extra latency.</Callout>
+<Callout type="info">`GET /account-info` accepts optional JSON body parameters (`iban`, `with_title_fetch`). Use query parameters if your HTTP client does not support GET bodies.</Callout>
 
 ### Title fetch example
 
@@ -49,7 +52,7 @@ const titlePayload: {
 
 ### Account info + alias lookup
 
-Use the `account-info` endpoint when you only have the customer’s Raast alias.
+Use the `account-info` endpoint when you only have the customer's Raast alias.
 
 <CodeGroup>
 
@@ -82,3 +85,20 @@ const accountInfo: {
 ```
 
 </CodeGroup>
+
+### Title fetch via alias
+
+Use `GET /title-fetch/alias` when you have a Raast alias and need the account title quickly.
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/title-fetch/alias?alias_type=RAAST_ID&alias_value={{customer_alias}}&with_title_fetch=true" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+## See also
+
+- [Payments](/concepts/payment)
+- [Payouts use case](/use-cases/payouts)
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Errors](/reference/errors)
+- [API reference](/api-reference)

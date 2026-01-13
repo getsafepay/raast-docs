@@ -5,19 +5,21 @@ sidebar:
   order: 4
 ---
 
+import { Steps, Callout, CodeGroup } from '~/ui/components/Snippet'
+
 Safepay issues an aggregator secret key (`{{secret_key}}`) after approving your account. All API requests must include it in the `X-SFPY-AGGREGATOR-SECRET-KEY` header.
 
-### Key format
+## Key format
 
 ```
 sk_live_c66a5b38-0ce1-4f83-8d72-57b8f91a8762
 ```
 
-### Best practices
+## Best practices
 
 <Steps>
   <Step title="Store in a secret manager">
-    Use AWS Secrets Manager, HashiCorp Vault, or your platform’s equivalent. Restrict read permissions to the services that call Safepay.
+    Use AWS Secrets Manager, HashiCorp Vault, or your platform's equivalent. Restrict read permissions to the services that call Safepay.
   </Step>
   <Step title="Rotate regularly">
     Rotate keys every 90 days or sooner when staff changes. You can create overlapping keys to achieve zero-downtime rotation.
@@ -27,9 +29,9 @@ sk_live_c66a5b38-0ce1-4f83-8d72-57b8f91a8762
   </Step>
 </Steps>
 
-### Create or rotate keys via API
+## Create or rotate keys via API
 
-Use the Access Keys API to automate issuance.
+Use the Access Keys API to automate issuance. Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.
 
 <CodeGroup>
 
@@ -44,6 +46,10 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/keys" \
 ```
 
 ```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = process.env.SAFEPAY_SECRET_KEY ?? '';
+
 type CreateAccessKeyPayload = {
   api_version: string;
   data: {
@@ -55,12 +61,12 @@ type CreateAccessKeyPayload = {
 };
 
 const res = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/keys`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/keys`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       name: 'payouts-service',
@@ -80,10 +86,58 @@ const secretKey = payload.data.secret;
 
 </CodeGroup>
 
+## Rotate an access key
+
+Use rotation to issue a new secret without changing the access key token.
+
+<CodeGroup>
+
+```bash cURL
+curl --request PUT "{{base_url}}/v1/aggregators/{{aggregator_id}}/keys/{{access_key_id}}/rotate" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const accessKeyId = '{{access_key_id}}';
+const secretKey = process.env.SAFEPAY_SECRET_KEY ?? '';
+
+const res = await fetch(
+  `${baseUrl}/v1/aggregators/${aggregatorId}/keys/${accessKeyId}/rotate`,
+  {
+    method: 'PUT',
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+    },
+  },
+);
+
+if (!res.ok) {
+  throw new Error(`Key rotation failed: ${res.status}`);
+}
+```
+
+</CodeGroup>
+
+## List, update, and revoke keys
+
+- Use [List access keys](/api-reference#get-/v1/aggregators/-raast-aggregator-id-/keys) to audit active credentials.
+- Use [Update access key](/api-reference#put-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-) to deactivate or rename keys.
+- Use [Delete access key](/api-reference#delete-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-) to revoke compromised credentials.
+
 <Callout type="warning">Always revoke compromised keys immediately using [Delete access key](/api-reference#delete-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-) and issue replacements.</Callout>
 
-### Header usage reminder
+## Header usage reminder
 
 ```
 X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}
 ```
+
+## See also
+
+- [Quickstart](/overview/quickstart)
+- [Aggregator](/concepts/aggregator)
+- [Errors](/reference/errors)
+- [Rate limits](/reference/rate-limits)
+- [Access Keys API](/api-reference#access-keys)

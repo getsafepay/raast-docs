@@ -5,32 +5,116 @@ sidebar:
   order: 6
 ---
 
+import { Steps, Callout } from '~/ui/components/Snippet'
+
 Raast is asynchronous: customers approve or reject requests inside their banking apps, and Safepay pushes the resulting status to your backend via webhooks. Subscribe to these notifications to drive real-time UI updates and back-office automations.
 
-<Callout type="warning">Webhook delivery details (endpoint format, signature headers, retry policy) are pending product documentation. Email [support@getsafepay.com](mailto:support@getsafepay.com) for the latest contract.</Callout>
-
-### Event flow
+## Webhook flow
 
 <Steps>
-  <Step title="Create a payment or payout">
-    Trigger RTP, QR, or payout requests using the APIs in this guide.
+  <Step title="Create a webhook endpoint">
+    Use `POST /v1/aggregators/{{aggregator_id}}/webhooks` with the event types you want.
   </Step>
-  <Step title="Safepay notifies your webhook endpoint">
-    When the Raast network confirms the customer decision, Safepay sends an event containing the updated status and relevant metadata.
+  <Step title="Receive the event">
+    Safepay sends events with identifying headers, the event timestamp, and a signed payload.
   </Step>
-  <Step title="Acknowledge promptly">
-    Respond with `200 OK` to stop retries. Store the payload for audit trails.
-  </Step>
-  <Step title="Update downstream systems">
-    Mark orders paid, release goods, or retry failed payouts based on the status received.
+  <Step title="Verify and acknowledge">
+    Verify the signature, persist the payload, and respond with `200 OK`.
   </Step>
 </Steps>
 
-### Recommended practices
+## Headers
 
-- Host webhook receivers on a dedicated path (for example, `/webhooks/safepay`) and require HTTPS.
-- Validate the payload signature once Safepay publishes the signing algorithm. Until then, pin allowed source IPs.
-- Treat webhook payloads as the source of truth for final payment states—even if polling endpoints for redundancy.
-- Log every attempt with timestamp, event type, and idempotency key for reconciliation.
+Safepay includes headers for event ID, event type, aggregator ID, signature, and timestamp. Always read:
 
-<Callout type="info">Need specific payload samples? Email [support@getsafepay.com](mailto:support@getsafepay.com) with your aggregator ID and integration timeline to receive the latest schema.</Callout>
+- `X-SFPY-SIGNATURE`
+- `X-SFPY-TIMESTAMP`
+
+Use the event ID header for idempotency and safe retries.
+
+## Signature verification
+
+Safepay signs the raw `payload` body with HMAC SHA-256 using `timestamp + '.' + payload`. Use the webhook secret you receive when creating the webhook.
+
+```go
+func Verify(secret, body []byte, providedSig, providedTS string, tolerance time.Duration) error {
+	if tolerance > 0 {
+		parsed, err := time.Parse(time.RFC3339Nano, providedTS)
+		if err != nil {
+			return err
+		}
+		if delta := time.Since(parsed); delta > tolerance || delta < -tolerance {
+			return errTimestampDrift
+		}
+	}
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte(providedTS))
+	mac.Write([]byte{'.'})
+	mac.Write(body)
+	expected := fmt.Sprintf(headerFormat, hex.EncodeToString(mac.Sum(nil)))
+	if !hmac.Equal([]byte(expected), []byte(providedSig)) {
+		return errSignatureMismatch
+	}
+	return nil
+}
+```
+
+<Callout type="info">Use the webhook `payload` object as the `body` argument when computing the signature.</Callout>
+<Callout type="info">`headerFormat` represents the signature format Safepay uses when building the `X-SFPY-SIGNATURE` header. Keep it consistent with the value you receive.</Callout>
+
+## Retry behavior
+
+Safepay retries failed deliveries up to 5 attempts using exponential backoff:
+
+- Attempt 1: 1 second
+- Attempt 2: 2 seconds
+- Attempt 3: 4 seconds
+- Attempt 4: 8 seconds
+- Attempt 5: 16 seconds
+
+## Event catalog
+
+| Event | Category | Description |
+| --- | --- | --- |
+| `payment.created` | Payments | A new payment request was created (initiated by customer). |
+| `payment.pending_authorization` | Payments | Payment is awaiting authorization (for example, Pay Later checks). |
+| `payment.authorized` | Payments | Payment has been authorized and funds are on hold. |
+| `payment.completed` | Payments | Payment has been captured or charged successfully. |
+| `payment.settled` | Payments | Payment funds have been settled to the merchant. |
+| `payment.refunded` | Payments | Payment was fully refunded. |
+| `payment.refund_partial` | Payments | Payment was partially refunded. |
+| `payment.rejected` | Payments | Payment was rejected before authorization. |
+| `payment.failed` | Payments | Payment processing failed. |
+| `payment.reversed` | Payments | Payment was reversed after completion. |
+| `payment.voided` | Payments | Payment authorization was voided. |
+| `settlement.created` | Settlements | Settlement request was created. |
+| `settlement.processing` | Settlements | Settlement is currently processing. |
+| `settlement.completed` | Settlements | Settlement completed successfully. |
+| `settlement.failed` | Settlements | Settlement failed during processing. |
+| `settlement.on_hold` | Settlements | Settlement temporarily placed on hold. |
+| `settlement.reversed` | Settlements | Settlement was reversed. |
+| `refund.created` | Refunds | Refund request was created. |
+| `refund.completed` | Refunds | Refund was successfully completed. |
+| `refund.failed` | Refunds | Refund failed during processing. |
+| `refund.canceled` | Refunds | Refund request was canceled. |
+
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /v1/aggregators/{{aggregator_id}}/webhooks` | Create a webhook. |
+| `GET /v1/aggregators/{{aggregator_id}}/webhooks` | List webhook endpoints. |
+| `GET /v1/aggregators/{{aggregator_id}}/webhooks/{{webhook_id}}` | Read a webhook endpoint. |
+| `PUT /v1/aggregators/{{aggregator_id}}/webhooks/{{webhook_id}}` | Update a webhook endpoint. |
+| `DELETE /v1/aggregators/{{aggregator_id}}/webhooks/{{webhook_id}}` | Delete a webhook endpoint. |
+| `PUT /v1/aggregators/{{aggregator_id}}/webhooks/{{webhook_id}}/rotate` | Rotate the webhook secret. |
+| `GET /v1/aggregators/{{aggregator_id}}/webhooks/{{endpoint}}/deliveries` | List webhook deliveries. |
+| `GET /v1/aggregators/{{aggregator_id}}/webhooks/{{endpoint}}/deliveries/{{delivery}}` | Read a webhook delivery. |
+
+## See also
+
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Refunds](/concepts/refunds)
+- [Pagination](/reference/pagination)
+- [API reference](/api-reference)

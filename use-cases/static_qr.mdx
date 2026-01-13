@@ -1,16 +1,35 @@
 ---
-title: 'Create static QR'
+title: 'Static QR payment'
 description: 'Generate a reusable QR code tied to a Raast merchant.'
 ---
 
+import { Steps, Tabs, Tab, CodeGroup, Callout } from '~/ui/components/Snippet'
+
 Static QR codes are reusable. They identify your aggregator merchant but leave amount and payer details open, making them ideal for countertop displays and printed invoices.
+
+## Prerequisites
+
+- `{{aggregator_id}}` and `{{secret_key}}`
+- `aggregator_merchant_identifier` for the merchant collecting funds
 
 ## Flow summary
 
-1. Capture the `aggregator_merchant_identifier` for the location or business line.
-2. Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: STATIC`.
-3. Render the returned `data.code` and share it digitally or physically.
-4. Reconcile payments by matching webhook payloads or listing QR payments.
+<Steps>
+  <Step title="Load merchant identifiers">
+    Retrieve the `aggregator_merchant_identifier` from the merchant creation response.
+  </Step>
+  <Step title="Create the static QR">
+    Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: STATIC`.
+  </Step>
+  <Step title="Render and share">
+    Render the returned `data.code` and distribute it digitally or physically.
+  </Step>
+  <Step title="Reconcile payments">
+    Match webhook payloads or list QR payments to reconcile each payment.
+  </Step>
+</Steps>
+
+<Callout type="info">Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.</Callout>
 
 ## Static QR
 
@@ -44,18 +63,18 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/qrs" \
 ```
 
 ```typescript TypeScript
-const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
-if (!aggregatorMerchantIdentifier) {
-  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
-}
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+const aggregatorMerchantIdentifier = '{{aggregator_merchant_identifier}}';
 
 const staticQrResponse = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/qrs`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/qrs`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       type: 'STATIC',
@@ -110,4 +129,20 @@ console.log('Reusable QR code', staticQrPayload.data.code);
 
 - Feed `data.code` to any QR generation library (`qrcode.react`, `qr-image`, etc.).
 - Print the QR with usage instructions or embed it in digital invoices.
-- Use [`GET /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}/payments`](/api-reference#get-/v1/aggregators/-raast-aggregator-id-/qrs/-qr-id-/payments) to list transactions tied to this QR.
+- Use `GET /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}/payments` to list transactions tied to this QR.
+
+## Webhook events to expect
+
+- `payment.created`
+- `payment.completed`
+- `payment.settled`
+- `payment.failed`
+- `payment.rejected`
+
+## See also
+
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [QR codes](/concepts/qr_code)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [Pagination](/reference/pagination)
+- [Create QR](/api-reference#post-/v1/aggregators/-raast-aggregator-id-/qrs)

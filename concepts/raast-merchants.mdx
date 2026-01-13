@@ -5,7 +5,9 @@ sidebar:
   order: 3
 ---
 
-Safepay maintains a registry of Raast merchants—business entities that are fully onboarded with the Raast switch. Your [aggregator merchants](/concepts/merchant) must link to one of these records via `raast_merchant_id` to inherit settlement permissions.
+import { Callout } from '~/ui/components/Snippet'
+
+Safepay maintains a registry of Raast merchants - business entities that are fully onboarded with the Raast switch. Your [aggregator merchants](/concepts/merchant) must link to one of these records via `raast_merchant_id` to inherit settlement permissions.
 
 | Field | Description |
 | --- | --- |
@@ -46,3 +48,17 @@ When you link to an existing Raast merchant, Safepay reuses the previously appro
 - Contact information for compliance escalation
 
 Processing can take longer when these artifacts are missing or incomplete.
+
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /v1/aggregators/{{aggregator_id}}/raast-merchants` | List Raast merchants with filters and pagination. |
+| `GET /v1/aggregators/{{aggregator_id}}/raast-merchants/{{raast_merchant_id}}` | Read a single Raast merchant. |
+
+## See also
+
+- [Aggregator merchants](/concepts/merchant)
+- [Quickstart](/overview/quickstart)
+- [Raast integration journey](/guides/raast-integration-journey)
+- [API reference](/api-reference)

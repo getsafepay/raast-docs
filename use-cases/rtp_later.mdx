@@ -1,16 +1,36 @@
 ---
-title: 'Create Request To Pay (later)'
+title: 'RTP Later payment'
 description: 'Schedule an RTP_LATER payment that gives the customer more time to approve.'
 ---
 
-Use this flow when customers may approve hours or days after you submit the payment—for example, invoice settlements or subscription renewals.
+import { Steps, Tabs, Tab, CodeGroup, Callout } from '~/ui/components/Snippet'
+
+Use this flow when customers may approve hours or days after you submit the payment, such as invoice settlements or subscription renewals.
+
+## Prerequisites
+
+- `{{aggregator_id}}` and `{{secret_key}}`
+- `aggregator_merchant_identifier` for the merchant collecting funds
+- Debtor IBAN or Raast ID
 
 ## Flow summary
 
-1. Load the `aggregator_merchant_identifier` for the merchant initiating the payment.
-2. Choose an expiry window between 1 and 40 days.
-3. Submit `POST /v1/aggregators/{{aggregator_id}}/payments` with `type: RTP_LATER`.
-4. Wait for the webhook event or poll the status endpoint to confirm settlement.
+<Steps>
+  <Step title="Load merchant identifiers">
+    Retrieve the `aggregator_merchant_identifier` from the merchant creation response.
+  </Step>
+  <Step title="Validate the debtor account">
+    Use the [account validation utilities](/concepts/account-validation) to confirm the debtor details.
+  </Step>
+  <Step title="Create the RTP Later payment">
+    Submit `POST /v1/aggregators/{{aggregator_id}}/payments` with `type: RTP_LATER` and an expiry window.
+  </Step>
+  <Step title="Track the outcome">
+    Use webhooks (and optional polling) to surface the final payment status.
+  </Step>
+</Steps>
+
+<Callout type="info">Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.</Callout>
 
 ## RTP later
 
@@ -33,13 +53,13 @@ Use this flow when customers may approve hours or days after you submit the paym
   Set to `RTP_LATER`.
 </ParamField>
 <ParamField path="expiry_in_days" type="integer" required>
-  Approval window in days (1–40).
+  Approval window in days (1-40).
 </ParamField>
 <ParamField path="debitor_raast_id" type="string">
   Provide when requesting via a Raast alias. One of the debtor identifiers must be supplied.
 </ParamField>
 <ParamField path="debitor_iban" type="string">
-  Use when you know the debtor’s IBAN instead of a Raast ID. One of the debtor identifiers must be supplied.
+  Use when you know the debtor's IBAN instead of a Raast ID. One of the debtor identifiers must be supplied.
 </ParamField>
 <ParamField path="debitor_vault_token" type="string">
   Reference a stored payment method for recurring requests. One of the debtor identifiers must be supplied.
@@ -66,18 +86,18 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments" \
 ```
 
 ```typescript TypeScript
-const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
-if (!aggregatorMerchantIdentifier) {
-  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
-}
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+const aggregatorMerchantIdentifier = '{{aggregator_merchant_identifier}}';
 
 const rtpLaterResponse = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payments`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/payments`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       request_id: crypto.randomUUID(),
@@ -140,9 +160,39 @@ console.log('Scheduled RTP token', rtpLaterPayload.data.token);
 
 ## Monitor status
 
-```bash
+Use webhooks as the primary source of truth. Polling is helpful for dashboards or fallback workflows.
+
+```bash cURL
 curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments/{{payment_token}}" \
   --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
 ```
 
-When the webhook indicates `P_SETTLED`, mark the invoice paid. If the customer rejects, resend with a new `request_id` after you resolve the issue.
+## Webhook events to expect
+
+- `payment.created`
+- `payment.pending_authorization`
+- `payment.authorized`
+- `payment.completed`
+- `payment.settled`
+- `payment.rejected`
+- `payment.failed`
+- `payment.voided`
+- `payment.reversed`
+- `payment.refunded` (if you issue refunds)
+- `payment.refund_partial` (if you issue partial refunds)
+
+When the webhook indicates `payment.settled`, mark the invoice paid. If the customer rejects, resend with a new `request_id` after you resolve the issue.
+
+## Troubleshooting
+
+- **Expired request** - Regenerate the RTP with a fresh `request_id` and `expiry_in_days`.
+- **No response yet** - Offer manual refresh or status polling for long-lived requests.
+- **Duplicate payload** - Reusing a `request_id` with different parameters returns an idempotency error; retry with the same body.
+
+## See also
+
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Account validation](/concepts/account-validation)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [Errors](/reference/errors)
+- [Create RTP](/api-reference#post-/v1/aggregators/-raast-aggregator-id-/payments)

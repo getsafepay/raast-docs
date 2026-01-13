@@ -1,0 +1,22 @@
+---
+title: 'Rate limits'
+description: 'Current limits and guidance for safe throughput.'
+---
+
+import { Callout } from '~/ui/components/Snippet'
+
+Safepay Raast does not enforce rate limits at this time.
+
+<Callout type="info">Even without enforced limits, design your integration to handle spikes and transient failures gracefully.</Callout>
+
+## Recommended practices
+
+- Use exponential backoff for `5xx` responses and network timeouts.
+- Reuse `request_id` values only when retrying the exact same payload.
+- Cache account validation lookups briefly to reduce repeated calls.
+
+## See also
+
+- [Errors](/reference/errors)
+- [Pagination](/reference/pagination)
+- [Webhooks delivery](/guides/webhooks-delivery)

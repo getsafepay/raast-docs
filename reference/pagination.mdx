@@ -1,0 +1,71 @@
+---
+title: 'Pagination'
+description: 'Use limit and offset to page through list endpoints.'
+---
+
+import { Callout, CodeGroup } from '~/ui/components/Snippet'
+
+Safepay list endpoints use `limit` and `offset` query parameters. Many responses include a `count` field and an array of resources inside `data`.
+
+## Query parameters
+
+| Parameter | Description | Example |
+| --- | --- | --- |
+| `limit` | Max records to return in a page. | `limit=10` |
+| `offset` | Number of records to skip before returning results. | `offset=0` |
+
+<Callout type="info">Parameter types vary between endpoints (string or integer). Follow the OpenAPI schema for each endpoint.</Callout>
+
+## Example: list payments
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments?limit=10&offset=0" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+
+const res = await fetch(
+  `${baseUrl}/v1/aggregators/${aggregatorId}/payments?limit=10&offset=0`,
+  {
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+    },
+  },
+);
+
+if (!res.ok) {
+  throw new Error(`Payment list failed: ${res.status}`);
+}
+
+const payload = await res.json();
+console.log('Total payments', payload.data.count);
+```
+
+</CodeGroup>
+
+### Response shape
+
+List responses return a `data` object containing `count` and a list for the resource type. Examples include `payments`, `keys`, `refunds`, and `qrs`.
+
+```json
+{
+  "api_version": "v1",
+  "data": {
+    "count": "605",
+    "payments": []
+  }
+}
+```
+
+## See also
+
+- [Errors](/reference/errors)
+- [Payments](/concepts/payment)
+- [Refunds](/concepts/refunds)
+- [API reference](/api-reference)

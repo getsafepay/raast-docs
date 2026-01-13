@@ -1,0 +1,81 @@
+---
+title: 'Errors'
+description: 'Understand error formats, status codes, and recovery strategies.'
+---
+
+import { Callout, CodeGroup } from '~/ui/components/Snippet'
+
+Safepay Raast returns structured errors that include an error code and message. Some endpoints wrap the error in an `api_version` envelope, while others return the error fields at the top level.
+
+## Error response formats
+
+### Envelope format
+
+Some responses include `api_version` and an `error` object.
+
+```json
+{
+  "api_version": "v1",
+  "error": {
+    "code": "error.unauthorized_access",
+    "message": "partner access key is required in request header"
+  }
+}
+```
+
+### Flat format
+
+Other responses return `code` and `message` at the top level.
+
+```json
+{
+  "code": "error.bad_request",
+  "message": "Invalid request parameters"
+}
+```
+
+<Callout type="info">Check the API reference for the exact error shape per endpoint.</Callout>
+
+## Common status codes
+
+| Status | Meaning | Typical action |
+| --- | --- | --- |
+| 400 | Bad request | Validate request payloads and required fields. |
+| 401 | Unauthorized | Confirm `X-SFPY-AGGREGATOR-SECRET-KEY` and environment. |
+| 404 | Not found | Verify the resource ID exists and belongs to your aggregator. |
+| 409 | Conflict | Retry with a new idempotency key or resolve duplicate creation. |
+| 500 | Internal error | Retry with backoff and contact support if persistent. |
+
+## Handling errors safely
+
+- Use `request_id` for idempotent create calls and reuse it only when retrying the same payload.
+- Log `code`, `message`, and the HTTP status for support escalations.
+- Prefer webhooks as the source of truth for asynchronous workflows.
+
+## Example: unauthorized error
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: invalid"
+```
+
+```json Error
+{
+  "api_version": "v1",
+  "error": {
+    "code": "error.unauthorized_access",
+    "message": "partner access key is required in request header"
+  }
+}
+```
+
+</CodeGroup>
+
+## See also
+
+- [First API call](/overview/first-api-call)
+- [Manage aggregator secret keys](/overview/request-access-key)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [API reference](/api-reference)

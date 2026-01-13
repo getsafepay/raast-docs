@@ -3,6 +3,8 @@ title: 'QR codes'
 description: 'How Safepay Raast creates static and dynamic QR codes.'
 ---
 
+import { Callout, CodeGroup, Steps } from '~/ui/components/Snippet'
+
 Safepay lets you issue QR codes that customers can scan with their banking apps. Static codes are reusable, while dynamic codes embed order-level metadata.
 
 ## Static vs dynamic
@@ -18,7 +20,18 @@ Safepay lets you issue QR codes that customers can scan with their banking apps.
 
 Use this when you want a reusable QR tied to a single aggregator merchant.
 
-```bash
+<Steps>
+  <Step title="Create the QR">
+    Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: STATIC` and your `aggregator_merchant_identifier`.
+  </Step>
+  <Step title="Render and share">
+    Render `data.code` using your QR library and display it where customers pay.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```bash cURL
 curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/qrs" \
   --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
   --header "Content-Type: application/json" \
@@ -29,34 +42,54 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/qrs" \
   }'
 ```
 
-Key fields:
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+const aggregatorMerchantIdentifier = '{{aggregator_merchant_identifier}}';
 
-- `type`: `STATIC`
-- `aggregator_merchant_identifier`: token returned when you created the merchant
-- `request_id`: UUID to guarantee idempotency on retries
+const res = await fetch(`${baseUrl}/v1/aggregators/${aggregatorId}/qrs`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+  },
+  body: JSON.stringify({
+    type: 'STATIC',
+    aggregator_merchant_identifier: aggregatorMerchantIdentifier,
+    request_id: crypto.randomUUID(),
+  }),
+});
 
-Response payload:
-
-```json
-{
-  "api_version": "v1",
-  "data": {
-    "token": "qr_4076ad61-75cf-44a3-97a1-b66643ea3bf2",
-    "code": "000201010211...",
-    "type": "STATIC",
-    "aggregator_merchant_id": "am_be454a50-7612-4dc6-a97e-284ebbe7ae93",
-    "created_at": "2025-04-28T10:26:48Z"
-  }
+if (!res.ok) {
+  const error = await res.json();
+  throw new Error(`Static QR failed: ${res.status} ${error.message}`);
 }
+
+const payload = await res.json();
+console.log('QR code', payload.data.code);
 ```
 
-Render `data.code` using your preferred QR generator and display it wherever customers need to pay.
+</CodeGroup>
+
+<Callout type="info">Static QRs can receive multiple payments. Reconcile each payment by webhook or by listing QR payments.</Callout>
 
 ## Create a dynamic QR
 
 Dynamic codes embed transaction metadata so each scan maps to a unique order.
 
-```bash
+<Steps>
+  <Step title="Create the QR">
+    Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: DYNAMIC`, order details, and amount.
+  </Step>
+  <Step title="Render and collect">
+    Display the QR to the customer and wait for the payment webhook.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```bash cURL
 curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/qrs" \
   --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
   --header "Content-Type: application/json" \
@@ -70,15 +103,52 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/qrs" \
   }'
 ```
 
-Additional fields:
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+const aggregatorMerchantIdentifier = '{{aggregator_merchant_identifier}}';
 
-- `order_id`: echoed in webhook payloads for reconciliation
-- `amount`: optional integer in paisa (omit to let customer choose)
-- `expiry_in_minutes`: optional window before the QR expires; defaults to 180
+const res = await fetch(`${baseUrl}/v1/aggregators/${aggregatorId}/qrs`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+  },
+  body: JSON.stringify({
+    type: 'DYNAMIC',
+    aggregator_merchant_identifier: aggregatorMerchantIdentifier,
+    order_id: 'ORDER-4921',
+    request_id: crypto.randomUUID(),
+    amount: 7500,
+    expiry_in_minutes: 180,
+  }),
+});
 
-## Best practices
+if (!res.ok) {
+  const error = await res.json();
+  throw new Error(`Dynamic QR failed: ${res.status} ${error.message}`);
+}
 
-- Store the QR `token` so you can fetch or delete it later.
-- Use [`GET /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}/payments`](/api-reference#get-/v1/aggregators/-raast-aggregator-id-/qrs/-qr-id-/payments) to list transactions created from a QR.
-- Rotate dynamic QRs for each checkout to avoid reuse attacks.
-- Pair static QRs with signage that instructs customers to add invoice numbers in the memo field for easier reconciliation.
+const payload = await res.json();
+console.log('QR code', payload.data.code);
+```
+
+</CodeGroup>
+
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /v1/aggregators/{{aggregator_id}}/qrs` | Create static or dynamic QR codes. |
+| `GET /v1/aggregators/{{aggregator_id}}/qrs` | List QR codes with filters and pagination. |
+| `GET /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}` | Read a single QR code. |
+| `GET /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}/payments` | List payments made against a QR. |
+| `DELETE /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}` | Delete a QR code. |
+
+## See also
+
+- [Dynamic QR use case](/use-cases/dynamic_qr)
+- [Static QR use case](/use-cases/static_qr)
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Webhooks](/concepts/webhooks)

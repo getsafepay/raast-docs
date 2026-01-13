@@ -5,7 +5,19 @@ sidebar:
   order: 3
 ---
 
+import { Steps, Callout } from '~/ui/components/Snippet'
+
 Start by requesting an aggregator account. Without it you cannot create merchants, payments, or payouts.
+
+## What you should prepare
+
+- Legal business name and registration details
+- Website or product overview
+- Primary contact (email and phone)
+- Expected monthly Raast volume and average ticket size
+- Use cases (RTP Now, RTP Later, QR, payouts)
+
+## Request flow
 
 <Steps>
   <Step title="Prepare your request">
@@ -24,8 +36,22 @@ Start by requesting an aggregator account. Without it you cannot create merchant
 
 <Callout type="info">If you need multiple environments, mention Sandbox and Production in your initial request so Safepay can issue separate secret keys.</Callout>
 
-### After approval
+## What you receive
+
+| Item | Description |
+| --- | --- |
+| `{{aggregator_id}}` | Your primary identifier in every API path. |
+| `{{secret_key}}` | Secret key that authenticates all API requests. |
+| Onboarding guidance | Links to quickstart and integration guides. |
+
+## After approval
 
 1. Store the provided secret key in your secret manager.
 2. Follow [Manage aggregator secret keys](/overview/request-access-key) to rotate or create additional keys.
 3. Create your first merchant using the [Quickstart](/overview/quickstart).
+
+## See also
+
+- [Quickstart](/overview/quickstart)
+- [Manage aggregator secret keys](/overview/request-access-key)
+- [Aggregator](/concepts/aggregator)

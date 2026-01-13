@@ -1,16 +1,36 @@
 ---
-title: 'Create Request To Pay (now)'
+title: 'RTP Now payment'
 description: 'Initiate an RTP_NOW payment that prompts the customer immediately.'
 ---
 
-Use this recipe to collect funds instantly. Submit a Request To Pay payload with the debtor’s identifier, then wait for the customer to approve inside their banking app.
+import { Steps, Tabs, Tab, CodeGroup, Callout } from '~/ui/components/Snippet'
+
+Use this recipe to collect funds instantly. Submit a Request To Pay payload with the debtor identifier, then wait for the customer to approve inside their banking app.
+
+## Prerequisites
+
+- `{{aggregator_id}}` and `{{secret_key}}`
+- `aggregator_merchant_identifier` for the merchant collecting funds
+- Debtor IBAN or Raast ID
 
 ## Flow summary
 
-1. Retrieve an `aggregator_merchant_identifier` from the merchant creation response.
-2. Validate debtor details with the [account validation utilities](/concepts/account-validation).
-3. Call `POST /v1/aggregators/{{aggregator_id}}/payments` with `type: RTP_NOW`.
-4. Monitor webhooks (and optionally poll) to surface the final payment status.
+<Steps>
+  <Step title="Load merchant identifiers">
+    Retrieve the `aggregator_merchant_identifier` from the merchant creation response.
+  </Step>
+  <Step title="Validate the debtor account">
+    Use the [account validation utilities](/concepts/account-validation) to confirm the debtor details.
+  </Step>
+  <Step title="Create the RTP Now payment">
+    Call `POST /v1/aggregators/{{aggregator_id}}/payments` with `type: RTP_NOW`.
+  </Step>
+  <Step title="Track the outcome">
+    Use webhooks (and optional polling) to surface the final payment status.
+  </Step>
+</Steps>
+
+<Callout type="info">Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.</Callout>
 
 ## RTP now
 
@@ -33,7 +53,7 @@ Use this recipe to collect funds instantly. Submit a Request To Pay payload with
   Must be `RTP_NOW` for immediate Request To Pay flows.
 </ParamField>
 <ParamField path="expiry_in_minutes" type="integer">
-  Required for RTP Now payments. Valid range 1–180 minutes.
+  Required for RTP Now payments. Valid range 1-180 minutes.
 </ParamField>
 <ParamField path="debitor_iban" type="string">
   Provide when charging a known IBAN. At least one of `debitor_iban`, `debitor_raast_id`, or `debitor_vault_token` must be supplied.
@@ -47,8 +67,6 @@ Use this recipe to collect funds instantly. Submit a Request To Pay payload with
 
   </Tab>
   <Tab title="API Example">
-
-Set `{{base_url}}` to either `https://dev.api.getsafepay.com/raastwire` (sandbox) or `https://api.getsafepay.com/raastwire` (production).
 
 <CodeGroup>
 
@@ -68,18 +86,18 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments" \
 ```
 
 ```typescript TypeScript
-const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
-if (!aggregatorMerchantIdentifier) {
-  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
-}
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+const aggregatorMerchantIdentifier = '{{aggregator_merchant_identifier}}';
 
 const rtpResponse = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payments`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/payments`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       request_id: crypto.randomUUID(),
@@ -142,15 +160,39 @@ console.log('Payment token', paymentPayload.data.token);
 
 ## Monitor status
 
-```bash
+Use webhooks as the primary source of truth. Polling is helpful for dashboards or fallback workflows.
+
+```bash cURL
 curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments/{{payment_token}}" \
   --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
 ```
+
+## Webhook events to expect
+
+- `payment.created`
+- `payment.pending_authorization`
+- `payment.authorized`
+- `payment.completed`
+- `payment.settled`
+- `payment.rejected`
+- `payment.failed`
+- `payment.voided`
+- `payment.reversed`
+- `payment.refunded` (if you issue refunds)
+- `payment.refund_partial` (if you issue partial refunds)
 
 Combine polling with webhooks so your UI updates as soon as the customer accepts or rejects the request.
 
 ## Troubleshooting
 
-- **Invalid debtor details** — Use the validation utilities before sending the RTP.
-- **Expired request** — Regenerate the RTP with a fresh `request_id` and `expiry_in_minutes`.
-- **Duplicate payload** — Reusing a `request_id` with different parameters returns an idempotency error; retry with the same body.
+- **Invalid debtor details** - Use the validation utilities before sending the RTP.
+- **Expired request** - Regenerate the RTP with a fresh `request_id` and `expiry_in_minutes`.
+- **Duplicate payload** - Reusing a `request_id` with different parameters returns an idempotency error; retry with the same body.
+
+## See also
+
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Account validation](/concepts/account-validation)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [Errors](/reference/errors)
+- [Create RTP](/api-reference#post-/v1/aggregators/-raast-aggregator-id-/payments)

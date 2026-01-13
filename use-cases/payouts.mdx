@@ -3,28 +3,31 @@ title: 'Send payouts'
 description: 'Disburse funds to beneficiaries using the Safepay Raast payout endpoint.'
 ---
 
+import { Steps, Tabs, Tab, CodeGroup, Callout } from '~/ui/components/Snippet'
+
 Use this recipe to push funds to beneficiaries such as drivers, vendors, or partners. Payouts share the same aggregator credentials you use for pay-ins.
 
 ## Prerequisites
 
 - `{{aggregator_id}}` and `{{secret_key}}`
-- Enabled `{{aggregator_merchant_identifier}}` if you need to associate payouts with a particular merchant in reporting
 - Beneficiary IBAN validated with the [account validation utilities](/concepts/account-validation)
 - Webhook endpoint ready to receive payout status updates
 
-## Steps
+## Flow summary
 
 <Steps>
   <Step title="Validate the beneficiary">
-    Resolve the beneficiary’s details with [`GET /title-fetch`](/concepts/account-validation) or [`GET /account-info`](/concepts/account-validation) to avoid payout failures.
+    Resolve the beneficiary's details with [`GET /title-fetch`](/concepts/account-validation) or [`GET /account-info`](/concepts/account-validation) to avoid payout failures.
   </Step>
   <Step title="Call the payout endpoint">
     Send `POST /v1/aggregators/{{aggregator_id}}/payout` with a unique `request_id`, the payout `amount` (string, in PKR), and the beneficiary `creditor_iban`.
   </Step>
   <Step title="Track completion">
-    Listen for webhook notifications or poll `GET /payments` to confirm settlement and update ledgers.
+    Listen for webhook notifications or poll `GET /v1/aggregators/{{aggregator_id}}/payments` to confirm settlement and update ledgers.
   </Step>
 </Steps>
+
+<Callout type="info">Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.</Callout>
 
 ## Payouts
 
@@ -58,13 +61,17 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payout" \
 ```
 
 ```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+
 const payoutResponse = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payout`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/payout`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       request_id: crypto.randomUUID(),
@@ -119,8 +126,20 @@ console.log('Payout token', payoutPayload.data.token);
   </Tab>
 </Tabs>
 
+## Webhook events to expect
+
+Refer to the [webhooks delivery guide](/guides/webhooks-delivery) for the full event catalog. Settlement-related events are emitted as batch processing progresses.
+
 ## Failure handling checklist
 
 - Inspect webhook payloads for failure reasons (insufficient funds, invalid account, compliance hold).
 - Retry transient errors with the same `request_id` to stay idempotent.
 - Raise manual review tasks for permanent failures and notify beneficiaries.
+
+## See also
+
+- [Payout lifecycle](/guides/payout-lifecycle)
+- [Account validation](/concepts/account-validation)
+- [Ledger accounts](/concepts/ledger)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [Create payout](/api-reference#post-/v1/aggregators/-raast-aggregator-id-/payout)

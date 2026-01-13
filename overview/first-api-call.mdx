@@ -1,0 +1,84 @@
+---
+title: 'First API call'
+description: 'Verify your credentials with a simple read request.'
+sidebar:
+  order: 5
+---
+
+import { Steps, Callout, CodeGroup } from '~/ui/components/Snippet'
+
+Use this page to confirm your `{{aggregator_id}}` and `{{secret_key}}` before building payment flows.
+
+## Choose your environment
+
+| Environment | Base URL | Notes |
+| --- | --- | --- |
+| Sandbox | `https://dev.api.getsafepay.com/raastwire` | Use for integration testing. |
+| Production | `https://api.getsafepay.com/raastwire` | Live traffic and real money movement. |
+
+## Make the request
+
+<Steps>
+  <Step title="Set your credentials">
+    Store `{{secret_key}}` in a server-side secret manager. Use `{{base_url}}` for the environment you are calling.
+  </Step>
+  <Step title="Call the aggregator endpoint">
+    Send a `GET` request to `/v1/aggregators/{{aggregator_id}}` with the `X-SFPY-AGGREGATOR-SECRET-KEY` header.
+  </Step>
+  <Step title="Verify the response">
+    A successful call returns aggregator metadata and confirms your credentials are valid.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = process.env.SAFEPAY_SECRET_KEY ?? '';
+
+const res = await fetch(`${baseUrl}/v1/aggregators/${aggregatorId}`, {
+  headers: {
+    'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+  },
+});
+
+if (!res.ok) {
+  throw new Error(`Aggregator lookup failed: ${res.status}`);
+}
+
+const payload = await res.json();
+console.log('Aggregator token', payload.data.token);
+```
+
+</CodeGroup>
+
+### Expected response
+
+A successful response (status `201`) includes your aggregator metadata.
+
+```json
+{
+  "api_version": "v1",
+  "data": {
+    "token": "{{aggregator_id}}",
+    "name": "Example Aggregator",
+    "is_active": true
+  }
+}
+```
+
+<Callout type="warning">Never expose `{{secret_key}}` in client-side apps. Always call the API from a secure backend.</Callout>
+
+## See also
+
+- [Quickstart](/overview/quickstart)
+- [Manage aggregator secret keys](/overview/request-access-key)
+- [Aggregator](/concepts/aggregator)
+- [Errors](/reference/errors)
+- [API reference](/api-reference)

@@ -5,7 +5,9 @@ sidebar:
   order: 6
 ---
 
-Payments initiate a Request-to-Pay (RTP) against a customer’s bank account. Each payment belongs to an [aggregator merchant](/concepts/merchant) and uses the Raast network to settle instantly once the customer approves.
+import { Callout, CodeGroup } from '~/ui/components/Snippet'
+
+Payments initiate a Request-to-Pay (RTP) against a customer's bank account. Each payment belongs to an [aggregator merchant](/concepts/merchant) and uses the Raast network to settle instantly once the customer approves.
 
 ### Endpoint summary
 
@@ -20,13 +22,13 @@ Payments initiate a Request-to-Pay (RTP) against a customer’s bank account. Ea
 | `aggregator_merchant_identifier` | string | Yes | Token returned when you created the merchant. |
 | `order_id` | string | Yes | Merchant order reference. |
 | `type` | enum | Yes | `RTP_NOW` or `RTP_LATER`. |
-| `expiry_in_minutes` | integer | Required for RTP Now | Range 1–180 minutes. |
-| `expiry_in_days` | integer | Required for RTP Later | Range 1–40 days. |
+| `expiry_in_minutes` | integer | Required for RTP Now | Range 1-180 minutes. |
+| `expiry_in_days` | integer | Required for RTP Later | Range 1-40 days. |
 | `debitor_iban` | string | One of | Provide IBAN when you know the account. |
 | `debitor_raast_id` | string | One of | Provide Raast alias (for example, phone). |
 | `debitor_vault_token` | string | One of | Provide stored vault token. |
 
-<Callout type="tip">Validate the debtor’s IBAN or alias with the [account validation utilities](/concepts/account-validation) before creating the payment.</Callout>
+<Callout type="tip">Validate the debtor's IBAN or alias with the [account validation utilities](/concepts/account-validation) before creating the payment.</Callout>
 
 ### Example request
 
@@ -103,11 +105,33 @@ console.log('Payment status', paymentPayload.data.status);
 | --- | --- |
 | `P_INITIATED` | Safepay accepted the request and pushed it to Raast. |
 | `P_RECEIVED` | Customer approval pending. |
+| `P_AUTHORIZED` | Payment authorized and funds on hold. |
+| `P_CAPTURED` | Payment captured successfully. |
 | `P_SETTLED` | Funds transferred. Emit confirmation to the user. |
-| `P_FAILED` / `P_REJECTED` | Customer declined or network/compliance error prevented settlement. |
+| `P_FAILED` | Payment failed during processing. |
+| `P_REJECTED` | Customer declined or request rejected. |
+| `P_CANCELLED` | Payment was canceled before completion. |
+| `P_REVERSED` | Payment reversed after completion. |
+| `P_PARTIALLY_REFUNDED` | Payment partially refunded. |
+| `P_REFUNDED` | Payment fully refunded. |
 
 ### Monitoring
 
-- Poll `GET /v1/aggregators/{{aggregator_id}}/payments/{payment_id}` for dashboards.
+- Poll `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` for dashboards.
 - Subscribe to [webhooks](/concepts/webhooks) to receive final states.
 - Use `request_id` to deduplicate retries.
+
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /v1/aggregators/{{aggregator_id}}/payments` | Create RTP Now or RTP Later payments. |
+| `GET /v1/aggregators/{{aggregator_id}}/payments` | List payments with filters and pagination. |
+| `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` | Read a single payment. |
+
+## See also
+
+- [Payment types](/concepts/payment-types)
+- [RTP Now use case](/use-cases/rtp_now)
+- [RTP Later use case](/use-cases/rtp_later)
+- [Webhooks](/concepts/webhooks)

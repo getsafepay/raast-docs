@@ -5,7 +5,17 @@ sidebar:
   order: 2
 ---
 
+import { Steps, Callout } from '~/ui/components/Snippet'
+
 Use this journey as your checklist. It strings together the core concepts, guides, and API calls you need to enable Safepay Raast for your business.
+
+## Prerequisites
+
+- `{{aggregator_id}}` issued by Safepay
+- `{{secret_key}}` for the target environment
+- Base URL set to `https://dev.api.getsafepay.com/raastwire` (sandbox) or `https://api.getsafepay.com/raastwire` (production)
+
+## Integration checklist
 
 <Steps>
   <Step title="Get aggregator access">
@@ -20,8 +30,8 @@ Use this journey as your checklist. It strings together the core concepts, guide
   <Step title="Enable payment initiation">
     Choose your [payment type](/concepts/payment-types) and follow the respective [use case](/use-cases/overview).
   </Step>
-  <Step title="Handle webhooks and reconciliation">
-    Subscribe to [webhooks](/concepts/webhooks), poll when necessary, and reconcile using the reporting APIs.
+  <Step title="Subscribe to webhooks">
+    Create webhook endpoints and verify signatures to receive asynchronous status updates.
   </Step>
   <Step title="Roll out payouts (optional)">
     Once pay-ins are live, add [instant payouts](/use-cases/payouts) for beneficiaries.
@@ -37,15 +47,35 @@ Use this journey as your checklist. It strings together the core concepts, guide
 
 <Callout type="info">A single Raast merchant can link to multiple aggregators. This lets merchants work with different platforms simultaneously.</Callout>
 
+### Key API calls by stage
+
+| Stage | Endpoint | Purpose |
+| --- | --- | --- |
+| Access keys | `POST /v1/aggregators/{{aggregator_id}}/keys` | Create additional keys for rotation. |
+| Raast merchant lookup | `GET /v1/aggregators/{{aggregator_id}}/raast-merchants` | Find an existing Raast merchant. |
+| Merchant onboarding | `POST /v1/aggregators/{{aggregator_id}}/merchants` | Create an aggregator merchant. |
+| RTP payments | `POST /v1/aggregators/{{aggregator_id}}/payments` | Initiate RTP Now or RTP Later. |
+| QR payments | `POST /v1/aggregators/{{aggregator_id}}/qrs` | Create static or dynamic QR codes. |
+| Payouts | `POST /v1/aggregators/{{aggregator_id}}/payout` | Send payouts to beneficiaries. |
+| Webhooks | `POST /v1/aggregators/{{aggregator_id}}/webhooks` | Register webhook endpoints. |
+
 ### Payment orchestration cheat sheet
 
-- **RTP Now** — Collect once the customer approves immediately. Ideal for cashback or just-in-time payouts.
-- **RTP Later** — Give customers more time to approve. Use when invoices can be paid hours or days later.
-- **Dynamic QR** — Create per transaction at checkout; you know the amount but not the payer until settlement.
-- **Static QR** — Post a reusable QR. Track incoming payments using amount and metadata.
+- **RTP Now** - Collect once the customer approves immediately. Ideal for cashback or just-in-time payouts.
+- **RTP Later** - Give customers more time to approve. Use when invoices can be paid hours or days later.
+- **Dynamic QR** - Create per transaction at checkout; you know the amount but not the payer until settlement.
+- **Static QR** - Post a reusable QR. Track incoming payments using amount and metadata.
 
 ### Operational readiness
 
 - Automate webhook retries and reconciliation dashboards.
 - Use [account validation utilities](/concepts/account-validation) to prevent bad debtor or beneficiary data.
 - Rotate aggregator keys using the [Access Keys API](/overview/request-access-key) before go-live.
+
+## See also
+
+- [Quickstart](/overview/quickstart)
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Payout lifecycle](/guides/payout-lifecycle)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [API reference](/api-reference)

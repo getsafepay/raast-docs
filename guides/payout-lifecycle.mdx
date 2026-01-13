@@ -5,7 +5,15 @@ sidebar:
   order: 4
 ---
 
+import { Steps, Callout } from '~/ui/components/Snippet'
+
 Payouts are asynchronous like pay-ins. Use this lifecycle to design back-office processes, customer notifications, and retries.
+
+## Prerequisites
+
+- `{{aggregator_id}}` and `{{secret_key}}`
+- Validated beneficiary account details (IBAN or alias)
+- Webhook endpoint for status updates
 
 ## Flow overview
 
@@ -24,6 +32,10 @@ Payouts are asynchronous like pay-ins. Use this lifecycle to design back-office 
   </Step>
 </Steps>
 
+### Webhook events to expect
+
+Use the [webhooks delivery guide](/guides/webhooks-delivery) for the full event catalog and signature verification. Settlement-related events are emitted as batch processing progresses.
+
 ## Status reference
 
 | Status | Description | Recommended action |
@@ -39,3 +51,11 @@ Payouts are asynchronous like pay-ins. Use this lifecycle to design back-office 
 - **Dual controls**: Require two-person review for high-value payouts before calling the API.
 - **Ledger reconciliation**: Store the `trace_reference` and `request_id` to match Safepay webhooks with internal ledger entries.
 - **Incident response**: Alert operators automatically when a payout remains in `P_RECEIVED` beyond your SLA or enters `P_FAILED`.
+
+## See also
+
+- [Payouts use case](/use-cases/payouts)
+- [Account validation](/concepts/account-validation)
+- [Ledger accounts](/concepts/ledger)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [API reference](/api-reference)

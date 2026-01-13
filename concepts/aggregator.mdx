@@ -5,6 +5,8 @@ sidebar:
   order: 1
 ---
 
+import { Steps, Callout } from '~/ui/components/Snippet'
+
 Aggregators are top-level accounts that Safepay provisions for partners who process Raast payments on behalf of multiple businesses. Every integration starts with an aggregator: it scopes your merchants, generates credentials, and defines the compliance perimeter for your transactions.
 
 | Attribute | Description | Example |
@@ -15,12 +17,21 @@ Aggregators are top-level accounts that Safepay provisions for partners who proc
 
 ## Requesting access
 
-1. Email [support@getsafepay.com](mailto:support@getsafepay.com) with your business details, use cases, and projected volume.
-2. Safepay provisions your aggregator and performs due diligence.
-3. You receive:
-   - `{{aggregator_id}}` (include in every API path)
-   - At least one `{{secret_key}}` scoped to an environment
-   - Dashboard access, if requested
+<Steps>
+  <Step title="Submit your request">
+    Email [support@getsafepay.com](mailto:support@getsafepay.com) with your business details, use cases, and projected volume.
+  </Step>
+  <Step title="Safepay review">
+    Safepay provisions your aggregator and performs due diligence.
+  </Step>
+  <Step title="Receive credentials">
+    You receive:
+
+    - `{{aggregator_id}}` (include in every API path)
+    - At least one `{{secret_key}}` scoped to an environment
+    - Dashboard access, if requested
+  </Step>
+</Steps>
 
 <Callout type="warning">Do not embed your secret key in mobile or web apps. Keep it in a server-side secret manager and rotate it immediately if compromised.</Callout>
 
@@ -34,3 +45,19 @@ All Raast API endpoints use the `apiKey` security scheme defined in the OpenAPI 
 - Rotate keys proactively or whenever staff changes. Safepay can issue new keys through the [Create access key](/api-reference#post-/v1/aggregators/-raast-aggregator-id-/keys) endpoint.
 - Use the [Rotate access key](/api-reference#put-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-/rotate) endpoint to refresh keys without downtime.
 - Monitor access with [List access keys](/api-reference#get-/v1/aggregators/-raast-aggregator-id-/keys) and disable unused keys with [Delete access key](/api-reference#delete-/v1/aggregators/-raast-aggregator-id-/keys/-access-key-id-).
+
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /v1/aggregators/{{aggregator_id}}` | Confirm aggregator metadata and validate credentials. |
+| `GET /v1/aggregators/{{aggregator_id}}/keys` | List active access keys. |
+| `POST /v1/aggregators/{{aggregator_id}}/keys` | Create new access keys for rotation. |
+| `PUT /v1/aggregators/{{aggregator_id}}/keys/{{access_key_id}}/rotate` | Rotate a key without changing the token. |
+
+## See also
+
+- [Create aggregator account](/overview/create-aggregator)
+- [Manage aggregator secret keys](/overview/request-access-key)
+- [First API call](/overview/first-api-call)
+- [API reference](/api-reference)

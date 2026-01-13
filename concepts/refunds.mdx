@@ -3,11 +3,17 @@ title: 'Refunds'
 description: 'Issue refunds for settled Raast payments.'
 ---
 
-Use refunds to return funds for payments that have reached `P_SETTLED`. Requests are idempotent and must reference the original payment token.
+import { Callout, CodeGroup } from '~/ui/components/Snippet'
+
+Use refunds to return funds for payments that have reached `P_SETTLED`. Refund requests are idempotent and must reference the original payment token.
+
+<Callout type="warning">Create refunds only after the payment reaches `P_SETTLED`.</Callout>
 
 ## Create a refund
 
-```bash
+<CodeGroup>
+
+```bash cURL
 curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/refunds" \
   --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
   --header "Content-Type: application/json" \
@@ -15,10 +21,43 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/refunds" \
     "request_id": "{{request_id}}",
     "payment_id": "{{payment_token}}",
     "amount": 500,
-    "reason": "CustomerRequest",
+    "reason": "DuplicatePayment",
+    "addtl_info": "Duplicate charge on invoice INV-1024",
     "debitor_iban": "PK12ALFH0031001006540005"
   }'
 ```
+
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+
+const res = await fetch(`${baseUrl}/v1/aggregators/${aggregatorId}/refunds`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+  },
+  body: JSON.stringify({
+    request_id: crypto.randomUUID(),
+    payment_id: '{{payment_token}}',
+    amount: 500,
+    reason: 'DuplicatePayment',
+    addtl_info: 'Duplicate charge on invoice INV-1024',
+    debitor_iban: 'PK12ALFH0031001006540005',
+  }),
+});
+
+if (!res.ok) {
+  const error = await res.json();
+  throw new Error(`Refund failed: ${res.status} ${error.message}`);
+}
+
+const payload = await res.json();
+console.log('Refund token', payload.data.token);
+```
+
+</CodeGroup>
 
 ### Body fields
 
@@ -27,31 +66,33 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/refunds" \
 | `request_id` | string | Yes | UUID to guarantee idempotency. |
 | `payment_id` | string | Yes | Token from the original payment response. |
 | `amount` | integer | Yes | Amount in paisa; cannot exceed the settled payment amount. |
-| `reason` | string | Yes | One of `TechnicalProblem`, `CustomerRequest`, `FraudDetected`, `DuplicatePayment`. |
+| `reason` | string | Yes | One of `TechnicalProblem` or `DuplicatePayment`. |
 | `debitor_iban` | string | Yes | IBAN that received the original payment. |
-| `addtl_info` | string | Optional | Free-form text that appears in audit logs. |
+| `addtl_info` | string | Optional | Free-form text for audit logs. |
 
-### Sample response
+### Statuses
 
-```json
-{
-  "api_version": "v1",
-  "data": {
-    "id": "rf_8a0f2e1b7a134d52a3429db3f4fa21e7",
-    "payment_id": "{{payment_token}}",
-    "amount": 500,
-    "status": "PENDING",
-    "reason": "CustomerRequest",
-    "request_id": "{{request_id}}",
-    "created_at": "2025-08-06T13:00:00Z"
-  }
-}
-```
+Refunds are asynchronous. The API returns a `status` field; list filters include `R_INITIATED`, `R_COMPLETED`, `R_FAILED`, and `R_CANCELED`.
 
-Refunds progress from `PENDING` to either `SUCCESS` or `FAILED`. Poll `GET /v1/aggregators/{{aggregator_id}}/refunds/{{refund_token}}` or rely on webhooks to confirm completion.
+## Webhook events to expect
 
-## Best practices
+- `refund.created`
+- `refund.completed`
+- `refund.failed`
+- `refund.canceled`
 
-- Generate a fresh `request_id` per refund attempt and reuse it only when retrying the same intent.
-- Validate the original payment status (`P_SETTLED`) before sending the refund.
-- Store the refund token for reconciliation and customer support workflows.
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /v1/aggregators/{{aggregator_id}}/refunds` | Create a refund. |
+| `GET /v1/aggregators/{{aggregator_id}}/refunds` | List refunds with filters and pagination. |
+| `GET /v1/aggregators/{{aggregator_id}}/refunds/{{refund_id}}` | Read a single refund. |
+
+## See also
+
+- [Payments](/concepts/payment)
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [Pagination](/reference/pagination)
+- [API reference](/api-reference)

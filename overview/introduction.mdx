@@ -1,31 +1,60 @@
 ---
 title: 'Introduction'
-description: 'Overview of Safepay Raast and the building blocks you need to move money.'
+description: 'Learn how Safepay Raast works and what you need to start integrating.'
 sidebar:
   order: 1
 ---
 
-Safepay Raast lets aggregators move money across Pakistan’s instant payment network on behalf of their merchants. This documentation is organized to get you production-ready quickly while keeping implementation details explicit.
+import { Steps, Callout } from '~/ui/components/Snippet'
 
-### Why Safepay Raast
+Raast is Pakistan's instant payment network operated by the State Bank of Pakistan. Safepay Raast gives you an aggregator-grade API to onboard merchants, initiate payments, and move funds between bank accounts and mobile wallets.
 
-- **Manage many merchants** — Create and supervise multiple [aggregator merchants](/concepts/merchant) under a single [aggregator](/concepts/aggregator) account.
-- **Instant pay-ins** — Collect funds using [RTP Now, RTP Later, Dynamic QR, or Static QR](/concepts/payment-types) flows.
-- **Instant payouts** — Disburse funds to vendors or beneficiaries with the same credentials.
-- **Validation utilities** — Confirm payer and beneficiary details before executing transactions.
+## Payment types you can support
 
-### Integration path
+1. **RTP Now** - Request a payment the customer approves immediately.
+2. **RTP Later** - Request a payment that the customer can approve later.
+3. **Dynamic QR** - Generate a per-transaction QR with a known amount.
+4. **Static QR** - Use a reusable QR where the customer enters the amount.
 
-1. [Request aggregator access](/overview/create-aggregator) and receive your `{{aggregator_id}}`.
-2. [Secure your aggregator secret key](/overview/request-access-key) (`X-SFPY-AGGREGATOR-SECRET-KEY`).
-3. [Create aggregator merchants](/concepts/merchant) and link them to [Raast merchants](/concepts/raast-merchants).
-4. Follow the [Raast integration journey](/guides/raast-integration-journey) to issue payments, QRs, and payouts.
-5. Subscribe to [webhooks](/concepts/webhooks) for asynchronous status updates.
+## How Safepay fits
 
-### Environments
+- **Aggregator model** - You create [aggregator merchants](/concepts/merchant) and link them to [Raast merchants](/concepts/raast-merchants).
+- **Payments and payouts** - Initiate RTP and QR payments, and send payouts with the same credentials.
+- **Operational tooling** - Manage access keys, refunds, webhooks, and ledgers through APIs.
 
-Use the Sandbox base URL (`https://dev.api.getsafepay.com/raastwire`) while integrating. Production lives at `https://api.getsafepay.com/raastwire`. Both environments require the same path structure: `/v1/aggregators/{{aggregator_id}}/...`.
+## Integration path
 
-### What’s next
+<Steps>
+  <Step title="Request aggregator access">
+    Follow [Create aggregator account](/overview/create-aggregator) to receive your `{{aggregator_id}}`.
+  </Step>
+  <Step title="Secure your secret key">
+    Store the `{{secret_key}}` and authenticate with `X-SFPY-AGGREGATOR-SECRET-KEY`.
+  </Step>
+  <Step title="Create and link merchants">
+    Create [aggregator merchants](/concepts/merchant) and link them to [Raast merchants](/concepts/raast-merchants).
+  </Step>
+  <Step title="Choose a payment flow">
+    Implement the right [payment type](/concepts/payment-types) for your use case.
+  </Step>
+  <Step title="Subscribe to webhooks">
+    Use [webhooks](/concepts/webhooks) to receive status updates and settlements.
+  </Step>
+</Steps>
 
-Jump into the [Quickstart](/overview/quickstart) to send your first payment, then explore the [API reference](/api-reference) when you are ready to automate credential rotation, payouts, and reporting.
+## Environments and base URLs
+
+| Environment | Base URL | Notes |
+| --- | --- | --- |
+| Sandbox | `https://dev.api.getsafepay.com/raastwire` | Use for integration testing. |
+| Production | `https://api.getsafepay.com/raastwire` | Live traffic and real money movement. |
+
+<Callout type="info">All API paths are prefixed with `/v1/aggregators/{{aggregator_id}}/...`.</Callout>
+
+## See also
+
+- [Quickstart](/overview/quickstart)
+- [Create aggregator account](/overview/create-aggregator)
+- [Manage aggregator secret keys](/overview/request-access-key)
+- [Payment types](/concepts/payment-types)
+- [Webhooks](/concepts/webhooks)

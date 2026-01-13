@@ -1,0 +1,164 @@
+---
+title: 'Webhooks delivery'
+description: 'Subscribe to events, verify signatures, and handle retries reliably.'
+sidebar:
+  order: 5
+---
+
+import { Steps, Callout, CodeGroup } from '~/ui/components/Snippet'
+
+Safepay webhooks notify you when payments, refunds, or settlements change state. Use this guide to create webhook endpoints, verify signatures, and process retries safely.
+
+## Create a webhook endpoint
+
+<Steps>
+  <Step title="Choose the events you need">
+    Subscribe to the specific event types your integration depends on, such as `payment.completed` or `refund.completed`.
+  </Step>
+  <Step title="Create the webhook">
+    Call `POST /v1/aggregators/{{aggregator_id}}/webhooks` with the URL and event list.
+  </Step>
+  <Step title="Store the webhook secret">
+    Safepay returns a webhook secret. Store it in your secret manager and use it for signature verification.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/webhooks" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "url": "https://api.example.com/webhooks/safepay",
+    "description": "Raast webhook endpoint",
+    "event_types": ["payment.created", "payment.completed", "refund.completed"],
+    "enabled": true
+  }'
+```
+
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+
+const res = await fetch(`${baseUrl}/v1/aggregators/${aggregatorId}/webhooks`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+  },
+  body: JSON.stringify({
+    url: 'https://api.example.com/webhooks/safepay',
+    description: 'Raast webhook endpoint',
+    event_types: ['payment.created', 'payment.completed', 'refund.completed'],
+    enabled: true,
+  }),
+});
+
+if (!res.ok) {
+  throw new Error(`Webhook creation failed: ${res.status}`);
+}
+
+const payload = await res.json();
+console.log('Webhook token', payload.data.token);
+```
+
+</CodeGroup>
+
+## Webhook headers
+
+Safepay includes headers that identify the event and allow you to verify authenticity. Always read:
+
+- `X-SFPY-SIGNATURE` for the HMAC signature
+- `X-SFPY-TIMESTAMP` for the event timestamp
+
+The delivery also includes headers for event ID, event type, and aggregator ID.
+
+## Signature verification
+
+Safepay signs the raw `payload` body. Use the signature header and timestamp header to verify authenticity.
+
+<Steps>
+  <Step title="Extract headers">
+    Read `X-SFPY-SIGNATURE` and `X-SFPY-TIMESTAMP` from the incoming request.
+  </Step>
+  <Step title="Compute HMAC">
+    Compute HMAC SHA-256 using the timestamp, a period separator, and the raw payload bytes: `timestamp + '.' + payload`.
+  </Step>
+  <Step title="Compare signatures">
+    Compare the computed signature to the provided signature using a constant-time compare.
+  </Step>
+</Steps>
+
+```go
+func Verify(secret, body []byte, providedSig, providedTS string, tolerance time.Duration) error {
+	if tolerance > 0 {
+		parsed, err := time.Parse(time.RFC3339Nano, providedTS)
+		if err != nil {
+			return err
+		}
+		if delta := time.Since(parsed); delta > tolerance || delta < -tolerance {
+			return errTimestampDrift
+		}
+	}
+	mac := hmac.New(sha256.New, secret)
+	mac.Write([]byte(providedTS))
+	mac.Write([]byte{'.'})
+	mac.Write(body)
+	expected := fmt.Sprintf(headerFormat, hex.EncodeToString(mac.Sum(nil)))
+	if !hmac.Equal([]byte(expected), []byte(providedSig)) {
+		return errSignatureMismatch
+	}
+	return nil
+}
+```
+
+<Callout type="info">Use the webhook `payload` object as the `body` argument when computing the signature.</Callout>
+<Callout type="info">`headerFormat` represents the signature format Safepay uses when building the `X-SFPY-SIGNATURE` header. Keep it consistent with the value you receive.</Callout>
+
+## Retry behavior
+
+Safepay retries failed deliveries up to 5 attempts using exponential backoff:
+
+- Attempt 1: 1 second
+- Attempt 2: 2 seconds
+- Attempt 3: 4 seconds
+- Attempt 4: 8 seconds
+- Attempt 5: 16 seconds
+
+Respond with `200 OK` as soon as you persist the event to stop further retries.
+
+## Event catalog
+
+| Event | Category | Description |
+| --- | --- | --- |
+| `payment.created` | Payments | A new payment request was created (initiated by customer). |
+| `payment.pending_authorization` | Payments | Payment is awaiting authorization (for example, Pay Later checks). |
+| `payment.authorized` | Payments | Payment has been authorized and funds are on hold. |
+| `payment.completed` | Payments | Payment has been captured or charged successfully. |
+| `payment.settled` | Payments | Payment funds have been settled to the merchant. |
+| `payment.refunded` | Payments | Payment was fully refunded. |
+| `payment.refund_partial` | Payments | Payment was partially refunded. |
+| `payment.rejected` | Payments | Payment was rejected before authorization. |
+| `payment.failed` | Payments | Payment processing failed. |
+| `payment.reversed` | Payments | Payment was reversed after completion. |
+| `payment.voided` | Payments | Payment authorization was voided. |
+| `settlement.created` | Settlements | Settlement request was created. |
+| `settlement.processing` | Settlements | Settlement is currently processing. |
+| `settlement.completed` | Settlements | Settlement completed successfully. |
+| `settlement.failed` | Settlements | Settlement failed during processing. |
+| `settlement.on_hold` | Settlements | Settlement temporarily placed on hold. |
+| `settlement.reversed` | Settlements | Settlement was reversed. |
+| `refund.created` | Refunds | Refund request was created. |
+| `refund.completed` | Refunds | Refund was successfully completed. |
+| `refund.failed` | Refunds | Refund failed during processing. |
+| `refund.canceled` | Refunds | Refund request was canceled. |
+
+## See also
+
+- [Webhooks](/concepts/webhooks)
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Payout lifecycle](/guides/payout-lifecycle)
+- [Errors](/reference/errors)
+- [Pagination](/reference/pagination)

@@ -1,16 +1,36 @@
 ---
-title: 'Create dynamic QR'
+title: 'Dynamic QR payment'
 description: 'Generate a per-transaction QR code for Raast payments.'
 ---
 
+import { Steps, Tabs, Tab, CodeGroup, Callout } from '~/ui/components/Snippet'
+
 Dynamic QR codes encode order-specific metadata so you can present a scannable Raast request at checkout. Each QR is single-use and maps to a specific aggregator merchant.
+
+## Prerequisites
+
+- `{{aggregator_id}}` and `{{secret_key}}`
+- `aggregator_merchant_identifier` for the merchant collecting funds
+- Optional order metadata and amount
 
 ## Flow summary
 
-1. Retrieve the `aggregator_merchant_identifier` for the merchant handling the checkout.
-2. Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: DYNAMIC` and the order details.
-3. Render the returned `data.code` string as a QR image.
-4. Listen for the payment webhook (or poll) to confirm settlement.
+<Steps>
+  <Step title="Load merchant identifiers">
+    Retrieve the `aggregator_merchant_identifier` from the merchant creation response.
+  </Step>
+  <Step title="Create the dynamic QR">
+    Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: DYNAMIC` and the order details.
+  </Step>
+  <Step title="Render the QR">
+    Render the returned `data.code` string as a QR image in your checkout UI.
+  </Step>
+  <Step title="Track the outcome">
+    Listen for payment webhooks or poll the payment endpoint to confirm settlement.
+  </Step>
+</Steps>
+
+<Callout type="info">Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.</Callout>
 
 ## Dynamic QR
 
@@ -56,18 +76,18 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/qrs" \
 ```
 
 ```typescript TypeScript
-const aggregatorMerchantIdentifier = process.env.SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER;
-if (!aggregatorMerchantIdentifier) {
-  throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
-}
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+const aggregatorMerchantIdentifier = '{{aggregator_merchant_identifier}}';
 
 const qrResponse = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/qrs`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/qrs`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       type: 'DYNAMIC',
@@ -125,4 +145,19 @@ console.log('QR code payload', qrPayload.data.code);
 
 Feed `data.code` into your preferred QR library (for example, `qrcode.react`, `qr-image`, or `qrcodejs`). The returned string is EMVCo-compliant and ready for Raast banking apps.
 
-When the customer pays, monitor the associated payment token via `GET /payments` or your webhook handler to confirm settlement.
+## Webhook events to expect
+
+- `payment.created`
+- `payment.completed`
+- `payment.settled`
+- `payment.failed`
+- `payment.rejected`
+
+When the customer pays, monitor the associated payment token via `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` or your webhook handler to confirm settlement.
+
+## See also
+
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [QR codes](/concepts/qr_code)
+- [Webhooks delivery](/guides/webhooks-delivery)
+- [Create QR](/api-reference#post-/v1/aggregators/-raast-aggregator-id-/qrs)

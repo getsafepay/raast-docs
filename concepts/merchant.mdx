@@ -5,6 +5,8 @@ sidebar:
   order: 2
 ---
 
+import { Callout, CodeGroup } from '~/ui/components/Snippet'
+
 Aggregator merchants represent the businesses you process payments for. They sit under an [aggregator](/concepts/aggregator), inherit its credentials, and must link to a Safepay-managed [Raast merchant](/concepts/raast-merchants) before you can move money on their behalf.
 
 | Field | Type | Required? | Example | Notes |
@@ -107,9 +109,27 @@ console.log('Aggregator merchant identifier', aggregatorMerchantIdentifier);
 
 ### Merchant lifecycle
 
-1. **Created** — Safepay receives your request and assigns an ID.
-2. **Pending checks** — KYC/KYB validations run. Provide documentation if requested.
-3. **Enabled** — Payment, QR, and payout endpoints accept this merchant.
-4. **Disabled** — Safepay can suspend a merchant; payment requests will fail until re-enabled.
+1. **Created** - Safepay receives your request and assigns an ID.
+2. **Pending checks** - KYC/KYB validations run. Provide documentation if requested.
+3. **Enabled** - Payment, QR, and payout endpoints accept this merchant.
+4. **Disabled** - Safepay can suspend a merchant; payment requests will fail until re-enabled.
 
 Re-use the `List merchants` and `Get merchant` endpoints to monitor these transitions during onboarding.
+
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /v1/aggregators/{{aggregator_id}}/merchants` | Create an aggregator merchant. |
+| `GET /v1/aggregators/{{aggregator_id}}/merchants` | List merchants with filters and pagination. |
+| `GET /v1/aggregators/{{aggregator_id}}/merchants/{{aggregator_merchant_id}}` | Read a single merchant. |
+| `PUT /v1/aggregators/{{aggregator_id}}/merchants/{{aggregator_merchant_id}}` | Update merchant details. |
+| `DELETE /v1/aggregators/{{aggregator_id}}/merchants/{{aggregator_merchant_id}}` | Disable or delete a merchant. |
+
+## See also
+
+- [Raast merchants](/concepts/raast-merchants)
+- [Quickstart](/overview/quickstart)
+- [Payment types](/concepts/payment-types)
+- [Pagination](/reference/pagination)
+- [API reference](/api-reference)

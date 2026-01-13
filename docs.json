@@ -17,23 +17,25 @@
             "group": "Getting started",
             "pages": [
               "overview/introduction",
-              "overview/quickstart",
-              "overview/create-aggregator",
-              "overview/request-access-key"
-            ]
-          },
-          {
-            "group": "Integration guides",
-            "pages": [
-              "guides/overview",
-              "guides/raast-integration-journey",
-              "guides/payment-lifecycle",
-              "guides/payout-lifecycle"
-            ]
-          },
-          {
-            "group": "Use Cases",
-            "pages": [
+            "overview/quickstart",
+            "overview/create-aggregator",
+            "overview/request-access-key",
+            "overview/first-api-call"
+          ]
+        },
+        {
+          "group": "Integration guides",
+          "pages": [
+            "guides/overview",
+            "guides/raast-integration-journey",
+            "guides/payment-lifecycle",
+            "guides/payout-lifecycle",
+            "guides/webhooks-delivery"
+          ]
+        },
+        {
+          "group": "Use Cases",
+          "pages": [
               "use-cases/overview",
               "use-cases/rtp_now",
               "use-cases/rtp_later",
@@ -53,12 +55,20 @@
               "concepts/payment",
               "concepts/qr_code",
               "concepts/refunds",
-              "concepts/webhooks",
-              "concepts/ledger"
-            ]
-          }
-        ]
-      },
+            "concepts/webhooks",
+            "concepts/ledger"
+          ]
+        },
+        {
+          "group": "Reference",
+          "pages": [
+            "reference/errors",
+            "reference/rate-limits",
+            "reference/pagination"
+          ]
+        }
+      ]
+    },
       {
         "tab": "API reference",
         "groups": [

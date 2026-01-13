@@ -5,9 +5,34 @@ sidebar:
   order: 3
 ---
 
+import { Steps, Callout } from '~/ui/components/Snippet'
+
 Every Raast payment is asynchronous. Use this guide to reason about customer experience, backend orchestration, and webhook handling for each flow.
 
+<Callout type="info">Subscribe to webhooks for real-time updates and use polling only as a backup for dashboards.</Callout>
+
+## Payment webhook events
+
+| Event | Description |
+| --- | --- |
+| `payment.created` | A new payment request was created (initiated by customer). |
+| `payment.pending_authorization` | Payment is awaiting authorization (for example, Pay Later checks). |
+| `payment.authorized` | Payment has been authorized and funds are on hold. |
+| `payment.completed` | Payment has been captured or charged successfully. |
+| `payment.settled` | Payment funds have been settled to the merchant. |
+| `payment.refunded` | Payment was fully refunded. |
+| `payment.refund_partial` | Payment was partially refunded. |
+| `payment.rejected` | Payment was rejected before authorization. |
+| `payment.failed` | Payment processing failed. |
+| `payment.reversed` | Payment was reversed after completion. |
+| `payment.voided` | Payment authorization was voided. |
+
 ## RTP Now
+
+**Endpoints**
+
+- `POST /v1/aggregators/{{aggregator_id}}/payments`
+- `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` (optional polling)
 
 <Steps>
   <Step title="Create the payment">
@@ -27,7 +52,16 @@ Every Raast payment is asynchronous. Use this guide to reason about customer exp
   </Step>
 </Steps>
 
+### Webhook events to expect
+
+Expect `payment.created`, `payment.pending_authorization`, and a terminal state such as `payment.completed`, `payment.settled`, `payment.rejected`, or `payment.failed`.
+
 ## RTP Later
+
+**Endpoints**
+
+- `POST /v1/aggregators/{{aggregator_id}}/payments`
+- `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` (optional polling)
 
 <Steps>
   <Step title="Create the payment">
@@ -47,7 +81,16 @@ Every Raast payment is asynchronous. Use this guide to reason about customer exp
   </Step>
 </Steps>
 
+### Webhook events to expect
+
+Expect `payment.created`, `payment.pending_authorization`, and a terminal state such as `payment.completed`, `payment.settled`, `payment.rejected`, or `payment.failed`.
+
 ## Dynamic QR
+
+**Endpoints**
+
+- `POST /v1/aggregators/{{aggregator_id}}/qrs`
+- `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` (optional polling)
 
 <Steps>
   <Step title="Generate QR per transaction">
@@ -64,7 +107,16 @@ Every Raast payment is asynchronous. Use this guide to reason about customer exp
   </Step>
 </Steps>
 
+### Webhook events to expect
+
+Expect `payment.created`, `payment.completed`, and `payment.settled`, plus `payment.failed` or `payment.rejected` when the customer abandons or cancels.
+
 ## Static QR
+
+**Endpoints**
+
+- `POST /v1/aggregators/{{aggregator_id}}/qrs`
+- `GET /v1/aggregators/{{aggregator_id}}/qrs/{{qr_id}}/payments` (list QR payments)
 
 <Steps>
   <Step title="Create once">
@@ -81,4 +133,16 @@ Every Raast payment is asynchronous. Use this guide to reason about customer exp
   </Step>
 </Steps>
 
-<Callout type="tip">Combine webhooks with periodic polling of `GET /payments` when building dashboards; polling is still helpful if your webhook endpoint is temporarily unavailable.</Callout>
+<Callout type="tip">Combine webhooks with periodic polling of `GET /v1/aggregators/{{aggregator_id}}/payments` when building dashboards; polling is still helpful if your webhook endpoint is temporarily unavailable.</Callout>
+
+### Webhook events to expect
+
+Expect `payment.created`, `payment.completed`, and `payment.settled` for each payment made against the QR.
+
+## See also
+
+- [RTP Now use case](/use-cases/rtp_now)
+- [RTP Later use case](/use-cases/rtp_later)
+- [Dynamic QR use case](/use-cases/dynamic_qr)
+- [Static QR use case](/use-cases/static_qr)
+- [Webhooks](/concepts/webhooks)

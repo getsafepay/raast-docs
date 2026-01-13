@@ -5,9 +5,13 @@ sidebar:
   order: 4
 ---
 
+import { Callout, CodeGroup, Steps } from '~/ui/components/Snippet'
+
 Safepay operates a double-entry ledger for Raast activity. Each aggregator and merchant is mapped to one or more ledger accounts that hold their operational balance, settlement deltas, and fee/tax accruals. These accounts are owned and maintained by Safepay, but you reference them when reading balances or triggering payouts.
 
-Ledger accounts are not bank accounts themselves—they are a real-time representation of what Safepay owes or is owed, backed by settlement runs to your bank account.
+Ledger accounts are not bank accounts themselves - they are a real-time representation of what Safepay owes or is owed, backed by settlement runs to your bank account.
+
+<Callout type="info">Raast payments settle in batches every 6 hours. The `running_balance` reflects activity within the current batch and resets to `0` after settlement completes.</Callout>
 
 | Field | Description |
 | --- | --- |
@@ -29,6 +33,51 @@ Ledger accounts are not bank accounts themselves—they are a real-time represen
 
 ### Mapping workflow
 
-1. Query **List ledger accounts** (for example, `List ledger accounts` in the API reference) to see existing accounts for your aggregator and merchants.
-2. Store the returned `token` in your system; this is the stable reference you use when reading balances or troubleshooting settlements.
-3. Use **Read aggregator ledger account** or **Read aggregator merchant ledger accounts** when you need to reconcile your internal balances with Safepay’s ledger.
+<Steps>
+  <Step title="List ledger accounts">
+    Call `GET /v1/aggregators/{{aggregator_id}}/ledger/accounts` to fetch the aggregator ledger accounts.
+  </Step>
+  <Step title="Store the ledger token">
+    Persist the returned `token`. It is the stable reference used in reconciliation and reporting.
+  </Step>
+  <Step title="Query merchant ledger accounts">
+    Use `GET /v1/aggregators/{{aggregator_id}}/merchants/{{aggregator_merchant_id}}/ledger/accounts` for merchant-level balances.
+  </Step>
+</Steps>
+
+### Example: list ledger accounts
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/ledger/accounts" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+
+const res = await fetch(`${baseUrl}/v1/aggregators/${aggregatorId}/ledger/accounts`, {
+  headers: {
+    'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+  },
+});
+
+if (!res.ok) {
+  throw new Error(`Ledger lookup failed: ${res.status}`);
+}
+
+const payload = await res.json();
+console.log('Ledger accounts', payload.data);
+```
+
+</CodeGroup>
+
+## See also
+
+- [Payout lifecycle](/guides/payout-lifecycle)
+- [Payouts use case](/use-cases/payouts)
+- [Webhooks](/concepts/webhooks)
+- [API reference](/api-reference)

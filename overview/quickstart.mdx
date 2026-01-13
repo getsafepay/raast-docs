@@ -5,7 +5,17 @@ sidebar:
   order: 2
 ---
 
+import { Steps, Callout, CodeGroup } from '~/ui/components/Snippet'
+
 Safepay Raast lets you orchestrate Request To Pay flows on behalf of your merchants. Follow this quickstart to get credentials, link a merchant, and send an RTP request.
+
+## Prerequisites
+
+- `{{aggregator_id}}` issued by Safepay
+- `{{secret_key}}` for the target environment
+- A Raast merchant to link during merchant creation
+
+## Environments
 
 | Environment | Base URL | Notes |
 | --- | --- | --- |
@@ -29,7 +39,7 @@ Safepay Raast lets you orchestrate Request To Pay flows on behalf of your mercha
 
 <Callout type="warning">Never ship `{{secret_key}}` in client-side code. Rotate credentials immediately if exposed.</Callout>
 
-### Create your first merchant
+## Create your first merchant
 
 Each merchant you manage must be linked to a Raast merchant. Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.
 
@@ -55,20 +65,25 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/merchants" \
 ```
 
 ```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = process.env.SAFEPAY_SECRET_KEY ?? '';
+const raastMerchantId = '{{raast_merchant_id}}';
+
 const createMerchantResponse = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/merchants`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/merchants`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       merchant_external_id: 'sec_0c3de397-441f-471f-bcd7-b6d948e1c307',
       iban: 'PK62ABPA0010000222380013',
       name: 'Acme Foods Saddar',
       enabled: true,
-      raast_merchant_id: process.env.SAFEPAY_RAAST_MERCHANT_ID,
+      raast_merchant_id: raastMerchantId,
       rate_card: {
         ratecard_kind: 'RateCardKind_fixed',
         fixed_rate: 3000,
@@ -103,7 +118,7 @@ console.log('Aggregator merchant identifier', aggregatorMerchantIdentifier);
 
 <Callout type="tip">Persist `data.token`; Safepay uses it as the `aggregator_merchant_identifier` in subsequent payment, QR, and payout calls.</Callout>
 
-### Make a payment request
+## Make a payment request
 
 Once Safepay enables the merchant, create a Request-to-Pay (RTP) using the same credentials. Reuse `{{base_url}}` for the target environment. The example below demonstrates an RTP Now payment that immediately prompts the customer.
 
@@ -130,13 +145,17 @@ if (!aggregatorMerchantIdentifier) {
   throw new Error('Missing SAFEPAY_AGGREGATOR_MERCHANT_IDENTIFIER');
 }
 
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = process.env.SAFEPAY_SECRET_KEY ?? '';
+
 const paymentResponse = await fetch(
-  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/payments`,
+  `${baseUrl}/v1/aggregators/${aggregatorId}/payments`,
   {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
     },
     body: JSON.stringify({
       request_id: crypto.randomUUID(),
@@ -175,3 +194,11 @@ console.log('Payment token', paymentPayload.data.token);
 </CodeGroup>
 
 Next, subscribe to [webhooks](/concepts/webhooks) to know when the customer approves or rejects the request, and retry idempotently by reusing the same `request_id` when network errors occur.
+
+## See also
+
+- [Create aggregator account](/overview/create-aggregator)
+- [Manage aggregator secret keys](/overview/request-access-key)
+- [First API call](/overview/first-api-call)
+- [Payment lifecycle guide](/guides/payment-lifecycle)
+- [Webhooks](/concepts/webhooks)
