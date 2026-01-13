@@ -1791,6 +1791,12 @@ components:
         variable_rate:
           type: number
           description: Percentage fee applied to the transaction amount
+        sales_tax_withholding:
+          type: number
+          description: Sales tax withholding rate applied to the transaction (fractional value)
+        income_tax_withholding:
+          type: number
+          description: Income tax withholding rate applied to the transaction (fractional value)
         created_at:
           $ref: "#/components/schemas/Timestamp"
         updated_at:
@@ -2504,6 +2510,12 @@ components:
                   tax_rate:
                     type: number
                     description: Applicable tax rate expressed as a fraction (e.g., 0.1 for 10%)
+                  sales_tax_withholding:
+                    type: number
+                    description: Sales tax withholding rate applied to the transaction (fractional value)
+                  income_tax_withholding:
+                    type: number
+                    description: Income tax withholding rate applied to the transaction (fractional value)
                 required:
                   - ratecard_kind
                   - tax_rate
@@ -2523,9 +2535,12 @@ components:
                 raast_merchant_id: mer_eb2f5757-c0e4-4eb4-ad4b-2f4b671a84e2
                 rate_card:
                   ratecard_kind: RateCardKind_fixed
-                  fixed_rate: 3000
-                  tax_region: PK
+                  variable_rate: 0.0215
+                  fixed_rate: 2900
                   tax_rate: 0.1
+                  tax_region: Punjab
+                  sales_tax_withholding: 0.10
+                  income_tax_withholding: 0.02
     UpdateMerchant:
       description: Request to update an existing aggregator merchant
       content:
@@ -2547,18 +2562,26 @@ components:
                 type: object
                 description: Rate configuration Safepay applies to the merchant's Raast transactions
                 properties:
+                  ratecard_kind:
+                    $ref: "#/components/schemas/RateCardKind"
                   fixed_rate:
                     type: integer
                     description: Fixed per-transaction fee in paisa
-                  tax_rate:
-                    type: number
-                    description: Applicable tax rate expressed as a fraction (e.g., 0.1 for 10%)
-                  tax_region:
-                    type: string
-                    description: Region where the tax rate applies
                   variable_rate:
                     type: number
                     description: Fractional fee applied to the transaction amount
+                  tax_region:
+                    type: string
+                    description: Region where the tax rate applies
+                  tax_rate:
+                    type: number
+                    description: Applicable tax rate expressed as a fraction (e.g., 0.1 for 10%)
+                  sales_tax_withholding:
+                    type: number
+                    description: Sales tax withholding rate applied to the transaction (fractional value)
+                  income_tax_withholding:
+                    type: number
+                    description: Income tax withholding rate applied to the transaction (fractional value)
           examples:
             Update Merchant:
               value:
@@ -2566,10 +2589,13 @@ components:
                 enabled: true
                 iban: PK85HABB0002157901170103
                 rate_card:
-                  fixed_rate: 4000
+                  ratecard_kind: RateCardKind_fixed
+                  variable_rate: 0.0215
+                  fixed_rate: 2900
                   tax_rate: 0.1
-                  tax_region: ""
-                  variable_rate: 0.029
+                  tax_region: Punjab
+                  sales_tax_withholding: 0.10
+                  income_tax_withholding: 0.02
     CreatePayment:
       description: Request to create an RTP Now or RTP Later
       content:
