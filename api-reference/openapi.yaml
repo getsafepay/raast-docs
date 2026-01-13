@@ -819,7 +819,7 @@ paths:
     get:
       tags:
         - Ledgers
-      summary: Find External Aggregator Ledger Account 
+      summary: Find Aggregator Ledger Account 
       description: Explore ledger account in detail
       security:
         - apiKey: []
@@ -836,7 +836,7 @@ paths:
     get:
       tags:
         - Ledgers
-      summary: Find External Merchant Ledger Account 
+      summary: Find Merchant Ledger Account 
       description: Explore ledger account in detail
       security:
         - apiKey: []
