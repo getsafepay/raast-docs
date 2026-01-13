@@ -701,8 +701,6 @@ paths:
         - $ref: "#/components/parameters/AccountInfoWithTitleFetchParam"
         - $ref: "#/components/parameters/AccountInfoAliasTypeParam"
         - $ref: "#/components/parameters/AccountInfoAliasValueParam"
-      requestBody:
-        $ref: "#/components/requestBodies/AccountInfoRequest"
       responses:
         "200":
           $ref: "#/components/responses/AccountInfoResponse"
