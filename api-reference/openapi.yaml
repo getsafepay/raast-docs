@@ -1436,6 +1436,78 @@ components:
         example: refund.created
       description: Limit results to Webhook deliveries of the given type
   schemas:
+    CreateRtpBase:
+      type: object
+      description: Base RTP creation payload shared across all debitor identifier options.
+      properties:
+        request_id:
+          type: string
+          description: Client-supplied idempotency identifier for the RTP request.
+        amount:
+          type: integer
+          description: Payment amount in the smallest currency unit (PKR).
+        aggregator_merchant_identifier:
+          type: string
+          description: Identifier for the merchant on whose behalf the RTP is initiated.
+        order_id:
+          type: string
+          description: Merchant order identifier associated with the RTP.
+        type:
+          type: string
+          description: Indicates whether the RTP should be processed immediately or scheduled.
+          enum:
+            - RTP_NOW
+            - RTP_LATER
+        expiry_in_minutes:
+          type: integer
+          description: Minutes until the RTP NOW request expires; must be between 1 and 180.
+          minimum: 1
+          maximum: 180
+        expiry_in_days:
+          type: integer
+          description: Days until the RTP LATER request expires; must be between 1 and 40.
+          minimum: 1
+          maximum: 40
+      required:
+        - request_id
+        - amount
+        - aggregator_merchant_identifier
+        - order_id
+        - type
+
+    CreateRtpWithRaastId:
+      allOf:
+        - $ref: "#/components/schemas/CreateRtpBase"
+        - type: object
+          properties:
+            debitor_raast_id:
+              type: string
+              description: Raast alias for the debitor (for example, a mobile number).
+          required:
+            - debitor_raast_id
+
+    CreateRtpWithIban:
+      allOf:
+        - $ref: "#/components/schemas/CreateRtpBase"
+        - type: object
+          properties:
+            debitor_iban:
+              type: string
+              description: Debitor IBAN for direct account routing.
+          required:
+            - debitor_iban
+
+    CreateRtpWithVaultToken:
+      allOf:
+        - $ref: "#/components/schemas/CreateRtpBase"
+        - type: object
+          properties:
+            debitor_vault_token:
+              type: string
+              description: Token referencing a stored debitor payment instrument in the vault.
+          required:
+            - debitor_vault_token
+
     Timestamp:
       type: string
       format: date-time
@@ -2599,59 +2671,10 @@ components:
       content:
         application/json:
           schema:
-            type: object
-            description: RTP creation payload encapsulating amount, merchant, and debitor details.
-            properties:
-              request_id:
-                type: string
-                description: Client-supplied idempotency identifier for the RTP request.
-              amount:
-                type: integer
-                description: Payment amount in the smallest currency unit (PKR).
-              aggregator_merchant_identifier:
-                type: string
-                description: Identifier for the merchant on whose behalf the RTP is initiated.
-              order_id:
-                type: string
-                description: Merchant order identifier associated with the RTP.
-              type:
-                type: string
-                description: Indicates whether the RTP should be processed immediately or scheduled.
-                enum:
-                  - RTP_NOW
-                  - RTP_LATER
-              expiry_in_minutes:
-                type: integer
-                description: Minutes until the RTP NOW request expires; must be between 1 and 180.
-                minimum: 1
-                maximum: 180
-              expiry_in_days:
-                type: integer
-                description: Days until the RTP LATER request expires; must be between 1 and 40.
-                minimum: 1
-                maximum: 40
-              debitor_raast_id:
-                type: string
-                description: Raast alias for the debitor (for example, a mobile number).
-              debitor_vault_token:
-                type: string
-                description: Token referencing a stored debitor payment instrument in the vault.
-              debitor_iban:
-                type: string
-                description: Debitor IBAN for direct account routing.
-            required:
-              - request_id
-              - amount
-              - aggregator_merchant_identifier
-              - order_id
-              - type
             oneOf:
-              - required:
-                  - debitor_raast_id
-              - required:
-                  - debitor_vault_token
-              - required:
-                  - debitor_iban
+              - $ref: "#/components/schemas/CreateRtpWithRaastId"
+              - $ref: "#/components/schemas/CreateRtpWithIban"
+              - $ref: "#/components/schemas/CreateRtpWithVaultToken"
           examples:
             Create RTP Now with Raast Alias:
               value:
@@ -2708,7 +2731,7 @@ components:
                 amount: "200"
                 creditor_iban: PK25ALFH0216001008658216
     CreateRefund:
-      description: Request to create an RTP Now or RTP Later
+      description: Request to create Refund
       content:
         application/json:
           schema:
