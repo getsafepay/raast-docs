@@ -56,7 +56,8 @@
               "concepts/qr_code",
               "concepts/refunds",
             "concepts/webhooks",
-            "concepts/ledger"
+            "concepts/ledger",
+            "concepts/settlement-reports"
           ]
         },
         {

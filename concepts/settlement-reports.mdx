@@ -1,0 +1,166 @@
+---
+title: 'Settlement reports'
+description: 'How Safepay Raast creates and tracks settlement report exports.'
+---
+
+import { Callout, CodeGroup, Steps } from '~/ui/components/Snippet'
+
+Safepay lets you generate settlement report exports so your team can reconcile settlement activity offline. Report exports are asynchronous: you seed a report request, and our settlement engine processes it in the background.
+
+## How settlement report exports work
+
+| Stage | What happens |
+| --- | --- |
+| Seed report request | You seed a report export request for an aggregator settlement scope. |
+| Processing | Safepay queues and prepares the file in the background. |
+| Read export | You fetch the export record to check status and file metadata. |
+| Download file | Once completed, download the file from the URL returned in the export payload. |
+
+## Create a settlement report export
+
+Use this when you need a settlement report for a specific date range or reconciliation run.
+
+<Steps>
+  <Step title="Seed report request">
+    Call `POST /v1/aggregators/{{aggregator_id}}/settlements/report-exports` with your export filters.
+  </Step>
+  <Step title="Track export status">
+    Poll `GET /v1/aggregators/{{aggregator_id}}/settlements/report-exports/{{report_export_id}}` until processing is completed.
+  </Step>
+  <Step title="Download and reconcile">
+    Download the exported file and reconcile settlements in your reporting workflow.
+  </Step>
+</Steps>
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/report-exports" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "request_id": "{{request_id}}",
+    "from_date": "2026-04-01",
+    "to_date": "2026-04-15",
+    "format": "CSV"
+  }'
+```
+
+```typescript TypeScript
+const baseUrl = '{{base_url}}';
+const aggregatorId = '{{aggregator_id}}';
+const secretKey = '{{secret_key}}';
+
+const res = await fetch(
+  `${baseUrl}/v1/aggregators/${aggregatorId}/settlements/report-exports`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+    },
+    body: JSON.stringify({
+      request_id: crypto.randomUUID(),
+      from_date: '2026-04-01',
+      to_date: '2026-04-15',
+      format: 'CSV',
+    }),
+  }
+);
+
+if (!res.ok) {
+  const error = await res.json();
+  throw new Error(`Settlement report export failed: ${res.status} ${error.message}`);
+}
+
+const payload = await res.json();
+console.log('Report export id', payload.data.id);
+console.log('Current status', payload.data.status);
+```
+
+</CodeGroup>
+
+<Callout type="info">
+  Report exports are generated asynchronously. Keep polling the read endpoint until status indicates completion, then use the returned file URL.
+</Callout>
+
+## List settlement report exports
+
+Use listing to audit historical exports and monitor pending jobs.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/report-exports?limit=20&offset=0" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const listRes = await fetch(
+  `${baseUrl}/v1/aggregators/${aggregatorId}/settlements/report-exports?limit=20&offset=0`,
+  {
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+    },
+  }
+);
+
+if (!listRes.ok) {
+  const error = await listRes.json();
+  throw new Error(`List report exports failed: ${listRes.status} ${error.message}`);
+}
+
+const listPayload = await listRes.json();
+console.log('Total exports', listPayload.data.items.length);
+```
+
+</CodeGroup>
+
+## Read a settlement report export
+
+Use this endpoint to retrieve the latest state of one export, including readiness and file details.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/report-exports/{{report_export_id}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const reportExportId = '{{report_export_id}}';
+
+const readRes = await fetch(
+  `${baseUrl}/v1/aggregators/${aggregatorId}/settlements/report-exports/${reportExportId}`,
+  {
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+    },
+  }
+);
+
+if (!readRes.ok) {
+  const error = await readRes.json();
+  throw new Error(`Read report export failed: ${readRes.status} ${error.message}`);
+}
+
+const readPayload = await readRes.json();
+console.log('Status', readPayload.data.status);
+console.log('File URL', readPayload.data.file_url);
+```
+
+</CodeGroup>
+
+## Key endpoints
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /v1/aggregators/{{aggregator_id}}/settlements/report-exports` | Seed a settlement report export request. |
+| `GET /v1/aggregators/{{aggregator_id}}/settlements/report-exports` | List settlement report export requests. |
+| `GET /v1/aggregators/{{aggregator_id}}/settlements/report-exports/{{report_export_id}}` | Read one settlement report export request. |
+
+## See also
+
+- [Settlement batches](/concepts/settlement-batches)
+- [Ledger](/concepts/ledger)
+- [Webhooks](/concepts/webhooks)
