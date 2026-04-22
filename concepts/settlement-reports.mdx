@@ -5,7 +5,7 @@ description: 'How Safepay Raast creates and tracks settlement report exports.'
 
 import { Callout, CodeGroup, Steps } from '~/ui/components/Snippet'
 
-Safepay lets you generate settlement report exports so your team can reconcile settlement activity offline. Report exports are asynchronous: you seed a report request, and our settlement engine processes it in the background.
+Safepay lets you generate settlement report exports so your team can reconcile settlement activity. Report exports are asynchronous: you seed a report request, and our settlement engine processes it in the background.
 
 ## How settlement report exports work
 
@@ -17,8 +17,6 @@ Safepay lets you generate settlement report exports so your team can reconcile s
 | Download file | Once completed, download the file from the URL returned in the export payload. |
 
 ## Create a settlement report export
-
-Use this when you need a settlement report for a specific date range or reconciliation run.
 
 <Steps>
   <Step title="Seed report request">
@@ -81,12 +79,12 @@ console.log('Current status', payload.data.status);
 </CodeGroup>
 
 <Callout type="info">
-  Report exports are generated asynchronously. Keep polling the read endpoint until status indicates completion, then use the returned file URL.
+  Report exports are generated asynchronously. Keep polling the read endpoint until status indicates REPORT_STATUS_SUCCEEDED, then use the returned file URL.
 </Callout>
 
 ## List settlement report exports
 
-Use listing to audit historical exports and monitor pending jobs.
+Lists report exports for auditing.
 
 <CodeGroup>
 
@@ -161,6 +159,5 @@ console.log('File URL', readPayload.data.file_url);
 
 ## See also
 
-- [Settlement batches](/concepts/settlement-batches)
 - [Ledger](/concepts/ledger)
 - [Webhooks](/concepts/webhooks)

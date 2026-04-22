@@ -978,7 +978,7 @@ paths:
       tags:
         - Settlement Reports
       summary: Create Settlement Report Export
-      description: Create an asynchronous settlement report export job for a settlement batch or merchant scope.
+      description: Create an asynchronous settlement report export job for a batch or merchant scope.
       security:
         - apiKey: []
       parameters:
@@ -1005,7 +1005,7 @@ paths:
       tags:
         - Settlement Reports
       summary: List Settlement Report Exports
-      description: List settlement report export jobs for a partner.
+      description: List settlement report export for aggregator.
       security:
         - apiKey: []
       parameters:
@@ -1033,14 +1033,14 @@ paths:
         - name: kind
           in: query
           required: false
-          description: Filter report exports by report kind.
+          description: Filter report exports by report kind (1=REPORT_KIND_SEED, 2=REPORT_KIND_BATCH, 3=REPORT_KIND_MERCHANT).
           schema:
             type: string
             enum:
-              - REPORT_KIND_SEED
-              - REPORT_KIND_BATCH
-              - REPORT_KIND_MERCHANT
-            example: REPORT_KIND_BATCH
+              - 1
+              - 2
+              - 3
+            example: 2
         - name: status
           in: query
           required: false
