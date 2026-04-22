@@ -972,6 +972,176 @@ paths:
           $ref: "#/components/responses/ListWebhookDeliveryResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/report-exports:
+    post:
+      tags:
+        - Settlement Reports
+      summary: Create Settlement Report Export
+      description: Create an asynchronous settlement report export job for a batch or merchant scope.
+      security:
+        - apiKey: []
+      parameters:
+        - name: aggregator_id
+          in: path
+          required: true
+          description: Aggregator identifier that owns the settlement report exports.
+          schema:
+            type: string
+            example: agg_b49985f2-e099-412e-8eb2-98756059cc0d
+      requestBody:
+        $ref: "#/components/requestBodies/CreateSettlementReportExport"
+      responses:
+        "200":
+          $ref: "#/components/responses/CreateSettlementReportExportResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    get:
+      tags:
+        - Settlement Reports
+      summary: List Settlement Report Exports
+      description: List settlement report export for aggregator.
+      security:
+        - apiKey: []
+      parameters:
+        - name: aggregator_id
+          in: path
+          required: true
+          description: Aggregator identifier that owns the settlement report exports.
+          schema:
+            type: string
+            example: agg_b49985f2-e099-412e-8eb2-98756059cc0d
+        - name: settlement_batch_id
+          in: query
+          required: false
+          description: Filter report exports by settlement batch identifier.
+          schema:
+            type: string
+            example: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+        - name: merchant_id
+          in: query
+          required: false
+          description: Filter report exports by merchant identifier.
+          schema:
+            type: string
+            example: mer_0e4b3a32-754b-483a-9c85-80581dbef4cf
+        - name: kind
+          in: query
+          required: false
+          description: Filter report exports by report kind (1=REPORT_KIND_SEED, 2=REPORT_KIND_BATCH, 3=REPORT_KIND_MERCHANT).
+          schema:
+            type: string
+            enum:
+              - 1
+              - 2
+              - 3
+            example: 2
+        - name: status
+          in: query
+          required: false
+          description: Filter report exports by processing status (1=PENDING, 2=RUNNING, 3=SUCCEEDED, 4=FAILED, 5=SEEDED, 6=RETRYING).
+          schema:
+            type: integer
+            format: int32
+            enum:
+              - 1
+              - 2
+              - 3
+              - 4
+              - 5
+              - 6
+            example: 3
+        - name: started_at_from
+          in: query
+          required: false
+          description: Include report exports started at or after this Unix timestamp.
+          schema:
+            type: integer
+            format: int64
+            example: 1711929600
+        - name: started_at_to
+          in: query
+          required: false
+          description: Include report exports started at or before this Unix timestamp.
+          schema:
+            type: integer
+            format: int64
+            example: 1712016000
+        - name: date_from
+          in: query
+          required: false
+          description: Include report exports created on or after this Unix timestamp.
+          schema:
+            type: integer
+            format: int64
+            example: 1711929600
+        - name: date_to
+          in: query
+          required: false
+          description: Include report exports created on or before this Unix timestamp.
+          schema:
+            type: integer
+            format: int64
+            example: 1712016000
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of records to return.
+          schema:
+            type: string
+            example: "20"
+        - name: offset
+          in: query
+          required: false
+          description: Number of records to skip before listing results.
+          schema:
+            type: string
+            example: "0"
+      responses:
+        "200":
+          $ref: "#/components/responses/ListSettlementReportExportsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/report-exports/{report-export-id}:
+    get:
+      tags:
+        - Settlement Reports
+      summary: Read Settlement Report Export
+      description: Read one settlement report export and retrieve a signed download URL when available.
+      security:
+        - apiKey: []
+      parameters:
+        - name: aggregator_id
+          in: path
+          required: true
+          description: Aggregator identifier that owns the settlement report exports.
+          schema:
+            type: string
+            example: agg_b49985f2-e099-412e-8eb2-98756059cc0d
+        - name: report_export_id
+          in: path
+          required: true
+          description: Settlement report export identifier.
+          schema:
+            type: string
+            example: rpt_7670f587-0396-4939-ba4b-585ca67983a2
+      responses:
+        "200":
+          $ref: "#/components/responses/ReadSettlementReportExportResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   securitySchemes:
     apiKey:
@@ -2469,8 +2639,94 @@ components:
           $ref: "#/components/schemas/Timestamp"
         delivered_at:
           $ref: "#/components/schemas/Timestamp"
+    SettlementReportExport:
+      type: object
+      description: Settlement report export job metadata and processing status.
+      properties:
+        id:
+          type: string
+          example: "58"
+        token:
+          type: string
+          example: rpt_7670f587-0396-4939-ba4b-585ca67983a2
+        settlement_batch_id:
+          type: string
+          example: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+        merchant_id:
+          type: string
+          example: mer_0e4b3a32-754b-483a-9c85-80581dbef4cf
+        kind:
+          type: string
+          example: REPORT_KIND_MERCHANT
+        status:
+          type: string
+          example: REPORT_STATUS_SUCCEEDED
+        attempts:
+          type: integer
+          example: 1
+        error_message:
+          type: string
+          example: ""
+        s3_key:
+          type: string
+          example: reports/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1/mer_0e4b3a32-754b-483a-9c85-80581dbef4cf/merchant-settlement-report-1775215823-v1.csv
+        record_count:
+          type: string
+          example: "2"
+        file_size:
+          type: string
+          example: "1234"
+        started_at:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          nullable: true
+        finished_at:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          nullable: true
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+        partner_id:
+          type: string
+          example: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+        version:
+          type: integer
+          example: 1
 
   requestBodies:
+    CreateSettlementReportExport:
+      description: Request body to create a settlement report export job.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              settlement_batch_id:
+                type: string
+                description: Settlement batch identifier to export.
+                example: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+              merchant_id:
+                type: string
+                description: Optional merchant identifier for merchant-level report exports type REPORT_KIND_MERCHANT. Empty if the report exports are of type REPORT_KIND_BATCH.
+                example: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+              kind:
+                type: string
+                description: Export scope kind.
+                enum:
+                  - REPORT_KIND_BATCH
+                  - REPORT_KIND_MERCHANT
+                example: REPORT_KIND_BATCH
+            required:
+              - settlement_batch_id
+              - kind
+          examples:
+            CreateSettlementReportExport:
+              value:
+                settlement_batch_id: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+                merchant_id: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+                kind: REPORT_KIND_BATCH
     CreateAccessKey:
       description: Request to create a new access key
       content:
@@ -2886,6 +3142,193 @@ components:
                 event_types: ["payment.created", "payment.refunded"]
                 enabled: true
   responses:
+    CreateSettlementReportExportResponse:
+      description: Settlement report export job created successfully.
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      report_export:
+                        $ref: "#/components/schemas/SettlementReportExport"
+          examples:
+            SettlementReportExportCreated:
+              value:
+                api_version: v1
+                data:
+                  report_export:
+                    id: "55"
+                    token: rpt_e71265de-6699-4a02-b99b-b985edb9b915
+                    settlement_batch_id: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+                    merchant_id: ""
+                    kind: REPORT_KIND_SEED
+                    status: REPORT_STATUS_SEEDED
+                    attempts: 1
+                    error_message: ""
+                    s3_key: ""
+                    record_count: "0"
+                    file_size: "0"
+                    started_at: "2026-04-03T11:30:09Z"
+                    finished_at: null
+                    created_at: "2026-04-03T11:30:04Z"
+                    updated_at: "2026-04-03T11:30:09Z"
+                    partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                    version: 0
+    ReadSettlementReportExportResponse:
+      description: Settlement report export job details.
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      report_export:
+                        $ref: "#/components/schemas/SettlementReportExport"
+                      signed_url:
+                        type: string
+                        description: Pre-signed URL for downloading the generated report file.
+          examples:
+            SettlementReportExportRead:
+              value:
+                api_version: v1
+                data:
+                  report_export:
+                    id: "58"
+                    token: rpt_7670f587-0396-4939-ba4b-585ca67983a2
+                    settlement_batch_id: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+                    merchant_id: mer_0e4b3a32-754b-483a-9c85-80581dbef4cf
+                    kind: REPORT_KIND_MERCHANT
+                    status: REPORT_STATUS_SUCCEEDED
+                    attempts: 1
+                    error_message: ""
+                    s3_key: reports/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1/mer_0e4b3a32-754b-483a-9c85-80581dbef4cf/merchant-settlement-report-1775215823-v1.csv
+                    record_count: "2"
+                    file_size: "1234"
+                    started_at: "2026-04-03T11:30:24Z"
+                    finished_at: "2026-04-03T11:30:24Z"
+                    created_at: "2026-04-03T11:30:09Z"
+                    updated_at: "2026-04-03T11:30:24Z"
+                    partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                    version: 1
+                  signed_url: https://raast-settlement-reports.s3.us-east-1.amazonaws.com/reports/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1/mer_0e4b3a32-754b-483a-9c85-80581dbef4cf/merchant-settlement-report-1775215823-v1.csv?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-SignedHeaders=host&X-Amz-Signature=example
+    ListSettlementReportExportsResponse:
+      description: Paginated list of settlement report export jobs.
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      report_exports:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementReportExport"
+                      count:
+                        type: string
+                        example: "4"
+          examples:
+            SettlementReportExportsListed:
+              value:
+                api_version: v1
+                data:
+                  report_exports:
+                    - id: "56"
+                      token: rpt_528221c6-d6ff-421f-a67e-73bae7451743
+                      settlement_batch_id: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+                      merchant_id: ""
+                      kind: REPORT_KIND_BATCH
+                      status: REPORT_STATUS_SUCCEEDED
+                      attempts: 1
+                      error_message: ""
+                      s3_key: reports/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1/batch/batch-settlement-report-1775215813-v1.csv
+                      record_count: "5"
+                      file_size: "2508"
+                      started_at: "2026-04-03T11:30:14Z"
+                      finished_at: "2026-04-03T11:30:14Z"
+                      created_at: "2026-04-03T11:30:09Z"
+                      updated_at: "2026-04-03T11:30:14Z"
+                      partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                      version: 1
+                    - id: "58"
+                      token: rpt_7670f587-0396-4939-ba4b-585ca67983a2
+                      settlement_batch_id: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+                      merchant_id: mer_0e4b3a32-754b-483a-9c85-80581dbef4cf
+                      kind: REPORT_KIND_MERCHANT
+                      status: REPORT_STATUS_SUCCEEDED
+                      attempts: 1
+                      error_message: ""
+                      s3_key: reports/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1/mer_0e4b3a32-754b-483a-9c85-80581dbef4cf/merchant-settlement-report-1775215823-v1.csv
+                      record_count: "2"
+                      file_size: "1234"
+                      started_at: "2026-04-03T11:30:24Z"
+                      finished_at: "2026-04-03T11:30:24Z"
+                      created_at: "2026-04-03T11:30:09Z"
+                      updated_at: "2026-04-03T11:30:24Z"
+                      partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                      version: 1
+                    - id: "57"
+                      token: rpt_48cc48c6-2088-4fa7-a790-007a1c4e2ac3
+                      settlement_batch_id: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+                      merchant_id: mer_ce6df98c-cdde-48bf-bc32-464cecac2ee3
+                      kind: REPORT_KIND_MERCHANT
+                      status: REPORT_STATUS_SUCCEEDED
+                      attempts: 1
+                      error_message: ""
+                      s3_key: reports/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1/mer_ce6df98c-cdde-48bf-bc32-464cecac2ee3/merchant-settlement-report-1775215818-v1.csv
+                      record_count: "3"
+                      file_size: "1666"
+                      started_at: "2026-04-03T11:30:19Z"
+                      finished_at: "2026-04-03T11:30:19Z"
+                      created_at: "2026-04-03T11:30:09Z"
+                      updated_at: "2026-04-03T11:30:19Z"
+                      partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                      version: 1
+                    - id: "55"
+                      token: rpt_e71265de-6699-4a02-b99b-b985edb9b915
+                      settlement_batch_id: sb_6eb80843-eb2b-4df2-b85f-25d50f03d2a1
+                      merchant_id: ""
+                      kind: REPORT_KIND_SEED
+                      status: REPORT_STATUS_SEEDED
+                      attempts: 1
+                      error_message: ""
+                      s3_key: ""
+                      record_count: "0"
+                      file_size: "0"
+                      started_at: "2026-04-03T11:30:09Z"
+                      finished_at: null
+                      created_at: "2026-04-03T11:30:04Z"
+                      updated_at: "2026-04-03T11:30:09Z"
+                      partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                      version: 0
+                  count: "4"
     StandardSuccess:
       description: Successful operation
       headers:
