@@ -19,7 +19,7 @@ Raast is asynchronous: customers approve or reject requests inside their banking
     Safepay sends events with identifying headers, the event timestamp, and a signed payload.
   </Step>
   <Step title="Verify and acknowledge">
-    Verify the signature, persist the payload, and respond with `200 OK`.
+    Verify the webhook signature using the timestamp and raw request body (see below), then parse and persist the event, and respond with `200 OK`.
   </Step>
 </Steps>
 
@@ -34,33 +34,57 @@ Use the event ID header for idempotency and safe retries.
 
 ## Signature verification
 
-Safepay signs the raw `payload` body with HMAC SHA-256 using `timestamp + '.' + payload`. Use the webhook secret you receive when creating the webhook.
+Safepay computes the webhook signature over `timestamp + '.' + raw_body`: the `X-SFPY-TIMESTAMP` value, a literal period, then the raw HTTP request body bytes. Use the signature header and timestamp header to verify authenticity **before** parsing JSON. The webhook secret returned at creation time is base64-encoded; decode it to get the HMAC key.
+
+<Steps>
+  <Step title="Extract headers">
+    Read `X-SFPY-SIGNATURE` and `X-SFPY-TIMESTAMP` from the incoming request.
+  </Step>
+  <Step title="Build the signing payload">
+    Read the raw HTTP request body bytes exactly as received. Build the signing payload as `timestamp + '.' + raw_body`. Use the `X-SFPY-TIMESTAMP` header value exactly as received, without reformatting it.
+
+    <Callout type="warning">Do not parse, prettify, re-serialize, or otherwise modify the request body before verification. Any modification to the body bytes will cause signature verification to fail.</Callout>
+  </Step>
+  <Step title="Compute HMAC">
+    Base64-decode the webhook secret and use the decoded bytes as the HMAC-SHA256 key. Compute the HMAC over the full signing payload (`timestamp + '.' + raw_body`), not the raw body alone.
+  </Step>
+  <Step title="Format and compare signatures">
+    Format the expected signature as `sha256=` plus a lowercase hexadecimal digest, and compare it to the `X-SFPY-SIGNATURE` header using a constant-time compare (for example `sha256=abcdef...`).
+  </Step>
+</Steps>
 
 ```go
-func Verify(secret, body []byte, providedSig, providedTS string, tolerance time.Duration) error {
+func Verify(secretBase64 string, body []byte, providedSig, providedTS string, tolerance time.Duration) error {
 	if tolerance > 0 {
 		parsed, err := time.Parse(time.RFC3339Nano, providedTS)
 		if err != nil {
-			return err
+			return errInvalidTimestamp
 		}
 		if delta := time.Since(parsed); delta > tolerance || delta < -tolerance {
 			return errTimestampDrift
 		}
 	}
-	mac := hmac.New(sha256.New, secret)
+
+	decodedSecret, err := base64.StdEncoding.DecodeString(secretBase64)
+	if err != nil {
+		return errInvalidSecret
+	}
+
+	mac := hmac.New(sha256.New, decodedSecret)
 	mac.Write([]byte(providedTS))
 	mac.Write([]byte{'.'})
 	mac.Write(body)
-	expected := fmt.Sprintf(headerFormat, hex.EncodeToString(mac.Sum(nil)))
+
+	expected := fmt.Sprintf("sha256=%s", hex.EncodeToString(mac.Sum(nil)))
 	if !hmac.Equal([]byte(expected), []byte(providedSig)) {
 		return errSignatureMismatch
 	}
+
 	return nil
 }
 ```
 
-<Callout type="info">Use the webhook `payload` object as the `body` argument when computing the signature.</Callout>
-<Callout type="info">`headerFormat` represents the signature format Safepay uses when building the `X-SFPY-SIGNATURE` header. Keep it consistent with the value you receive.</Callout>
+<Callout type="info">Pass the raw request body bytes to `Verify` as `body`. Only after verification succeeds should you parse the JSON and process the event. See [Webhooks delivery](/guides/webhooks-delivery) for a full walkthrough.</Callout>
 
 ## Retry behavior
 

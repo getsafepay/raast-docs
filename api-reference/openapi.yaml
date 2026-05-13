@@ -2590,6 +2590,7 @@ components:
           type: string
         secret:
           type: string
+          description: Base64-encoded signing secret (returned on create or rotate). Base64-decode it and use the bytes as the HMAC-SHA256 key when verifying webhook deliveries; see webhooks documentation for the signature algorithm.
         secret_version:
           type: integer
         created_at:
