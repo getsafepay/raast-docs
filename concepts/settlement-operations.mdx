@@ -1,0 +1,228 @@
+---
+title: 'Settlement operations'
+description: 'Inspect settlement batches, payouts, underlying transactions, and per-merchant snapshots for your aggregator.'
+---
+
+import { Callout, CodeGroup, Steps } from '~/ui/components/Snippet'
+
+Settlement operations let you query live settlement activity for your aggregator: batch status, downloadable batch artifacts, payout transactions, underlying payment/refund transactions, per-merchant snapshots, and related settlement-engine job runs.
+
+Use these read APIs to reconcile what settled and when. To download CSV/file exports for reporting workflows, use [Settlement reports](/concepts/settlement-reports).
+
+<Callout type="info">
+  Raast payments settle in scheduled batches. Settlement operations expose those batches and payouts; ledger `running_balance` is the unsettled delta since the last settle and resets to `0` when a settlement batch is scheduled.
+</Callout>
+
+## Object model
+
+| Object | Prefix | What it represents |
+| --- | --- | --- |
+| Settlement batch | `sb_` | A settlement run for a partner window. Holds status, artifacts, and batch-level charge totals. |
+| Settlement transaction | `stxn_` | A merchant/aggregator payout dispatched as part of a batch. |
+| Ledger transaction | `txn_` | An underlying payment or refund included in settlement. |
+| Settlement snapshot | — | Per-merchant payout row for a batch (IBAN, account title, amount breakdown). |
+| Job run | `job_` | A settlement-engine job execution (ledger poster, ledger settler, or payout generator). |
+
+Amounts across settlement operations are returned in the lowest currency denomination (paisa for `PKR`).
+
+## Typical flow
+
+<Steps>
+  <Step title="List batches">
+    Call `GET /v1/aggregators/{{aggregator_id}}/settlements/batches` to find the batch token (`sb_…`) you care about.
+  </Step>
+  <Step title="Read the batch">
+    Call `GET /v1/aggregators/{{aggregator_id}}/settlements/batches/{{settlement_batch_id}}` for artifacts (`presigned_url`) and batch-level `charge_snapshot`.
+  </Step>
+  <Step title="Inspect transactions">
+    List batch transactions or settlement transactions to inspect payouts (`stxn_`) and underlying payments/refunds (`txn_`).
+  </Step>
+  <Step title="List snapshots">
+    Call the snapshots endpoint for merchant IBAN / account title / amount breakdowns.
+  </Step>
+  <Step title="Optional: inspect job runs">
+    Call `GET /v1/aggregators/{{aggregator_id}}/settlements/job-runs` to see related ledger settler / payout generator runs (for example, match a batch `created_by_job_id`).
+  </Step>
+  <Step title="Optional: export a report">
+    Create a [report export](/concepts/settlement-reports) when you need a downloadable CSV for offline reconciliation.
+  </Step>
+</Steps>
+
+## Endpoints
+
+| Endpoint | Purpose | Key parameters |
+| --- | --- | --- |
+| [GET /settlements/batches](/api-reference/settlement-operations/list-settlement-batches) | List settlement batches | `cursor`, `limit`, `direction`, `batch_id`, `status` |
+| [GET /settlements/batches/\{id\}](/api-reference/settlement-operations/read-settlement-batch) | Read one batch with artifacts and charge totals | `settlement-batch-id` |
+| [GET /settlements/transactions](/api-reference/settlement-operations/list-settlement-transactions) | List settlement payouts or general transactions | `only_transactions`, status/id filters |
+| [GET /settlements/transactions/\{id\}](/api-reference/settlement-operations/read-settlement-transaction) | Read one `stxn_` payout or `txn_` ledger transaction | `transaction-id` |
+| [GET /settlements/batches/\{id\}/transactions](/api-reference/settlement-operations/list-settlement-batch-transactions) | List transactions linked to a batch | `only_settlement_txns` |
+| [GET /settlements/batches/\{id\}/snapshots](/api-reference/settlement-operations/list-settlement-snapshots) | List per-merchant payout snapshots for a batch | `merchant_id`, `settlement_txn_id` |
+| [GET /settlements/job-runs](/api-reference/settlement-operations/list-settlement-job-runs) | List related settlement-engine job runs | `job_id`, `job_type`, `job_status`, `start_date`, `end_date` |
+
+<Callout type="tip">
+  All settlement operations endpoints are read-only and use cursor pagination. Default page size is `30` (maximum `100`). Pass `direction` as uppercase `ASC` or `DESC` (invalid or empty values default to `DESC`).
+</Callout>
+
+## List vs read behavior
+
+| Call | Includes |
+| --- | --- |
+| List batches | Batch metadata only |
+| Read batch | Batch metadata + `artifacts[]` (with `presigned_url`) + `charge_snapshot` |
+| List snapshots | Per-merchant snapshot rows (not embedded on read batch) |
+
+List responses also return `count.filtered_count` (after optional filters) and `count.total_count` (same scope before those filters).
+
+## Transaction list flags
+
+Two list endpoints share a dual response shape (`settlement_transactions` **or** `transactions`), but their defaults are inverted:
+
+| Endpoint | Default | Flip flag |
+| --- | --- | --- |
+| `GET .../settlements/transactions` | Settlement payouts (`stxn_`) | `only_transactions=true` returns ledger txns (`txn_`) |
+| `GET .../settlements/batches/{id}/transactions` | Ledger txns (`txn_`) | `only_settlement_txns=true` returns settlement payouts (`stxn_`) |
+
+Reading `GET .../settlements/transactions/{id}` is prefix-routed:
+
+- `stxn_…` → `data.settlement_transaction`
+- `txn_…` → `data.transactions`
+- any other prefix → `400 Bad Request`
+
+## Status enums
+
+Query filters accept the **integer** enum; responses serialize the **string** enum name.
+
+### Batch status
+
+| Value | Name |
+| --- | --- |
+| `0` | `BATCH_CREATED` |
+| `1` | `BATCH_PROCESSING` |
+| `2` | `BATCH_COMPLETED` |
+| `3` | `BATCH_FAILED` |
+
+### Settlement transaction status
+
+| Value | Name | Meaning |
+| --- | --- | --- |
+| `1` | `SETTLEMENT_TXN_ACK_PENDING` | Dispatched, awaiting rail acknowledgement |
+| `2` | `SETTLEMENT_TXN_POSTED` | Settled successfully |
+| `3` | `SETTLEMENT_TXN_FAILED` | Failed before or at dispatch |
+| `4` | `SETTLEMENT_TXN_REJECTED` | Rail rejected after dispatch |
+
+### Ledger transaction status
+
+| Value | Name |
+| --- | --- |
+| `1` | `TXN_LEDGER_POSTED` |
+| `2` | `TXN_SETTLEMENT_SCHEDULED` |
+| `3` | `TXN_SETTLEMENT_DISPATCHED` |
+| `4` | `TXN_SETTLEMENT_CONFIRMED` |
+| `5` | `TXN_SETTLEMENT_REVERSED` |
+
+### Job run type
+
+| Value | Name |
+| --- | --- |
+| `1` | `LEDGER_POSTER_JOB` |
+| `2` | `LEDGER_SETTLER_JOB` |
+| `3` | `PAYOUT_GENERATOR_JOB` |
+
+### Job run status
+
+| Value | Name |
+| --- | --- |
+| `1` | `JOB_STATUS_STARTED` |
+| `2` | `JOB_STATUS_SUCCESS` |
+| `3` | `JOB_STATUS_FAILED` |
+
+Query param names for this endpoint are `job_type` and `job_status` (not `status`). Date filters use Unix timestamps via `start_date` / `end_date`.
+
+## List settlement batches
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/batches?limit=30&direction=DESC" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const res = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/settlements/batches?limit=30&direction=DESC`,
+  {
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+  },
+);
+
+if (!res.ok) {
+  throw new Error(`List settlement batches failed with status ${res.status}`);
+}
+
+const payload = await res.json();
+console.log('Batches', payload.data.batches.length);
+console.log('Next cursor', payload.data.next_cursor);
+```
+
+</CodeGroup>
+
+## Read a settlement batch
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/batches/{{settlement_batch_id}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+The response includes downloadable `artifacts` (settlement file and/or charges summary) and a batch-level `charge_snapshot` with gross/net/fee/tax totals when available.
+
+## List settlement transactions
+
+Default lists payouts. Add `only_transactions=true` to list underlying payment/refund ledger transactions instead.
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/transactions?limit=30&direction=DESC" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+## List batch transactions and snapshots
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/batches/{{settlement_batch_id}}/transactions?only_settlement_txns=true" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/batches/{{settlement_batch_id}}/snapshots?merchant_id={{merchant_id}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+## List settlement job runs
+
+Lists settlement-engine job runs that created batches containing settlement transactions for your aggregator. Useful for correlating a batch `created_by_job_id` with job status/timing.
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/settlements/job-runs?job_type=2&limit=30&direction=DESC" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+## Identifier prefixes
+
+| Prefix | Meaning | Example |
+| --- | --- | --- |
+| `sb_` | Settlement batch token (39 chars) | `sb_1328a110-2cf5-4e13-993e-55792ec6b76c` |
+| `stxn_` | Settlement payout transaction (41 chars) | `stxn_d646b075-f62b-49f7-ab0f-7df161a6fc0b` |
+| `txn_` | Underlying payment/refund transaction (40 chars) | `txn_8ffa984c-f0cb-4835-8eee-89c9ca673dad` |
+| `job_` | Settlement-engine job run (40 chars) | `job_76b08225-5372-46db-9acb-086ac9c2f7d6` |
+| `mer_` | Raast merchant (snapshots / txn metadata) | `mer_ce6df98c-cdde-48bf-bc32-464cecac2ee3` |
+| `am_` | Aggregator merchant (on settlement/ledger txns) | `am_7c9594a6-962d-49c7-94e9-64d9cf285969` |
+
+## See also
+
+- [Settlement reports](/concepts/settlement-reports)
+- [Ledger](/concepts/ledger)
+- [Webhooks](/concepts/webhooks)
+- [Pagination](/reference/pagination)
+- [API reference](/api-reference)

@@ -5,7 +5,9 @@ description: 'Use limit and offset to page through list endpoints.'
 
 import { Callout, CodeGroup } from '~/ui/components/Snippet'
 
-Safepay list endpoints use `limit` and `offset` query parameters. Many responses include a `count` field and an array of resources inside `data`.
+Most Safepay list endpoints use `limit` and `offset` query parameters. Many responses include a `count` field and an array of resources inside `data`.
+
+[Settlement operations](/concepts/settlement-operations) list endpoints use **cursor** pagination instead (`cursor`, `limit`, `direction`, and `next_cursor`).
 
 ## Query parameters
 
@@ -14,7 +16,7 @@ Safepay list endpoints use `limit` and `offset` query parameters. Many responses
 | `limit` | Max records to return in a page. | `limit=10` |
 | `offset` | Number of records to skip before returning results. | `offset=0` |
 
-<Callout type="info">Parameter types vary between endpoints (string or integer). Follow the OpenAPI schema for each endpoint.</Callout>
+<Callout type="info">Parameter types vary between endpoints (string or integer). Follow the OpenAPI schema for each endpoint. For settlement operations, use `cursor` / `next_cursor` rather than `offset`.</Callout>
 
 ## Example: list payments
 
@@ -68,4 +70,5 @@ List responses return a `data` object containing `count` and a list for the reso
 - [Errors](/reference/errors)
 - [Payments](/concepts/payment)
 - [Refunds](/concepts/refunds)
+- [Settlement operations](/concepts/settlement-operations)
 - [API reference](/api-reference)

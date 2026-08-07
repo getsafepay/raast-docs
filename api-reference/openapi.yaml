@@ -686,6 +686,25 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /v1/aggregators/{raast-aggregator-id}/title-fetch/v2:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Utilities
+      summary: Title Fetch V2
+      description: Retrieve account title metadata for a conventional bank account number. Provide `account_number` and `bank_name`; Safepay resolves the receiver BIC internally before querying the Raast directory. Supported `bank_name` values and their BIC mappings are listed on this page.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/TitleFetchV2AccountNumberParam"
+        - $ref: "#/components/parameters/TitleFetchV2BankNameParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/TitleFetchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /v1/aggregators/{raast-aggregator-id}/account-info:
     parameters:
       - $ref: "#/components/parameters/AggregatorIdParam"
@@ -973,6 +992,321 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
 
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/batches:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: List Settlement Batches
+      description: |
+        List settlement batches for the aggregator with cursor-based pagination.
+
+        Query `status` using the integer enum; responses serialize status as the string enum name.
+        Amounts elsewhere in settlement operations are returned in the lowest currency denomination (paisa).
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/SettlementOpsCursorParam"
+        - $ref: "#/components/parameters/SettlementOpsLimitParam"
+        - $ref: "#/components/parameters/SettlementOpsDirectionParam"
+        - name: batch_id
+          in: query
+          required: false
+          description: Restrict results to a single settlement batch token (`sb_…`, exactly 39 characters).
+          schema:
+            type: string
+            example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        - name: status
+          in: query
+          required: false
+          description: Filter by settlement batch status integer enum (`0=BATCH_CREATED`, `1=BATCH_PROCESSING`, `2=BATCH_COMPLETED`, `3=BATCH_FAILED`). Response `status` is the string enum name.
+          schema:
+            type: integer
+            format: int32
+            enum: [0, 1, 2, 3]
+            example: 2
+      responses:
+        "200":
+          $ref: "#/components/responses/ListSettlementBatchesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/batches/{settlement-batch-id}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/SettlementBatchIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: Read Settlement Batch
+      description: |
+        Retrieve one settlement batch by token, including downloadable batch artifacts and the batch-level charge snapshot when available.
+
+        Per-merchant settlement snapshot rows are exposed through the dedicated snapshots list endpoint, not embedded on this response.
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/ReadSettlementBatchResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/transactions:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: List Settlement Transactions
+      description: |
+        List settlement payout transactions for the aggregator by default.
+
+        Set `only_transactions=true` to list underlying payment/refund ledger transactions instead.
+        When listing settlement transactions, populate `settlement_transactions`; when listing general transactions, populate `transactions`.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/SettlementOpsCursorParam"
+        - $ref: "#/components/parameters/SettlementOpsLimitParam"
+        - $ref: "#/components/parameters/SettlementOpsDirectionParam"
+        - name: only_transactions
+          in: query
+          required: false
+          description: When true, return general payment/refund transactions in `transactions` instead of settlement payouts in `settlement_transactions`.
+          schema:
+            type: boolean
+            example: false
+        - name: settlement_batch_id
+          in: query
+          required: false
+          description: Filter by settlement batch token (`sb_…`).
+          schema:
+            type: string
+            example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        - name: settlement_txn_id
+          in: query
+          required: false
+          description: Filter by settlement transaction token (`stxn_…`, exactly 41 characters).
+          schema:
+            type: string
+            example: stxn_75549797-f2c6-421d-8dd7-ce39995534b8
+        - name: settlement_txn_status
+          in: query
+          required: false
+          description: Filter settlement transactions by status integer enum (`1=SETTLEMENT_TXN_ACK_PENDING`, `2=SETTLEMENT_TXN_POSTED`, `3=SETTLEMENT_TXN_FAILED`, `4=SETTLEMENT_TXN_REJECTED`). Response `status` is the string enum name.
+          schema:
+            type: integer
+            format: int32
+            enum: [1, 2, 3, 4]
+            example: 2
+        - name: txn_id
+          in: query
+          required: false
+          description: Filter general transactions by token (`txn_…`, exactly 40 characters). Used with `only_transactions=true`.
+          schema:
+            type: string
+            example: txn_8ffa984c-f0cb-4835-8eee-89c9ca673dad
+        - name: txn_status
+          in: query
+          required: false
+          description: Filter general transactions by status integer enum (`1=TXN_LEDGER_POSTED`, `2=TXN_SETTLEMENT_SCHEDULED`, `3=TXN_SETTLEMENT_DISPATCHED`, `4=TXN_SETTLEMENT_CONFIRMED`, `5=TXN_SETTLEMENT_REVERSED`). Response `status` is the string enum name.
+          schema:
+            type: integer
+            format: int32
+            enum: [1, 2, 3, 4, 5]
+            example: 4
+      responses:
+        "200":
+          $ref: "#/components/responses/ListSettlementTransactionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/transactions/{transaction-id}:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/SettlementOpsTransactionIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: Read Settlement Transaction
+      description: |
+        Retrieve one transaction by token. The ID prefix selects the response shape:
+
+        - `stxn_…` returns `data.settlement_transaction` (settlement payout)
+        - `txn_…` returns `data.transactions` (underlying payment/refund ledger transaction)
+
+        Invalid prefixes return `400 Bad Request`.
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/ReadSettlementOpsTransactionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/batches/{settlement-batch-id}/transactions:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/SettlementBatchIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: List Settlement Batch Transactions
+      description: |
+        List transactions linked to a settlement batch.
+
+        By default returns underlying payment/refund transactions in `transactions`.
+        Set `only_settlement_txns=true` to return settlement payouts in `settlement_transactions` instead.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/SettlementOpsCursorParam"
+        - $ref: "#/components/parameters/SettlementOpsLimitParam"
+        - $ref: "#/components/parameters/SettlementOpsDirectionParam"
+        - name: only_settlement_txns
+          in: query
+          required: false
+          description: When true, return settlement payouts in `settlement_transactions` instead of general transactions in `transactions`.
+          schema:
+            type: boolean
+            example: false
+      responses:
+        "200":
+          $ref: "#/components/responses/ListSettlementBatchTransactionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/batches/{settlement-batch-id}/snapshots:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/SettlementBatchIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: List Settlement Snapshots
+      description: |
+        List per-merchant settlement snapshots persisted for a settlement batch, including payout IBAN, account title, and amount breakdowns.
+
+        `count.filtered_count` reflects optional filters; `count.total_count` is the batch total before those filters.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/SettlementOpsCursorParam"
+        - $ref: "#/components/parameters/SettlementOpsLimitParam"
+        - $ref: "#/components/parameters/SettlementOpsDirectionParam"
+        - name: settlement_txn_id
+          in: query
+          required: false
+          description: Filter by settlement transaction token (`stxn_…`).
+          schema:
+            type: string
+            example: stxn_9d5bd7bd-863a-487f-944c-f15d30d9bbc5
+        - name: merchant_id
+          in: query
+          required: false
+          description: Filter by Raast merchant token (`mer_…`).
+          schema:
+            type: string
+            example: mer_ce6df98c-cdde-48bf-bc32-464cecac2ee3
+      responses:
+        "200":
+          $ref: "#/components/responses/ListSettlementSnapshotsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/aggregators/{raast-aggregator-id}/settlements/job-runs:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: List Settlement Job Runs
+      description: |
+        List settlement-engine job runs visible to the aggregator.
+
+        Results are scoped to jobs that created settlement batches containing settlement transactions for this aggregator.
+        Use this to inspect ledger poster, ledger settler, and payout generator runs related to your settlement activity.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/SettlementOpsCursorParam"
+        - $ref: "#/components/parameters/SettlementOpsLimitParam"
+        - $ref: "#/components/parameters/SettlementOpsDirectionParam"
+        - name: job_id
+          in: query
+          required: false
+          description: Restrict results to a single job run token (`job_…`, exactly 40 characters).
+          schema:
+            type: string
+            example: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+        - name: job_type
+          in: query
+          required: false
+          description: |
+            Filter by job type integer enum (`1=LEDGER_POSTER_JOB`, `2=LEDGER_SETTLER_JOB`, `3=PAYOUT_GENERATOR_JOB`).
+            Response `job_type` is the string enum name.
+          schema:
+            type: integer
+            format: int32
+            enum: [1, 2, 3]
+            example: 2
+        - name: job_status
+          in: query
+          required: false
+          description: |
+            Filter by job status integer enum (`1=JOB_STATUS_STARTED`, `2=JOB_STATUS_SUCCESS`, `3=JOB_STATUS_FAILED`).
+            Response `status` is the string enum name.
+          schema:
+            type: integer
+            format: int32
+            enum: [1, 2, 3]
+            example: 2
+        - name: start_date
+          in: query
+          required: false
+          description: Inclusive lower bound on job `started_at`, as a Unix timestamp in seconds.
+          schema:
+            type: integer
+            format: int64
+            example: 1744531200
+        - name: end_date
+          in: query
+          required: false
+          description: Inclusive upper bound on job `ended_at`, as a Unix timestamp in seconds. Must be greater than or equal to `start_date` when both are set.
+          schema:
+            type: integer
+            format: int64
+            example: 1744617600
+      responses:
+        "200":
+          $ref: "#/components/responses/ListSettlementJobRunsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /v1/aggregators/{raast-aggregator-id}/settlements/report-exports:
     post:
       tags:
@@ -1166,6 +1500,51 @@ components:
         type: string
         example: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
       description: The unique identifier for the aggregator
+
+    SettlementBatchIdParam:
+      name: settlement-batch-id
+      in: path
+      required: true
+      description: Settlement batch token. Must start with `sb_` and be exactly 39 characters.
+      schema:
+        type: string
+        example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+    SettlementOpsTransactionIdParam:
+      name: transaction-id
+      in: path
+      required: true
+      description: |
+        Transaction token. Use a settlement transaction id (`stxn_…`, 41 characters) or a general transaction id (`txn_…`, 40 characters).
+      schema:
+        type: string
+        example: stxn_d646b075-f62b-49f7-ab0f-7df161a6fc0b
+    SettlementOpsCursorParam:
+      name: cursor
+      in: query
+      required: false
+      description: Cursor for pagination. Pass the previous response `next_cursor`, or omit/`0` for the first page.
+      schema:
+        type: integer
+        format: int64
+        example: 0
+    SettlementOpsLimitParam:
+      name: limit
+      in: query
+      required: false
+      description: Page size. Default `30`. Maximum `100`. `0` is treated as the default.
+      schema:
+        type: integer
+        format: int32
+        example: 30
+    SettlementOpsDirectionParam:
+      name: direction
+      in: query
+      required: false
+      description: Sort direction on the underlying numeric id. Must be uppercase `ASC` or `DESC`. Invalid or empty values default to `DESC`.
+      schema:
+        type: string
+        enum: [ASC, DESC]
+        example: DESC
     AggregatorSecretKeyHeader:
       name: X-SFPY-AGGREGATOR-SECRET-KEY
       in: header
@@ -1340,6 +1719,24 @@ components:
         type: string
         example: PK46MPBL0101017140572181
       example: PK46MPBL0101017140572181
+    TitleFetchV2AccountNumberParam:
+      name: account_number
+      in: query
+      required: true
+      description: Conventional bank account number to fetch the registered account title for.
+      schema:
+        type: string
+        example: "1007079203"
+      example: "1007079203"
+    TitleFetchV2BankNameParam:
+      name: bank_name
+      in: query
+      required: true
+      description: Snake_case identifier of the beneficiary's bank institution (e.g. `bank_al_falah_limited`). Must match one of the supported values listed on this page. Used to resolve the receiver BIC internally; unknown bank names return a validation error.
+      schema:
+        type: string
+        example: bank_al_falah_limited
+      example: bank_al_falah_limited
     AccountInfoIbanParam:
       name: iban
       in: query
@@ -1728,10 +2125,13 @@ components:
           description: Numeric status code returned by the Raast directory
         acctitle:
           type: string
-          description: Registered account title associated with the IBAN
+          description: Registered account title associated with the account
         acctype:
           type: string
-          description: Classification of the account tied to the IBAN
+          description: Classification of the account
+        iban:
+          type: string
+          description: IBAN associated with the account when returned by the directory (for example, on conventional account lookups)
     AccountInfo:
       type: object
       description: Raast account metadata resolved by IBAN or alias lookup
@@ -2640,6 +3040,406 @@ components:
           $ref: "#/components/schemas/Timestamp"
         delivered_at:
           $ref: "#/components/schemas/Timestamp"
+
+    SettlementListCount:
+      type: object
+      description: Count metadata for settlement list responses.
+      properties:
+        filtered_count:
+          type: string
+          description: Number of records matching the current filters.
+          example: "1"
+        total_count:
+          type: string
+          description: Total records in the same scope before optional filters.
+          example: "5"
+    SettlementJobRun:
+      type: object
+      description: Settlement-engine job run metadata (ledger poster, ledger settler, or payout generator).
+      properties:
+        id:
+          type: string
+          example: "42"
+        token:
+          type: string
+          example: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+        job_type:
+          type: string
+          enum:
+            - UNSPECIFIED_JOB
+            - LEDGER_POSTER_JOB
+            - LEDGER_SETTLER_JOB
+            - PAYOUT_GENERATOR_JOB
+          example: LEDGER_SETTLER_JOB
+        status:
+          type: string
+          enum:
+            - JOB_STATUS_UNSPECIFIED
+            - JOB_STATUS_STARTED
+            - JOB_STATUS_SUCCESS
+            - JOB_STATUS_FAILED
+          example: JOB_STATUS_SUCCESS
+        started_at:
+          $ref: "#/components/schemas/Timestamp"
+        ended_at:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          nullable: true
+        error_message:
+          type: string
+          example: ""
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+    SettlementBatchArtifact:
+      type: object
+      description: Downloadable file artifact attached to a settlement batch.
+      properties:
+        id:
+          type: string
+          example: "21"
+        batch_id:
+          type: string
+          example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        artifact_type:
+          type: string
+          description: Artifact type enum name.
+          enum:
+            - BATCH_ARTIFACT_TYPE_UNSPECIFIED
+            - BATCH_ARTIFACT_TYPE_SETTLEMENT_FILE
+            - BATCH_ARTIFACT_TYPE_CHARGES_SUMMARY_FILE
+          example: BATCH_ARTIFACT_TYPE_SETTLEMENT_FILE
+        file_name:
+          type: string
+          example: CEP Safepay 20260723113002 sb_1328a110-2cf5-4e13-993e-55792ec6b76c.xls
+        s3_key:
+          type: string
+          example: settlement-batches/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_1328a110-2cf5-4e13-993e-55792ec6b76c/CEP Safepay 20260723113002 sb_1328a110-2cf5-4e13-993e-55792ec6b76c.xls
+        presigned_url:
+          type: string
+          description: Temporary signed URL used to download the artifact.
+          example: https://example-bucket.s3.amazonaws.com/settlement-batches/...
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+    SettlementBatchChargeSnapshot:
+      type: object
+      description: Batch-level charges summary totals. Amounts are in the lowest currency denomination.
+      properties:
+        id:
+          type: string
+          example: "8"
+        batch_id:
+          type: string
+          example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        gross_amount:
+          type: string
+          example: "8100"
+        net_amount:
+          type: string
+          example: "7814"
+        fee_amount:
+          type: string
+          example: "39"
+        sales_tax_on_fee_amount:
+          type: string
+          example: "4"
+        sales_tax_withholding_amount:
+          type: string
+          example: "162"
+        income_tax_withholding_amount:
+          type: string
+          example: "81"
+        digital_tax_amount:
+          type: string
+          example: "0"
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+    SettlementSnapshot:
+      type: object
+      description: Per-merchant settlement snapshot captured for a batch.
+      properties:
+        id:
+          type: string
+          example: "44"
+        batch_id:
+          type: string
+          example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        settlement_transaction_id:
+          type: string
+          example: stxn_9d5bd7bd-863a-487f-944c-f15d30d9bbc5
+        merchant_id:
+          type: string
+          example: mer_ce6df98c-cdde-48bf-bc32-464cecac2ee3
+        aggregator_id:
+          type: string
+          example: agg_b49985f2-e099-412e-8eb2-98756059cc0d
+        iban:
+          type: string
+          example: PK36SCBL0000001123456702
+        account_title:
+          type: string
+          example: OPTIVOLVE DIGITAL
+        gross_amount:
+          type: string
+          example: "7900"
+        net_amount:
+          type: string
+          example: "7620"
+        fee_amount:
+          type: string
+          example: "39"
+        sales_tax_on_fee_amount:
+          type: string
+          example: "4"
+        sales_tax_withholding_amount:
+          type: string
+          example: "158"
+        income_tax_withholding_amount:
+          type: string
+          example: "79"
+        digital_tax_amount:
+          type: string
+          example: "0"
+        currency:
+          type: string
+          example: PKR
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+    SettlementBatch:
+      type: object
+      description: Settlement batch metadata for aggregator settlement operations.
+      properties:
+        id:
+          type: string
+          example: "200"
+        token:
+          type: string
+          example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        file_name:
+          type: string
+          example: ""
+        date:
+          $ref: "#/components/schemas/Timestamp"
+        status:
+          type: string
+          enum:
+            - BATCH_CREATED
+            - BATCH_PROCESSING
+            - BATCH_COMPLETED
+            - BATCH_FAILED
+          example: BATCH_COMPLETED
+        version:
+          type: integer
+          example: 1
+        created_by_job_id:
+          type: string
+          example: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+        partner_id:
+          type: string
+          example: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+        artifacts:
+          type: array
+          items:
+            $ref: "#/components/schemas/SettlementBatchArtifact"
+        settlement_snapshots:
+          type: array
+          description: Usually empty on read; use the snapshots list endpoint for per-row data.
+          items:
+            $ref: "#/components/schemas/SettlementSnapshot"
+        charge_snapshot:
+          allOf:
+            - $ref: "#/components/schemas/SettlementBatchChargeSnapshot"
+          nullable: true
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+    SettlementTransaction:
+      type: object
+      description: Settlement payout transaction dispatched as part of a batch.
+      properties:
+        id:
+          type: string
+          example: "49"
+        token:
+          type: string
+          example: stxn_75549797-f2c6-421d-8dd7-ce39995534b8
+        settlement_batch_id:
+          type: string
+          example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        aggregator_id:
+          type: string
+          example: agg_8fd114c0-1364-4953-8773-62551397ffe1
+        aggregator_merchant_id:
+          type: string
+          example: am_7c9594a6-962d-49c7-94e9-64d9cf285969
+        raast_merchant_id:
+          type: string
+          example: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+        status:
+          type: string
+          enum:
+            - SETTLEMENT_TXN_ACK_PENDING
+            - SETTLEMENT_TXN_POSTED
+            - SETTLEMENT_TXN_FAILED
+            - SETTLEMENT_TXN_REJECTED
+          example: SETTLEMENT_TXN_POSTED
+        attempt:
+          type: integer
+          example: 1
+        gross_amount:
+          type: string
+          example: "300"
+        fee_amount:
+          type: string
+          example: "0"
+        net_amount:
+          type: string
+          example: "294"
+        sales_tax_on_fee_amount:
+          type: string
+          example: "0"
+        sales_tax_withholding_amount:
+          type: string
+          example: "4"
+        income_tax_withholding_amount:
+          type: string
+          example: "2"
+        digital_tax_amount:
+          type: string
+          example: "0"
+        debitor_account_id:
+          type: string
+          example: acct_f72d1825-31cc-43a2-a7f6-4463443a1c46
+        creditor_account_id:
+          type: string
+          example: acct_7f073fa9-e248-4f96-8e7c-99ddcd282124
+        failure_reason:
+          type: string
+          example: ""
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+        debitor_account:
+          allOf:
+            - $ref: "#/components/schemas/LedgerAccount"
+          nullable: true
+        creditor_account:
+          allOf:
+            - $ref: "#/components/schemas/LedgerAccount"
+          nullable: true
+        settlement_batch:
+          allOf:
+            - $ref: "#/components/schemas/SettlementBatch"
+          nullable: true
+    SettlementOpsTransaction:
+      type: object
+      description: Underlying payment or refund ledger transaction included in settlement.
+      properties:
+        id:
+          type: string
+          example: "160"
+        token:
+          type: string
+          example: txn_8ffa984c-f0cb-4835-8eee-89c9ca673dad
+        payment_id:
+          type: string
+          nullable: true
+          example: pm_e950c9fc-9532-4f4b-aa4c-d39b8f2619c6
+        refund_id:
+          type: string
+          nullable: true
+          example: null
+        transaction_type:
+          type: string
+          example: TT_PAYMENT
+        payment_type:
+          type: string
+          example: DYNAMIC_QR
+        status:
+          type: string
+          enum:
+            - TXN_LEDGER_POSTED
+            - TXN_SETTLEMENT_SCHEDULED
+            - TXN_SETTLEMENT_DISPATCHED
+            - TXN_SETTLEMENT_CONFIRMED
+            - TXN_SETTLEMENT_REVERSED
+          example: TXN_SETTLEMENT_CONFIRMED
+        aggregator_id:
+          type: string
+          example: agg_8fd114c0-1364-4953-8773-62551397ffe1
+        aggregator_name:
+          type: string
+          example: Safepay Aggregator
+        aggregator_merchant_id:
+          type: string
+          example: am_7c9594a6-962d-49c7-94e9-64d9cf285969
+        aggregator_merchant_name:
+          type: string
+          example: Safepay Merchant
+        raast_merchant_id:
+          type: string
+          example: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+        raast_merchant_name:
+          type: string
+          example: Safepay Merchant
+        raast_merchant_ntn:
+          type: string
+          example: "4669740"
+        raast_merchant_province:
+          type: string
+          example: Sindh
+        gross_amount:
+          type: string
+          example: "100"
+        currency:
+          type: string
+          example: PKR
+        fee_amount:
+          type: string
+          example: "0"
+        net_amount:
+          type: string
+          example: "97"
+        sales_tax_on_fee_amount:
+          type: string
+          example: "0"
+        sales_tax_withholding_amount:
+          type: string
+          example: "2"
+        income_tax_withholding_amount:
+          type: string
+          example: "1"
+        digital_tax_amount:
+          type: string
+          example: "0"
+        debitor_account_id:
+          type: string
+          nullable: true
+        creditor_account_id:
+          type: string
+          nullable: true
+          example: acct_7f073fa9-e248-4f96-8e7c-99ddcd282124
+        latest_batch_id:
+          type: string
+          example: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+        partner_id:
+          type: string
+          example: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
+        updated_at:
+          $ref: "#/components/schemas/Timestamp"
+        debitor_account:
+          allOf:
+            - $ref: "#/components/schemas/LedgerAccount"
+          nullable: true
+        creditor_account:
+          allOf:
+            - $ref: "#/components/schemas/LedgerAccount"
+          nullable: true
+        latest_batch:
+          allOf:
+            - $ref: "#/components/schemas/SettlementBatch"
+          nullable: true
     SettlementReportExport:
       type: object
       description: Settlement report export job metadata and processing status.
@@ -3143,6 +3943,376 @@ components:
                 event_types: ["payment.created", "payment.refunded"]
                 enabled: true
   responses:
+
+    ListSettlementBatchesResponse:
+      description: Paginated list of settlement batches.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      batches:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementBatch"
+                      next_cursor:
+                        type: string
+                        example: "65"
+                      count:
+                        $ref: "#/components/schemas/SettlementListCount"
+          examples:
+            SettlementBatchesListed:
+              value:
+                api_version: v1
+                data:
+                  batches:
+                    - id: "200"
+                      token: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                      file_name: ""
+                      date: "1970-01-01T00:00:00Z"
+                      status: BATCH_COMPLETED
+                      version: 1
+                      created_by_job_id: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+                      partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                      created_at: "2026-04-13T11:30:02Z"
+                  next_cursor: "65"
+                  count:
+                    filtered_count: "36"
+                    total_count: "36"
+    ReadSettlementBatchResponse:
+      description: Settlement batch details including artifacts and charge snapshot.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      settlement_batch:
+                        $ref: "#/components/schemas/SettlementBatch"
+          examples:
+            SettlementBatchRead:
+              value:
+                api_version: v1
+                data:
+                  settlement_batch:
+                    id: "200"
+                    token: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                    file_name: ""
+                    date: "1970-01-01T00:00:00Z"
+                    status: BATCH_COMPLETED
+                    version: 1
+                    created_by_job_id: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+                    partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                    artifacts:
+                      - id: "21"
+                        batch_id: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                        artifact_type: BATCH_ARTIFACT_TYPE_SETTLEMENT_FILE
+                        file_name: CEP Safepay 20260723113002 sb_1328a110-2cf5-4e13-993e-55792ec6b76c.xls
+                        s3_key: settlement-batches/partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8/sb_1328a110-2cf5-4e13-993e-55792ec6b76c/CEP Safepay 20260723113002 sb_1328a110-2cf5-4e13-993e-55792ec6b76c.xls
+                        presigned_url: https://example-bucket.s3.amazonaws.com/settlement-batches/...
+                        created_at: "2026-07-23T11:30:06Z"
+                    charge_snapshot:
+                      id: "8"
+                      batch_id: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                      gross_amount: "8100"
+                      net_amount: "7814"
+                      fee_amount: "39"
+                      sales_tax_on_fee_amount: "4"
+                      sales_tax_withholding_amount: "162"
+                      income_tax_withholding_amount: "81"
+                      digital_tax_amount: "0"
+                      created_at: "2026-07-23T11:30:06Z"
+                    created_at: "2026-04-13T11:30:02Z"
+    ListSettlementTransactionsResponse:
+      description: Paginated list of settlement payouts or general transactions.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      settlement_transactions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementTransaction"
+                      transactions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementOpsTransaction"
+                      next_cursor:
+                        type: string
+                        example: "49"
+                      count:
+                        $ref: "#/components/schemas/SettlementListCount"
+          examples:
+            SettlementTransactionsListed:
+              value:
+                api_version: v1
+                data:
+                  settlement_transactions:
+                    - id: "49"
+                      token: stxn_75549797-f2c6-421d-8dd7-ce39995534b8
+                      settlement_batch_id: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                      aggregator_id: agg_8fd114c0-1364-4953-8773-62551397ffe1
+                      aggregator_merchant_id: am_7c9594a6-962d-49c7-94e9-64d9cf285969
+                      raast_merchant_id: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+                      status: SETTLEMENT_TXN_POSTED
+                      attempt: 1
+                      gross_amount: "300"
+                      fee_amount: "0"
+                      net_amount: "294"
+                      sales_tax_on_fee_amount: "0"
+                      sales_tax_withholding_amount: "4"
+                      income_tax_withholding_amount: "2"
+                      digital_tax_amount: "0"
+                      debitor_account_id: acct_f72d1825-31cc-43a2-a7f6-4463443a1c46
+                      creditor_account_id: acct_7f073fa9-e248-4f96-8e7c-99ddcd282124
+                      failure_reason: ""
+                      created_at: "2026-04-13T11:30:02Z"
+                      updated_at: "2026-04-13T11:30:04Z"
+                  transactions: []
+                  next_cursor: "49"
+                  count:
+                    filtered_count: "1"
+                    total_count: "1"
+    ReadSettlementOpsTransactionResponse:
+      description: Settlement payout or general transaction details depending on the id prefix.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      settlement_transaction:
+                        $ref: "#/components/schemas/SettlementTransaction"
+                      transactions:
+                        $ref: "#/components/schemas/SettlementOpsTransaction"
+          examples:
+            SettlementTransactionRead:
+              summary: Settlement transaction (`stxn_`)
+              value:
+                api_version: v1
+                data:
+                  settlement_transaction:
+                    id: "13"
+                    token: stxn_d646b075-f62b-49f7-ab0f-7df161a6fc0b
+                    settlement_batch_id: sb_8ea56b1e-dc96-4751-9ca6-3bcc47e9a5c2
+                    aggregator_id: agg_8fd114c0-1364-4953-8773-62551397ffe1
+                    aggregator_merchant_id: am_7c9594a6-962d-49c7-94e9-64d9cf285969
+                    raast_merchant_id: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+                    status: SETTLEMENT_TXN_POSTED
+                    attempt: 1
+                    gross_amount: "2000"
+                    fee_amount: "10"
+                    net_amount: "1929"
+                    sales_tax_on_fee_amount: "1"
+                    sales_tax_withholding_amount: "40"
+                    income_tax_withholding_amount: "20"
+                    digital_tax_amount: "0"
+                    debitor_account_id: acct_f72d1825-31cc-43a2-a7f6-4463443a1c46
+                    creditor_account_id: acct_7f073fa9-e248-4f96-8e7c-99ddcd282124
+                    failure_reason: ""
+                    created_at: "2026-02-06T16:30:02Z"
+                    updated_at: "2026-02-06T16:30:04Z"
+            GeneralTransactionRead:
+              summary: General transaction (`txn_`)
+              value:
+                api_version: v1
+                data:
+                  transactions:
+                    id: "160"
+                    token: txn_8ffa984c-f0cb-4835-8eee-89c9ca673dad
+                    payment_id: pm_e950c9fc-9532-4f4b-aa4c-d39b8f2619c6
+                    refund_id: null
+                    transaction_type: TT_PAYMENT
+                    payment_type: DYNAMIC_QR
+                    status: TXN_SETTLEMENT_CONFIRMED
+                    aggregator_id: agg_8fd114c0-1364-4953-8773-62551397ffe1
+                    aggregator_name: Safepay Aggregator
+                    aggregator_merchant_id: am_7c9594a6-962d-49c7-94e9-64d9cf285969
+                    aggregator_merchant_name: Safepay Merchant
+                    raast_merchant_id: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+                    raast_merchant_name: Safepay Merchant
+                    raast_merchant_ntn: "4669740"
+                    raast_merchant_province: Sindh
+                    gross_amount: "100"
+                    currency: PKR
+                    fee_amount: "0"
+                    net_amount: "97"
+                    sales_tax_on_fee_amount: "0"
+                    sales_tax_withholding_amount: "2"
+                    income_tax_withholding_amount: "1"
+                    digital_tax_amount: "0"
+                    latest_batch_id: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                    partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                    created_at: "2026-04-13T06:33:35Z"
+                    updated_at: "2026-04-13T11:30:04Z"
+    ListSettlementBatchTransactionsResponse:
+      description: Paginated list of transactions linked to a settlement batch.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      settlement_transactions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementTransaction"
+                      transactions:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementOpsTransaction"
+                      next_cursor:
+                        type: string
+                        example: "158"
+                      count:
+                        $ref: "#/components/schemas/SettlementListCount"
+          examples:
+            BatchGeneralTransactionsListed:
+              value:
+                api_version: v1
+                data:
+                  settlement_transactions: []
+                  transactions:
+                    - id: "160"
+                      token: txn_8ffa984c-f0cb-4835-8eee-89c9ca673dad
+                      payment_id: pm_e950c9fc-9532-4f4b-aa4c-d39b8f2619c6
+                      refund_id: null
+                      transaction_type: TT_PAYMENT
+                      payment_type: DYNAMIC_QR
+                      status: TXN_SETTLEMENT_CONFIRMED
+                      aggregator_id: agg_8fd114c0-1364-4953-8773-62551397ffe1
+                      aggregator_name: Safepay Aggregator
+                      aggregator_merchant_id: am_7c9594a6-962d-49c7-94e9-64d9cf285969
+                      aggregator_merchant_name: Safepay Merchant
+                      raast_merchant_id: mer_e1a38d10-0064-4d7b-a700-f4ba483efb05
+                      raast_merchant_name: Safepay Merchant
+                      raast_merchant_ntn: "4669740"
+                      raast_merchant_province: Sindh
+                      gross_amount: "100"
+                      currency: PKR
+                      fee_amount: "0"
+                      net_amount: "97"
+                      sales_tax_on_fee_amount: "0"
+                      sales_tax_withholding_amount: "2"
+                      income_tax_withholding_amount: "1"
+                      digital_tax_amount: "0"
+                      latest_batch_id: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                      partner_id: partner_37e414c3-c0cc-4541-9bea-ab5a22964bd8
+                      created_at: "2026-04-13T06:33:35Z"
+                      updated_at: "2026-04-13T11:30:04Z"
+                  next_cursor: "158"
+                  count:
+                    filtered_count: "3"
+                    total_count: "3"
+    ListSettlementSnapshotsResponse:
+      description: Paginated list of settlement snapshots for a batch.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      settlement_snapshots:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementSnapshot"
+                      next_cursor:
+                        type: string
+                        example: "44"
+                      count:
+                        $ref: "#/components/schemas/SettlementListCount"
+          examples:
+            SettlementSnapshotsListed:
+              value:
+                api_version: v1
+                data:
+                  settlement_snapshots:
+                    - id: "44"
+                      batch_id: sb_1328a110-2cf5-4e13-993e-55792ec6b76c
+                      settlement_transaction_id: stxn_9d5bd7bd-863a-487f-944c-f15d30d9bbc5
+                      merchant_id: mer_ce6df98c-cdde-48bf-bc32-464cecac2ee3
+                      aggregator_id: agg_b49985f2-e099-412e-8eb2-98756059cc0d
+                      iban: PK36SCBL0000001123456702
+                      account_title: OPTIVOLVE DIGITAL
+                      gross_amount: "7900"
+                      net_amount: "7620"
+                      fee_amount: "39"
+                      sales_tax_on_fee_amount: "4"
+                      sales_tax_withholding_amount: "158"
+                      income_tax_withholding_amount: "79"
+                      digital_tax_amount: "0"
+                      currency: PKR
+                      created_at: "2026-07-23T11:30:06Z"
+                  next_cursor: "44"
+                  count:
+                    filtered_count: "1"
+                    total_count: "5"
+    ListSettlementJobRunsResponse:
+      description: Paginated list of settlement-engine job runs.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      job_run:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementJobRun"
+                      next_cursor:
+                        type: string
+                        example: "42"
+                      count:
+                        $ref: "#/components/schemas/SettlementListCount"
+          examples:
+            SettlementJobRunsListed:
+              value:
+                api_version: v1
+                data:
+                  job_run:
+                    - id: "42"
+                      token: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+                      job_type: LEDGER_SETTLER_JOB
+                      status: JOB_STATUS_SUCCESS
+                      started_at: "2026-04-13T11:30:00Z"
+                      ended_at: "2026-04-13T11:30:04Z"
+                      error_message: ""
+                      created_at: "2026-04-13T11:30:00Z"
+                  next_cursor: "42"
+                  count:
+                    filtered_count: "1"
+                    total_count: "3"
     CreateSettlementReportExportResponse:
       description: Settlement report export job created successfully.
       headers:
@@ -3664,6 +4834,14 @@ components:
                   statusCode: 0
                   acctitle: "Title-1 1007079203"
                   acctype: Account
+            Title Fetch V2:
+              value:
+                api_version: v1
+                data:
+                  statusCode: 0
+                  acctitle: "Title-1 1007079203"
+                  acctype: Account
+                  iban: PK91ALFH0005001007079203
     AliasTitleFetchResponse:
       description: This response contains account title details fetched from Raast for an alias
       headers:
@@ -5502,3 +6680,5 @@ tags:
   - name: Aliases
   - name: Ledgers
   - name: Webhooks
+  - name: Settlement Operations
+  - name: Settlement Reports

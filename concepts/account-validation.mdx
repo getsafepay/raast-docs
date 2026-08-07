@@ -12,6 +12,7 @@ Reduce payment failures by validating customer bank details before submitting RT
 | Endpoint | Purpose | Key request parameters |
 | --- | --- | --- |
 | [GET /title-fetch](/api-reference/utilities/title-fetch) | Returns the registered account title for a Raast IBAN. | `iban` (query) |
+| [GET /title-fetch/v2](/api-reference/utilities/title-fetch-v2) | Returns the registered account title for a conventional account number. | `account_number`, `bank_name` (query) |
 | [GET /account-info](/api-reference/utilities/read-account-info) | Retrieves metadata for an IBAN or alias, optionally combining title fetch. | `iban` or `alias_*` params; `with_title_fetch` flag |
 
 <Callout type="tip">Call these endpoints before RTP or payout operations to ensure the payer or beneficiary details are valid. Cache responses briefly to avoid extra latency.</Callout>
@@ -45,6 +46,48 @@ const titlePayload: {
   title: string;
   bank: string;
   verified_at: string;
+} = await res.json();
+```
+
+</CodeGroup>
+
+### Title fetch v2 (account number)
+
+Use `GET /title-fetch/v2` when you have a conventional account number and bank name instead of an IBAN.
+
+<CodeGroup>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/title-fetch/v2?account_number={{account_number}}&bank_name={{bank_name}}" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```typescript TypeScript
+const params = new URLSearchParams({
+  account_number: accountNumber,
+  bank_name: bankName,
+});
+
+const res = await fetch(
+  `${process.env.SAFEPAY_BASE_URL}/v1/aggregators/${process.env.SAFEPAY_AGGREGATOR_ID}/title-fetch/v2?${params}`,
+  {
+    headers: {
+      'X-SFPY-AGGREGATOR-SECRET-KEY': process.env.SAFEPAY_SECRET_KEY ?? '',
+    },
+  },
+);
+
+if (!res.ok) {
+  throw new Error(`Title fetch v2 failed with status ${res.status}`);
+}
+
+const titlePayload: {
+  data: {
+    statusCode: number;
+    acctitle: string;
+    acctype: string;
+    iban?: string;
+  };
 } = await res.json();
 ```
 
