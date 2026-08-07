@@ -686,6 +686,25 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /v1/aggregators/{raast-aggregator-id}/title-fetch/v2:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Utilities
+      summary: Title Fetch V2
+      description: Retrieve account title metadata for a conventional bank account number. Provide `account_number` and `bank_name`; Safepay resolves the receiver BIC internally before querying the Raast directory. Supported `bank_name` values and their BIC mappings are listed on this page.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/TitleFetchV2AccountNumberParam"
+        - $ref: "#/components/parameters/TitleFetchV2BankNameParam"
+      responses:
+        "200":
+          $ref: "#/components/responses/TitleFetchResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /v1/aggregators/{raast-aggregator-id}/account-info:
     parameters:
       - $ref: "#/components/parameters/AggregatorIdParam"
@@ -1340,6 +1359,24 @@ components:
         type: string
         example: PK46MPBL0101017140572181
       example: PK46MPBL0101017140572181
+    TitleFetchV2AccountNumberParam:
+      name: account_number
+      in: query
+      required: true
+      description: Conventional bank account number to fetch the registered account title for.
+      schema:
+        type: string
+        example: "1007079203"
+      example: "1007079203"
+    TitleFetchV2BankNameParam:
+      name: bank_name
+      in: query
+      required: true
+      description: Full name of the beneficiary's bank institution. Must match one of the supported values listed on this page exactly. Used to resolve the receiver BIC internally; unknown bank names return a validation error.
+      schema:
+        type: string
+        example: BANK AL FALAH LIMITED
+      example: BANK AL FALAH LIMITED
     AccountInfoIbanParam:
       name: iban
       in: query
@@ -1728,10 +1765,13 @@ components:
           description: Numeric status code returned by the Raast directory
         acctitle:
           type: string
-          description: Registered account title associated with the IBAN
+          description: Registered account title associated with the account
         acctype:
           type: string
-          description: Classification of the account tied to the IBAN
+          description: Classification of the account
+        iban:
+          type: string
+          description: IBAN associated with the account when returned by the directory (for example, on conventional account lookups)
     AccountInfo:
       type: object
       description: Raast account metadata resolved by IBAN or alias lookup
@@ -3664,6 +3704,14 @@ components:
                   statusCode: 0
                   acctitle: "Title-1 1007079203"
                   acctype: Account
+            Title Fetch V2:
+              value:
+                api_version: v1
+                data:
+                  statusCode: 0
+                  acctitle: "Title-1 1007079203"
+                  acctype: Account
+                  iban: PK91ALFH0005001007079203
     AliasTitleFetchResponse:
       description: This response contains account title details fetched from Raast for an alias
       headers:
