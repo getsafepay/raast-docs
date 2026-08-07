@@ -7,6 +7,8 @@ import { Callout, CodeGroup, Steps } from '~/ui/components/Snippet'
 
 Safepay lets you generate settlement report exports so your team can reconcile settlement activity. Report exports are asynchronous: you seed a report request, and our settlement engine processes it in the background.
 
+To inspect live batches, payouts, and per-merchant snapshots without generating a file, use [Settlement operations](/concepts/settlement-operations).
+
 ## How settlement report exports work
 
 | Stage | What happens |
@@ -159,5 +161,7 @@ console.log('File URL', readPayload.data.file_url);
 
 ## See also
 
+- [Settlement operations](/concepts/settlement-operations)
 - [Ledger](/concepts/ledger)
 - [Webhooks](/concepts/webhooks)
+- [API reference](/api-reference)

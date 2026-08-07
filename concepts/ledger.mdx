@@ -11,7 +11,7 @@ Safepay operates a double-entry ledger for Raast activity. Each aggregator and m
 
 Ledger accounts are not bank accounts themselves - they are a real-time representation of what Safepay owes or is owed, backed by settlement runs to your bank account.
 
-<Callout type="info">Raast payments settle in batches every 6 hours. The `running_balance` reflects activity within the current batch and resets to `0` after settlement completes.</Callout>
+<Callout type="info">Raast payments settle in scheduled batches. The `running_balance` reflects the unsettled delta since the last settle and resets to `0` when a settlement batch is scheduled.</Callout>
 
 | Field | Description |
 | --- | --- |
@@ -79,5 +79,7 @@ console.log('Ledger accounts', payload.data);
 
 - [Payout lifecycle](/guides/payout-lifecycle)
 - [Payouts use case](/use-cases/payouts)
+- [Settlement operations](/concepts/settlement-operations)
+- [Settlement reports](/concepts/settlement-reports)
 - [Webhooks](/concepts/webhooks)
 - [API reference](/api-reference)

@@ -2,8 +2,6 @@
 openapi: get /v1/aggregators/{raast-aggregator-id}/title-fetch/v2
 ---
 
-Use this endpoint when you have a conventional bank account number instead of an IBAN. Pass `account_number` and `bank_name` as query parameters. Safepay resolves the receiver BIC internally before querying the Raast directory—you do not send the BIC in the request.
-
 `bank_name` must match one of the supported institution names below exactly. Unknown or misspelled bank names return a validation error.
 
 ### Supported `bank_name` values

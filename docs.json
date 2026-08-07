@@ -55,21 +55,22 @@
               "concepts/payment",
               "concepts/qr_code",
               "concepts/refunds",
-            "concepts/webhooks",
-            "concepts/ledger",
-            "concepts/settlement-reports"
-          ]
-        },
-        {
-          "group": "Reference",
-          "pages": [
-            "reference/errors",
-            "reference/rate-limits",
-            "reference/pagination"
-          ]
-        }
-      ]
-    },
+              "concepts/webhooks",
+              "concepts/ledger",
+              "concepts/settlement-operations",
+              "concepts/settlement-reports"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/errors",
+              "reference/rate-limits",
+              "reference/pagination"
+            ]
+          }
+        ]
+      },
       {
         "tab": "API reference",
         "groups": [
