@@ -2,60 +2,60 @@
 openapi: get /v1/aggregators/{raast-aggregator-id}/title-fetch/v2
 ---
 
-`bank_name` must match one of the supported institution names below exactly. Unknown or misspelled bank names return a validation error.
+`bank_name` must match one of the supported snake_case identifiers below. Unknown or misspelled bank names return a validation error.
 
 ### Supported `bank_name` values
 
 | bank_name | BIC |
 | --- | --- |
-| ALLIED BANK LTD | ABPAPKKA |
-| ACCOUNTANT GENERAL PAKISTAN REVENUE | AGPRPKKA |
-| SUMMIT BANK LIMITED | AHRBPKKA |
-| BANK AL FALAH LIMITED | ALFHPKKA |
-| ASKARI BANK LTD | ASCMPKKA |
-| BANK AL HABIB LTD | BAHLPKKA |
-| BANK OF CHINA | BKCHPKKA |
-| BANK ISLAMI PAKISTAN LTD | BKIPPKKA |
-| THE BANK OF PUNJAB | BPUNPKKA |
-| CENTRAL DEPOSITORY CO. OF PAKISTAN | CDCPKKAA |
-| CGA | CGAPKKAA |
-| CITI BANK N A | CITIPKKX |
-| DEUTSCHE BANK AG | DEUTPKKA |
-| DUBAI ISLAMIC BANK PAK LTD | DUIBPKKA |
-| AL BARAKA BANK (PAKISTAN) LTD | EGIBPKKA |
-| FAYSAL BANK LIMITED | FAYSPKKA |
-| CENTRAL DIRECTORATE OF NATIONAL SAVINGS | FGCDNSZB |
-| FINCA MICROFINANCE BANK | FINCAMFB |
-| HBL MICRO FINANCE BANK LTD. | FMICFBPK |
-| FIRST WOMEN BANK LIMITED | FWOMPKKA |
-| HABIB BANK LIMITED | HABBPKKARTG |
-| INDUSTRIAL AND COMMERCIAL BANK OF CHINA LTD | ICBKPKKA |
-| JS BANK LIMITED | JSBLPKKA |
-| KHUSHALI BANK LIMITED | KHBLDFID |
-| THE BANK OF KHYBER LTD | KHYBPKKA |
-| SAMBA BANK LIMITED | MBPLPKKA |
-| MCB ISLAMIC BANK | MCIBPKKI |
-| MEEZAN BANK LIMITED | MEZNPKKA |
-| HABIB METROPOLITAN BANK LTD | MPBLPKKA |
-| MCB BANK LTD. | MUCBPKKKRTG |
-| NATIONAL BANK OF PAKISTAN | NBPBPKKA |
-| APNA MICROFINANCE BANK LTD | NMICFBPK |
-| NRSP MICROFINANCE BANK | NRSPMFBB |
-| SILKBANK LIMITED | SAUDPKKA |
-| STATE BANK OF PAKISTAN | SBPPPKKA |
-| STANDARD CHARTERED BANK PAKISTAN | SCBLPKKA |
-| SINDH BANK LIMITED | SINDPKKA |
-| SME BANK LIMITED | SMESPKKA |
-| SONERI BANK LTD. | SONEPKKA |
-| TELENOR MICRO FINANCE BANK LIMITED | TMICFBPK |
-| UAT PARTICIPANT | UATPKKHH |
-| U MICROFINANCE BANK LTD | UMBLPKKA |
-| UNITED BANK LIMITED | UNILPKKARTG |
-| MOBILINK MICRO FINANCE BANK LTD | WMBLPKKA |
-| ZARAI TARAQIATI BANK LTD - KARACHI | ZTBLPKKA |
-| NAYAPAY | NPAYPKKA |
-| SADAPAY | SADAPKKA |
-| MASHREQ BANK | MSHQPKKA |
-| RUPIN | RUPIPKKA |
+| allied_bank_ltd | ABPAPKKA |
+| accountant_general_pakistan_revenue | AGPRPKKA |
+| summit_bank_limited | AHRBPKKA |
+| bank_al_falah_limited | ALFHPKKA |
+| askari_bank_ltd | ASCMPKKA |
+| bank_al_habib_ltd | BAHLPKKA |
+| bank_of_china | BKCHPKKA |
+| bank_islami_pakistan_ltd | BKIPPKKA |
+| the_bank_of_punjab | BPUNPKKA |
+| central_depository_co_of_pakistan | CDCPKKAA |
+| cga | CGAPKKAA |
+| citi_bank_n_a | CITIPKKX |
+| deutsche_bank_ag | DEUTPKKA |
+| dubai_islamic_bank_pak_ltd | DUIBPKKA |
+| al_baraka_bank_pakistan_ltd | EGIBPKKA |
+| faysal_bank_limited | FAYSPKKA |
+| central_directorate_of_national_savings | FGCDNSZB |
+| finca_microfinance_bank | FINCAMFB |
+| hbl_micro_finance_bank_ltd | FMICFBPK |
+| first_women_bank_limited | FWOMPKKA |
+| habib_bank_limited | HABBPKKARTG |
+| industrial_and_commercial_bank_of_china_ltd | ICBKPKKA |
+| js_bank_limited | JSBLPKKA |
+| khushali_bank_limited | KHBLDFID |
+| the_bank_of_khyber_ltd | KHYBPKKA |
+| samba_bank_limited | MBPLPKKA |
+| mcb_islamic_bank | MCIBPKKI |
+| meezan_bank_limited | MEZNPKKA |
+| habib_metropolitan_bank_ltd | MPBLPKKA |
+| mcb_bank_ltd | MUCBPKKKRTG |
+| national_bank_of_pakistan | NBPBPKKA |
+| apna_microfinance_bank_ltd | NMICFBPK |
+| nrsp_microfinance_bank | NRSPMFBB |
+| silkbank_limited | SAUDPKKA |
+| state_bank_of_pakistan | SBPPPKKA |
+| standard_chartered_bank_pakistan | SCBLPKKA |
+| sindh_bank_limited | SINDPKKA |
+| sme_bank_limited | SMESPKKA |
+| soneri_bank_ltd | SONEPKKA |
+| telenor_micro_finance_bank_limited | TMICFBPK |
+| uat_participant | UATPKKHH |
+| u_microfinance_bank_ltd | UMBLPKKA |
+| united_bank_limited | UNILPKKARTG |
+| mobilink_micro_finance_bank_ltd | WMBLPKKA |
+| zarai_taraqiati_bank_ltd_karachi | ZTBLPKKA |
+| nayapay | NPAYPKKA |
+| sadapay | SADAPKKA |
+| mashreq_bank | MSHQPKKA |
+| rupin | RUPIPKKA |
 
 If you already have the beneficiary's IBAN, use [Title Fetch](/api-reference/utilities/title-fetch) instead.

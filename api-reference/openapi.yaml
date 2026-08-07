@@ -1732,11 +1732,11 @@ components:
       name: bank_name
       in: query
       required: true
-      description: Full name of the beneficiary's bank institution. Must match one of the supported values listed on this page exactly. Used to resolve the receiver BIC internally; unknown bank names return a validation error.
+      description: Snake_case identifier of the beneficiary's bank institution (e.g. `bank_al_falah_limited`). Must match one of the supported values listed on this page. Used to resolve the receiver BIC internally; unknown bank names return a validation error.
       schema:
         type: string
-        example: BANK AL FALAH LIMITED
-      example: BANK AL FALAH LIMITED
+        example: bank_al_falah_limited
+      example: bank_al_falah_limited
     AccountInfoIbanParam:
       name: iban
       in: query
