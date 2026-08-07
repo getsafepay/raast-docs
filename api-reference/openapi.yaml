@@ -1236,6 +1236,77 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /v1/aggregators/{raast-aggregator-id}/settlements/job-runs:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+    get:
+      tags:
+        - Settlement Operations
+      summary: List Settlement Job Runs
+      description: |
+        List settlement-engine job runs visible to the aggregator.
+
+        Results are scoped to jobs that created settlement batches containing settlement transactions for this aggregator.
+        Use this to inspect ledger poster, ledger settler, and payout generator runs related to your settlement activity.
+      security:
+        - apiKey: []
+      parameters:
+        - $ref: "#/components/parameters/SettlementOpsCursorParam"
+        - $ref: "#/components/parameters/SettlementOpsLimitParam"
+        - $ref: "#/components/parameters/SettlementOpsDirectionParam"
+        - name: job_id
+          in: query
+          required: false
+          description: Restrict results to a single job run token (`job_…`, exactly 40 characters).
+          schema:
+            type: string
+            example: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+        - name: job_type
+          in: query
+          required: false
+          description: |
+            Filter by job type integer enum (`1=LEDGER_POSTER_JOB`, `2=LEDGER_SETTLER_JOB`, `3=PAYOUT_GENERATOR_JOB`).
+            Response `job_type` is the string enum name.
+          schema:
+            type: integer
+            format: int32
+            enum: [1, 2, 3]
+            example: 2
+        - name: job_status
+          in: query
+          required: false
+          description: |
+            Filter by job status integer enum (`1=JOB_STATUS_STARTED`, `2=JOB_STATUS_SUCCESS`, `3=JOB_STATUS_FAILED`).
+            Response `status` is the string enum name.
+          schema:
+            type: integer
+            format: int32
+            enum: [1, 2, 3]
+            example: 2
+        - name: start_date
+          in: query
+          required: false
+          description: Inclusive lower bound on job `started_at`, as a Unix timestamp in seconds.
+          schema:
+            type: integer
+            format: int64
+            example: 1744531200
+        - name: end_date
+          in: query
+          required: false
+          description: Inclusive upper bound on job `ended_at`, as a Unix timestamp in seconds. Must be greater than or equal to `start_date` when both are set.
+          schema:
+            type: integer
+            format: int64
+            example: 1744617600
+      responses:
+        "200":
+          $ref: "#/components/responses/ListSettlementJobRunsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /v1/aggregators/{raast-aggregator-id}/settlements/report-exports:
     post:
       tags:
@@ -2982,6 +3053,43 @@ components:
           type: string
           description: Total records in the same scope before optional filters.
           example: "5"
+    SettlementJobRun:
+      type: object
+      description: Settlement-engine job run metadata (ledger poster, ledger settler, or payout generator).
+      properties:
+        id:
+          type: string
+          example: "42"
+        token:
+          type: string
+          example: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+        job_type:
+          type: string
+          enum:
+            - UNSPECIFIED_JOB
+            - LEDGER_POSTER_JOB
+            - LEDGER_SETTLER_JOB
+            - PAYOUT_GENERATOR_JOB
+          example: LEDGER_SETTLER_JOB
+        status:
+          type: string
+          enum:
+            - JOB_STATUS_UNSPECIFIED
+            - JOB_STATUS_STARTED
+            - JOB_STATUS_SUCCESS
+            - JOB_STATUS_FAILED
+          example: JOB_STATUS_SUCCESS
+        started_at:
+          $ref: "#/components/schemas/Timestamp"
+        ended_at:
+          allOf:
+            - $ref: "#/components/schemas/Timestamp"
+          nullable: true
+        error_message:
+          type: string
+          example: ""
+        created_at:
+          $ref: "#/components/schemas/Timestamp"
     SettlementBatchArtifact:
       type: object
       description: Downloadable file artifact attached to a settlement batch.
@@ -4166,6 +4274,45 @@ components:
                   count:
                     filtered_count: "1"
                     total_count: "5"
+    ListSettlementJobRunsResponse:
+      description: Paginated list of settlement-engine job runs.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      job_run:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SettlementJobRun"
+                      next_cursor:
+                        type: string
+                        example: "42"
+                      count:
+                        $ref: "#/components/schemas/SettlementListCount"
+          examples:
+            SettlementJobRunsListed:
+              value:
+                api_version: v1
+                data:
+                  job_run:
+                    - id: "42"
+                      token: job_76b08225-5372-46db-9acb-086ac9c2f7d6
+                      job_type: LEDGER_SETTLER_JOB
+                      status: JOB_STATUS_SUCCESS
+                      started_at: "2026-04-13T11:30:00Z"
+                      ended_at: "2026-04-13T11:30:04Z"
+                      error_message: ""
+                      created_at: "2026-04-13T11:30:00Z"
+                  next_cursor: "42"
+                  count:
+                    filtered_count: "1"
+                    total_count: "3"
     CreateSettlementReportExportResponse:
       description: Settlement report export job created successfully.
       headers:
