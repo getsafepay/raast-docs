@@ -128,7 +128,9 @@ console.log('Payout token', payoutPayload.data.token);
 
 ## Webhook events to expect
 
-Refer to the [webhooks delivery guide](/guides/webhooks-delivery) for the full event catalog. Settlement-related events are emitted as batch processing progresses.
+Payouts use the `payment.*` event family. Expect `payment.created`, `payment.pending_authorization`, and a terminal event such as `payment.settled` or `payment.failed`. Identify payout events by checking whether `subject.payment.type` is `PAYOUT` or `SETTLEMENT_PAYOUT`; there is no separate `payout.*` event family.
+
+Refer to the [webhooks delivery guide](/guides/webhooks-delivery) for the full delivery contract and [Webhook events and payloads](/guides/webhook-events#payout-event-example) for an example.
 
 ## Failure handling checklist
 

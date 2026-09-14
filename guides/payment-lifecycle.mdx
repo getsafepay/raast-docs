@@ -13,19 +13,7 @@ Every Raast payment is asynchronous. Use this guide to reason about customer exp
 
 ## Payment webhook events
 
-| Event | Description |
-| --- | --- |
-| `payment.created` | A new payment request was created (initiated by customer). |
-| `payment.pending_authorization` | Payment is awaiting authorization (for example, Pay Later checks). |
-| `payment.authorized` | Payment has been authorized and funds are on hold. |
-| `payment.completed` | Payment has been captured or charged successfully. |
-| `payment.settled` | Payment funds have been settled to the merchant. |
-| `payment.refunded` | Payment was fully refunded. |
-| `payment.refund_partial` | Payment was partially refunded. |
-| `payment.rejected` | Payment was rejected before authorization. |
-| `payment.failed` | Payment processing failed. |
-| `payment.reversed` | Payment was reversed after completion. |
-| `payment.voided` | Payment authorization was voided. |
+Each flow below lists the events to expect. See [Webhooks delivery](/guides/webhooks-delivery#event-catalog) for the full payment event catalog, including the exact status each event corresponds to.
 
 ## RTP Now
 

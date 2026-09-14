@@ -110,7 +110,7 @@ console.log('Payment status', paymentPayload.data.status);
 | `P_SETTLED` | Funds transferred. Emit confirmation to the user. |
 | `P_FAILED` | Payment failed during processing. |
 | `P_REJECTED` | Customer declined or request rejected. |
-| `P_CANCELLED` | Payment was canceled before completion. |
+| `P_CANCELLED` | The RTP request was withdrawn before authorization (for example, a merchant-initiated cancel or an expired request). Reaching this status emits the `payment.voided` webhook event; there is no separate `P_VOIDED` status. |
 | `P_REVERSED` | Payment reversed after completion. |
 | `P_PARTIALLY_REFUNDED` | Payment partially refunded. |
 | `P_REFUNDED` | Payment fully refunded. |

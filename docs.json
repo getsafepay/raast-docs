@@ -30,7 +30,8 @@
             "guides/raast-integration-journey",
             "guides/payment-lifecycle",
             "guides/payout-lifecycle",
-            "guides/webhooks-delivery"
+            "guides/webhooks-delivery",
+            "guides/webhook-events"
           ]
         },
         {

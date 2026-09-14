@@ -1,25 +1,25 @@
 ---
 title: 'Webhooks delivery'
-description: 'Subscribe to events, verify signatures, and handle retries reliably.'
+description: 'Subscribe to events, verify signatures, acknowledge deliveries, and recover from failures.'
 sidebar:
   order: 5
 ---
 
 import { Steps, Callout, CodeGroup } from '~/ui/components/Snippet'
 
-Safepay webhooks notify you when payments, refunds, or settlements change state. Use this guide to create webhook endpoints, verify signatures, and process retries safely.
+Safepay webhooks notify you asynchronously when Raast payments, refunds, or settlements change state. This guide describes the delivery contract. See [Webhook events and payloads](/guides/webhook-events) for the event envelope and JSON examples.
 
 ## Create a webhook endpoint
 
 <Steps>
   <Step title="Choose the events you need">
-    Subscribe to the specific event types your integration depends on, such as `payment.completed` or `refund.completed`.
+    Subscribe to exact event names, such as `payment.completed`, or use a trailing wildcard to subscribe to a category, such as `payment.*`, `refund.*`, or `settlement.*`. A wildcard is supported only at the end of a filter.
   </Step>
   <Step title="Create the webhook">
-    Call `POST /v1/aggregators/{{aggregator_id}}/webhooks` with the URL and event list.
+    Call `POST /v1/aggregators/{{aggregator_id}}/webhooks` with your URL, event filters, and whether the endpoint is enabled.
   </Step>
   <Step title="Store the webhook secret">
-    Safepay returns a webhook secret (base64-encoded). Store it in your secret manager. Base64-decode it when computing the HMAC signing key.
+    The response contains a base64-encoded signing secret. Store it in a secret manager and base64-decode it before using the resulting bytes as the HMAC key.
   </Step>
 </Steps>
 
@@ -32,144 +32,227 @@ curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/webhooks" \
   --data '{
     "url": "https://api.example.com/webhooks/safepay",
     "description": "Raast webhook endpoint",
-    "event_types": ["payment.created", "payment.completed", "refund.completed"],
+    "event_types": ["payment.*", "refund.*"],
     "enabled": true
   }'
 ```
 
 ```typescript TypeScript
-const baseUrl = '{{base_url}}';
-const aggregatorId = '{{aggregator_id}}';
-const secretKey = '{{secret_key}}';
-
-const res = await fetch(`${baseUrl}/v1/aggregators/${aggregatorId}/webhooks`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'X-SFPY-AGGREGATOR-SECRET-KEY': secretKey,
+const res = await fetch(
+  `{{base_url}}/v1/aggregators/{{aggregator_id}}/webhooks`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-SFPY-AGGREGATOR-SECRET-KEY': '{{secret_key}}',
+    },
+    body: JSON.stringify({
+      url: 'https://api.example.com/webhooks/safepay',
+      description: 'Raast webhook endpoint',
+      event_types: ['payment.*', 'refund.*'],
+      enabled: true,
+    }),
   },
-  body: JSON.stringify({
-    url: 'https://api.example.com/webhooks/safepay',
-    description: 'Raast webhook endpoint',
-    event_types: ['payment.created', 'payment.completed', 'refund.completed'],
-    enabled: true,
-  }),
-});
+);
 
-if (!res.ok) {
-  throw new Error(`Webhook creation failed: ${res.status}`);
-}
+if (!res.ok) throw new Error(`Webhook creation failed: ${res.status}`);
 
-const payload = await res.json();
-console.log('Webhook token', payload.data.token);
+const { data } = await res.json();
+console.log('Webhook token', data.endpoint.token);
+console.log('Store this signing secret securely', data.secret);
 ```
 
 </CodeGroup>
 
-## Webhook headers
+<Callout type="warning">
+  Treat every `secret` field as sensitive signing material. Do not expose it in client-side code, logs, support tickets, or source control.
+</Callout>
 
-Safepay includes headers that identify the event and allow you to verify authenticity. Always read:
+## HTTP request contract
 
-- `X-SFPY-SIGNATURE` for the HMAC signature
-- `X-SFPY-TIMESTAMP` for the event timestamp
+Safepay sends an HTTP `POST` with `Content-Type: application/json`. Header names are case-insensitive according to HTTP, but Safepay emits the following names:
 
-The delivery also includes headers for event ID, event type, and aggregator ID.
+| Header | Description |
+| --- | --- |
+| `X-SFPY-EVENT-ID` | Unique originating event identifier. Use this as the idempotency key. |
+| `X-SFPY-EVENT-TYPE` | Subscribed event name, for example `payment.completed`. |
+| `X-SFPY-AGGREGATOR-ID` | Aggregator that owns the event and endpoint. |
+| `X-SFPY-SIGNATURE` | HMAC-SHA256 signature formatted as `sha256=<lowercase hex digest>`. |
+| `X-SFPY-TIMESTAMP` | UTC RFC 3339 timestamp used to calculate the signature. |
 
-## Signature verification
+The JSON body is the raw event envelope. The values in `X-SFPY-EVENT-ID`, `X-SFPY-EVENT-TYPE`, and `X-SFPY-AGGREGATOR-ID` correspond to the body’s `identifier`, `webhookEventType`, and `aggregatorId` fields.
 
-Safepay computes the webhook signature over `timestamp + '.' + raw_body`: the `X-SFPY-TIMESTAMP` value, a literal period, then the raw HTTP request body bytes. Use the signature header and timestamp header to verify authenticity **before** parsing JSON.
+## Verify the signature
+
+Safepay signs each individual delivery attempt. The signed message is the exact `X-SFPY-TIMESTAMP` value, a literal period (`.`), and the raw HTTP request body bytes:
+
+```text
+<timestamp>.<raw_body>
+```
 
 <Steps>
-  <Step title="Extract headers">
-    Read `X-SFPY-SIGNATURE` and `X-SFPY-TIMESTAMP` from the incoming request.
+  <Step title="Read the request without changing it">
+    Capture `X-SFPY-SIGNATURE`, `X-SFPY-TIMESTAMP`, and the raw request body. Do not parse or re-serialize the body before verification.
   </Step>
-  <Step title="Build the signing payload">
-    Read the raw HTTP request body bytes exactly as received. Build the signing payload as `timestamp + '.' + raw_body`. Use the `X-SFPY-TIMESTAMP` header value exactly as received, without reformatting it.
-
-    <Callout type="warning">Do not parse, prettify, re-serialize, or otherwise modify the request body before verification. Any modification to the body bytes will cause signature verification to fail.</Callout>
+  <Step title="Check timestamp freshness">
+    Parse the timestamp as RFC 3339 with optional fractional seconds. Reject timestamps outside a tolerance appropriate for your environment; five minutes is a reasonable starting point. Safepay does not enforce this tolerance on your behalf.
   </Step>
-  <Step title="Compute HMAC">
-    Base64-decode the webhook secret and use the decoded bytes as the HMAC-SHA256 key. Compute the HMAC over the full signing payload (`timestamp + '.' + raw_body`), not the raw body alone.
+  <Step title="Compute the expected signature">
+    Base64-decode the stored webhook secret, calculate HMAC-SHA256 over `timestamp + '.' + raw_body`, then prefix the lowercase hexadecimal digest with `sha256=`.
   </Step>
-  <Step title="Format and compare signatures">
-    Format the expected signature as `sha256=` plus a lowercase hexadecimal digest, and compare it to the `X-SFPY-SIGNATURE` header using a constant-time compare (for example `sha256=abcdef...`).
+  <Step title="Compare in constant time">
+    Compare the expected signature with `X-SFPY-SIGNATURE` using a constant-time comparison. Parse the JSON only after verification succeeds.
   </Step>
 </Steps>
 
+<Callout type="warning">
+  Whitespace and property order are part of the signed bytes. Parsing, prettifying, or re-serializing the body before verification will invalidate the signature.
+</Callout>
+
 ```go
 func Verify(secretBase64 string, body []byte, providedSig, providedTS string, tolerance time.Duration) error {
+	parsed, err := time.Parse(time.RFC3339Nano, providedTS)
+	if err != nil {
+		return errInvalidTimestamp
+	}
 	if tolerance > 0 {
-		parsed, err := time.Parse(time.RFC3339Nano, providedTS)
-		if err != nil {
-			return errInvalidTimestamp
-		}
-		if delta := time.Since(parsed); delta > tolerance || delta < -tolerance {
+		delta := time.Since(parsed)
+		if delta > tolerance || delta < -tolerance {
 			return errTimestampDrift
 		}
 	}
 
-	decodedSecret, err := base64.StdEncoding.DecodeString(secretBase64)
+	secret, err := base64.StdEncoding.DecodeString(secretBase64)
 	if err != nil {
 		return errInvalidSecret
 	}
 
-	mac := hmac.New(sha256.New, decodedSecret)
+	mac := hmac.New(sha256.New, secret)
 	mac.Write([]byte(providedTS))
 	mac.Write([]byte{'.'})
 	mac.Write(body)
+	expected := "sha256=" + hex.EncodeToString(mac.Sum(nil))
 
-	expected := fmt.Sprintf("sha256=%s", hex.EncodeToString(mac.Sum(nil)))
 	if !hmac.Equal([]byte(expected), []byte(providedSig)) {
 		return errSignatureMismatch
 	}
-
 	return nil
 }
 ```
 
-<Callout type="info">Pass the raw request body bytes to `Verify` as `body`. Only after verification succeeds should you parse the JSON and process the event.</Callout>
+## Acknowledge and process safely
 
-## Retry behavior
+Return any `2xx` response after you have durably stored the event. Safepay treats the delivery as successful and does not retry it. A `200 OK` response is recommended.
 
-Safepay retries failed deliveries up to 5 attempts using exponential backoff:
+Do not wait for downstream business logic before acknowledging. A safe handler performs these operations in order:
 
-- Attempt 1: 1 second
-- Attempt 2: 2 seconds
-- Attempt 3: 4 seconds
-- Attempt 4: 8 seconds
-- Attempt 5: 16 seconds
+1. Read the raw body and required headers.
+2. Verify the timestamp and signature.
+3. Atomically persist the event using `X-SFPY-EVENT-ID` as a unique key.
+4. Return `200 OK`.
+5. Process the stored event asynchronously.
 
-Respond with `200 OK` as soon as you persist the event to stop further retries.
+Safepay does not currently publish a contractual response timeout. Return a `2xx` promptly and do not depend on a long-running connection remaining open.
+
+## Delivery and retry semantics
+
+Webhook delivery is **at least once**. Your endpoint can receive the same event more than once, for example when Safepay sends a request successfully but does not receive your acknowledgement. Safepay does not guarantee that separate events arrive in creation order, especially when one event is being retried. Always make processing idempotent and compare the resource’s current state before applying a transition.
+
+Safepay makes one initial delivery attempt. Transport errors and `5xx` responses are retried up to five more times using exponential backoff:
+
+| Request | Delay after the preceding failure |
+| --- | --- |
+| Initial attempt | No delay |
+| Retry 1 | 1 second |
+| Retry 2 | 2 seconds |
+| Retry 3 | 4 seconds |
+| Retry 4 | 8 seconds |
+| Retry 5 | 16 seconds |
+
+Any `2xx` response completes the delivery. A terminal non-`2xx` response below `500`, including a `4xx`, is not retried and moves the delivery to `WD_DEAD`. After the final failed retry, the delivery also moves to `WD_DEAD`.
+
+<Callout type="info">
+  Automatic redirects should not be part of your integration contract. Register the final HTTPS URL and return a `2xx` response directly from it.
+</Callout>
+
+### Delivery statuses
+
+| Status | Meaning |
+| --- | --- |
+| `WD_PENDING` | Waiting for its initial attempt or next automatic retry. A delivery stays `WD_PENDING` through every retryable failure, with `next_attempt_at` advanced each time. |
+| `WD_DELIVERED` | Safepay received a `2xx` response. |
+| `WD_FAILED` | Reserved by the API contract. The delivery engine does not currently assign it; do not build logic that expects to observe it. |
+| `WD_DEAD` | No more automatic attempts will be made: either a non-retryable response (a `3xx` or `4xx`) was received on any attempt, or all retries were exhausted. |
+
+Use the [List Webhook Delivery](/api-reference/webhooks/list-webhook-delivery) endpoint to filter by status, event type, event ID, or delivery ID. Use [Find Webhook Delivery](/api-reference/webhooks/find-webhook-delivery) to inspect the stored payload and last error.
+
+There is currently no public API for manually replaying a `WD_DEAD` delivery. Reconcile the resource through the corresponding Payments, Refunds, or Settlement API and process it idempotently in your system.
+
+## Rotate the signing secret
+
+Call `PUT /v1/aggregators/{{aggregator_id}}/webhooks/{{webhook_id}}/rotate` to generate a new base64-encoded secret. Rotation atomically replaces the stored secret; Safepay does not maintain a server-side overlap period with both secrets.
+
+New delivery attempts, including retries of older events, load the current secret and are signed with it. A request already in progress at the moment rotation completes may have been signed with the previous secret. To rotate without rejecting an in-flight request:
+
+1. Retain the previous secret in your verifier.
+2. Call the rotation endpoint and securely store the returned secret.
+3. Try the new secret first and the previous secret second for a short operational grace period.
+4. Remove the previous secret after in-flight requests have cleared.
+
+Each attempt receives a fresh `X-SFPY-TIMESTAMP` and signature. The webhook request does not include a secret-version header.
+
+## Endpoint changes
+
+- Disabling an endpoint causes pending deliveries selected afterward to become `WD_DEAD`.
+- Deleting an endpoint also deletes its stored delivery records.
+- Updating event filters affects future events; it does not create deliveries for past events.
 
 ## Event catalog
 
-| Event | Category | Description |
-| --- | --- | --- |
-| `payment.created` | Payments | A new payment request was created (initiated by customer). |
-| `payment.pending_authorization` | Payments | Payment is awaiting authorization (for example, Pay Later checks). |
-| `payment.authorized` | Payments | Payment has been authorized and funds are on hold. |
-| `payment.completed` | Payments | Payment has been captured or charged successfully. |
-| `payment.settled` | Payments | Payment funds have been settled to the merchant. |
-| `payment.refunded` | Payments | Payment was fully refunded. |
-| `payment.refund_partial` | Payments | Payment was partially refunded. |
-| `payment.rejected` | Payments | Payment was rejected before authorization. |
-| `payment.failed` | Payments | Payment processing failed. |
-| `payment.reversed` | Payments | Payment was reversed after completion. |
-| `payment.voided` | Payments | Payment authorization was voided. |
-| `settlement.created` | Settlements | Settlement request was created. |
-| `settlement.processing` | Settlements | Settlement is currently processing. |
-| `settlement.completed` | Settlements | Settlement completed successfully. |
-| `settlement.failed` | Settlements | Settlement failed during processing. |
-| `settlement.on_hold` | Settlements | Settlement temporarily placed on hold. |
-| `settlement.reversed` | Settlements | Settlement was reversed. |
-| `refund.created` | Refunds | Refund request was created. |
-| `refund.completed` | Refunds | Refund was successfully completed. |
-| `refund.failed` | Refunds | Refund failed during processing. |
-| `refund.canceled` | Refunds | Refund request was canceled. |
+### Payment events
+
+| Event | Description |
+| --- | --- |
+| `payment.created` | A new payment or payout request was initiated. |
+| `payment.pending_authorization` | The payment is waiting for authorization or acknowledgement. |
+| `payment.authorized` | The payment was authorized and funds are reserved. |
+| `payment.completed` | The payment was successfully captured or charged. |
+| `payment.settled` | Funds were settled to the recipient. |
+| `payment.refunded` | The payment was fully refunded. |
+| `payment.refund_partial` | The payment was partially refunded. |
+| `payment.rejected` | The payment was rejected before authorization. |
+| `payment.failed` | Payment processing failed. |
+| `payment.reversed` | The payment was reversed after completion. |
+| `payment.voided` | An `RTP_NOW`/`RTP_LATER` request was withdrawn before authorization. `subject.payment.status` is `P_CANCELLED`; there is no separate `P_VOIDED` status. |
+
+Payouts use the `payment.*` event family because payouts are represented as payments with `subject.payment.type` set to `PAYOUT` or `SETTLEMENT_PAYOUT`. There is no separate `payout.*` event family.
+
+### Refund events
+
+| Event | Description |
+| --- | --- |
+| `refund.created` | A refund request was initiated. |
+| `refund.completed` | The refund completed successfully. |
+| `refund.failed` | Refund processing failed. |
+| `refund.canceled` | The refund was canceled before processing. |
+
+Payment-level `payment.refunded` and `payment.refund_partial` events describe the resulting payment state. Refund-level `refund.*` events describe the lifecycle of an individual refund. Use `subject.payment.refunds` to identify the refund concerned.
+
+### Settlement events
+
+| Event | Description |
+| --- | --- |
+| `settlement.created` | A settlement request was created. |
+| `settlement.processing` | The settlement is being processed. |
+| `settlement.completed` | The settlement completed successfully. |
+| `settlement.failed` | Settlement processing failed. |
+| `settlement.on_hold` | The settlement was placed on hold. |
+| `settlement.reversed` | The settlement was reversed. |
 
 ## See also
 
-- [Webhooks](/concepts/webhooks)
+- [Webhook events and payloads](/guides/webhook-events)
+- [Webhooks concept](/concepts/webhooks)
 - [Payment lifecycle guide](/guides/payment-lifecycle)
 - [Payout lifecycle](/guides/payout-lifecycle)
 - [Errors](/reference/errors)

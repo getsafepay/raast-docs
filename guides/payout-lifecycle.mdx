@@ -34,7 +34,9 @@ Payouts are asynchronous like pay-ins. Use this lifecycle to design back-office 
 
 ### Webhook events to expect
 
-Use the [webhooks delivery guide](/guides/webhooks-delivery) for the full event catalog and signature verification. Settlement-related events are emitted as batch processing progresses.
+Payouts are represented as payment resources, so they emit `payment.*` events rather than a separate `payout.*` family. For the lifecycle above, expect `payment.created`, `payment.pending_authorization`, and a terminal event such as `payment.settled` or `payment.failed`. Confirm that `subject.payment.type` is `PAYOUT` or `SETTLEMENT_PAYOUT` before applying payout-specific business logic.
+
+Use the [webhooks delivery guide](/guides/webhooks-delivery) for signature verification and delivery handling, and [Webhook events and payloads](/guides/webhook-events#payout-event-example) for an example.
 
 ## Status reference
 
@@ -47,7 +49,7 @@ Use the [webhooks delivery guide](/guides/webhooks-delivery) for the full event 
 
 ## Operational best practices
 
-- **Webhook reliability**: Implement exponential backoff retries if your webhook endpoint experiences downtime.
+- **Webhook reliability**: Persist events idempotently and return a `2xx` promptly. Safepay performs the supported delivery retries when your endpoint has a transport error or returns `5xx`.
 - **Dual controls**: Require two-person review for high-value payouts before calling the API.
 - **Ledger reconciliation**: Store the `trace_reference` and `request_id` to match Safepay webhooks with internal ledger entries.
 - **Incident response**: Alert operators automatically when a payout remains in `P_RECEIVED` beyond your SLA or enters `P_FAILED`.
