@@ -5,7 +5,7 @@ description: 'Current limits and guidance for safe throughput.'
 
 import { Callout } from '~/ui/components/Snippet'
 
-Safepay Raast does not enforce rate limits at this time.
+Safepay Raast does not enforce application-level rate limits at this time. This is current behavior, not a guarantee of unlimited capacity or permission to expose sensitive lookup APIs without your own controls. Safepay may introduce limits in the future; integrations should handle `429 Too Many Requests` and honor `Retry-After` if returned.
 
 <Callout type="info">Even without enforced limits, design your integration to handle spikes and transient failures gracefully.</Callout>
 
@@ -13,10 +13,21 @@ Safepay Raast does not enforce rate limits at this time.
 
 - Use exponential backoff for `5xx` responses and network timeouts.
 - Reuse `request_id` values only when retrying the exact same payload.
-- Cache account validation lookups briefly to reduce repeated calls.
+- Apply per-user, per-IP or device, per-identifier, and aggregator-wide limits to account validation lookups.
+- Cache a successful account validation result for no more than five minutes, scoped to the same authenticated user and transaction.
+- Do not retry `4xx` responses automatically. If you receive `429`, wait for `Retry-After` and add jitter before retrying.
+
+## Sensitive account lookups
+
+`account-info`, `title-fetch`, `title-fetch/v2`, and `title-fetch/alias` can disclose an account holder's name. Do not make them generally searchable or proxy them directly to an end-user client.
+
+As a starting point, allow an authenticated user up to 60 lookups per minute and 300 per hour, limit a user to 10 requests for the same normalized identifier in 15 minutes, and apply an additional source-IP or device limit of 120 requests per minute. Count successful and failed requests. These are integration-side abuse-prevention recommendations, not limits enforced by Safepay.
+
+See [Account validation utilities](/concepts/account-validation#privacy-and-abuse-prevention) for transaction binding, caching, logging, user-interface, and monitoring guidance.
 
 ## See also
 
 - [Errors](/reference/errors)
+- [Account validation utilities](/concepts/account-validation)
 - [Pagination](/reference/pagination)
 - [Webhooks delivery](/guides/webhooks-delivery)

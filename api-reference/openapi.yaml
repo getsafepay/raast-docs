@@ -675,7 +675,10 @@ paths:
       tags:
         - Utilities
       summary: Title Fetch
-      description: Retrieve account title metadata for a Raast IBAN
+      description: >-
+        Retrieve account title metadata for a Raast IBAN. Account titles are
+        sensitive personal data: call this operation only from an authenticated,
+        transaction-bound backend flow and apply your own abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
@@ -693,7 +696,13 @@ paths:
       tags:
         - Utilities
       summary: Title Fetch V2
-      description: Retrieve account title metadata for a conventional bank account number. Provide `account_number` and `bank_name`; Safepay resolves the receiver BIC internally before querying the Raast directory. Supported `bank_name` values and their BIC mappings are listed on this page.
+      description: >-
+        Retrieve account title metadata for a conventional bank account number.
+        Provide `account_number` and `bank_name`; Safepay resolves the receiver BIC
+        internally before querying the Raast directory. Supported `bank_name` values
+        and their BIC mappings are listed on this page. Account titles are sensitive
+        personal data; keep this call in an authenticated backend flow and apply your
+        own abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
@@ -712,7 +721,10 @@ paths:
       tags:
         - Utilities
       summary: Read Account Info
-      description: Retrieve Raast account metadata using an IBAN or alias lookup
+      description: >-
+        Retrieve Raast account metadata using an IBAN or alias lookup. Because a
+        lookup can reveal an account holder's name, restrict it to authenticated,
+        transaction-bound backend flows and apply your own abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
@@ -817,7 +829,11 @@ paths:
       tags:
         - Aliases
       summary: Title Fetch Alias
-      description: Retrieve account title metadata for a Raast Alias
+      description: >-
+        Retrieve account title metadata for a Raast alias. An alias such as a mobile
+        number can reveal an account holder's name, so restrict this operation to an
+        authenticated, transaction-bound backend flow and apply your own
+        abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
