@@ -15,8 +15,38 @@ Reduce payment failures by validating customer bank details before submitting RT
 | [GET /title-fetch/v2](/api-reference/utilities/title-fetch-v2) | Returns the registered account title for a conventional account number. | `account_number`, `bank_name` (query) |
 | [GET /account-info](/api-reference/utilities/read-account-info) | Retrieves metadata for an IBAN or alias, optionally combining title fetch. | `iban` or `alias_*` params; `with_title_fetch` flag |
 
-<Callout type="tip">Call these endpoints before RTP or payout operations to ensure the payer or beneficiary details are valid. Cache responses briefly to avoid extra latency.</Callout>
+<Callout type="tip">Call these endpoints immediately before an RTP or payout operation to ensure the payer or beneficiary details are valid. If you cache a successful response, scope it to the same authenticated user and transaction and expire it after no more than five minutes.</Callout>
 <Callout type="info">`GET /account-info` accepts optional JSON body parameters (`iban`, `with_title_fetch`). Use query parameters if your HTTP client does not support GET bodies.</Callout>
+
+## Privacy and abuse prevention
+
+Account information and title fetch responses can reveal an account holder's name from an IBAN, conventional account number, or alias such as a mobile number. The absence of a Safepay-enforced rate limit does not make these APIs suitable for unrestricted directory lookup.
+
+Keep all calls on your backend. Never expose your aggregator secret or proxy these endpoints directly to a browser or mobile application. Allow a lookup only when all of the following are true:
+
+- The end user is authenticated and has started a payment, payout, beneficiary-addition, or account-verification flow.
+- The identifier has passed format validation and the user has explicitly submitted it. Do not call lookup APIs on every keystroke, provide search or autocomplete, or support bulk enumeration.
+- The result is bound to that user and transaction. Show only the minimum account-title detail required for confirmation and do not make results visible to another user.
+- Identifiers and account titles are redacted from application, analytics, and support logs. Retain them only for the transaction or another documented legal or operational need.
+
+### Recommended starting limits
+
+Safepay does not currently prescribe or enforce a numeric account-lookup quota. Until a contractual limit is provided, apply these controls at your own edge as a starting point:
+
+| Scope | Suggested starting control |
+| --- | --- |
+| Authenticated user | 60 lookup requests per minute and 300 per hour |
+| Source IP or device | 120 lookup requests per minute across users |
+| Same normalized identifier | 10 requests per 15 minutes per user; reuse a recent result instead of querying again |
+| Aggregator | A global ceiling based on expected payment traffic, with an alert on unusual volume or a spike in distinct identifiers |
+
+These values are abuse-prevention guidance, not a Safepay service quota or throughput entitlement. Tighten them for higher-risk or unauthenticated surfaces and tune them using your legitimate traffic after a security review. Count attempts whether they succeed or fail, and apply the strictest applicable limit.
+
+When a caller exceeds your limit, return `429 Too Many Requests` with `Retry-After` from your application without forwarding the request to Safepay. Add a cooldown or step-up challenge when one user, IP, or device probes many distinct identifiers. Use consistent user-facing errors so lookup failures cannot be used to efficiently enumerate registered aliases.
+
+<Callout type="warning">
+  Do not treat an account-title match as proof that the end user owns or controls the account. It confirms directory information only; use the authorization or verification controls required by your product flow.
+</Callout>
 
 ### Title fetch example
 
@@ -140,6 +170,7 @@ curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/title-fetch/al
 
 ## See also
 
+- [Rate limits](/reference/rate-limits)
 - [Payments](/concepts/payment)
 - [Payouts use case](/use-cases/payouts)
 - [Payment lifecycle guide](/guides/payment-lifecycle)

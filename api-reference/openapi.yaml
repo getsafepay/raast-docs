@@ -675,7 +675,10 @@ paths:
       tags:
         - Utilities
       summary: Title Fetch
-      description: Retrieve account title metadata for a Raast IBAN
+      description: >-
+        Retrieve account title metadata for a Raast IBAN. Account titles are
+        sensitive personal data: call this operation only from an authenticated,
+        transaction-bound backend flow and apply your own abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
@@ -693,7 +696,13 @@ paths:
       tags:
         - Utilities
       summary: Title Fetch V2
-      description: Retrieve account title metadata for a conventional bank account number. Provide `account_number` and `bank_name`; Safepay resolves the receiver BIC internally before querying the Raast directory. Supported `bank_name` values and their BIC mappings are listed on this page.
+      description: >-
+        Retrieve account title metadata for a conventional bank account number.
+        Provide `account_number` and `bank_name`; Safepay resolves the receiver BIC
+        internally before querying the Raast directory. Supported `bank_name` values
+        and their BIC mappings are listed on this page. Account titles are sensitive
+        personal data; keep this call in an authenticated backend flow and apply your
+        own abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
@@ -712,7 +721,10 @@ paths:
       tags:
         - Utilities
       summary: Read Account Info
-      description: Retrieve Raast account metadata using an IBAN or alias lookup
+      description: >-
+        Retrieve Raast account metadata using an IBAN or alias lookup. Because a
+        lookup can reveal an account holder's name, restrict it to authenticated,
+        transaction-bound backend flows and apply your own abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
@@ -817,7 +829,11 @@ paths:
       tags:
         - Aliases
       summary: Title Fetch Alias
-      description: Retrieve account title metadata for a Raast Alias
+      description: >-
+        Retrieve account title metadata for a Raast alias. An alias such as a mobile
+        number can reveal an account holder's name, so restrict this operation to an
+        authenticated, transaction-bound backend flow and apply your own
+        abuse-prevention limits.
       security:
         - apiKey: []
       parameters:
@@ -868,6 +884,10 @@ paths:
       tags:
         - Webhooks
       summary: Create Webhook
+      description: >-
+        Register an endpoint for exact event names or trailing-wildcard filters such as
+        `payment.*`. The response contains the base64-encoded signing secret. Store it
+        securely and decode it before using the bytes as the HMAC-SHA256 key.
       security:
         - apiKey: []
       parameters:
@@ -903,6 +923,7 @@ paths:
       tags:
         - Webhooks
       summary: Update Webhook
+      description: Update the endpoint URL, description, enabled state, or event filters. Changes apply to future event matching.
       security:
         - apiKey: []
       responses:
@@ -916,6 +937,7 @@ paths:
       tags:
         - Webhooks
       summary: Delete Webhook
+      description: Delete the endpoint and its stored webhook-delivery records.
       security:
         - apiKey: []
       responses:
@@ -927,6 +949,7 @@ paths:
       tags:
         - Webhooks
       summary: Find Webhook
+      description: Retrieve one webhook endpoint owned by the aggregator.
       security:
         - apiKey: []
       responses:
@@ -940,6 +963,11 @@ paths:
       tags:
         - Webhooks
       summary: Rotate Webhook
+      description: >-
+        Atomically replace the endpoint signing secret and return the new base64-encoded
+        value. Safepay does not retain the previous secret for a server-managed overlap
+        period. A request already in flight can still carry a signature made with the
+        previous secret.
       security:
         - apiKey: []
       parameters:
@@ -960,7 +988,7 @@ paths:
       tags:
         - Webhooks
       summary: Find Webhook Delivery
-      description: Retrieve a specific webhook delivery status and payload.
+      description: Retrieve a specific webhook delivery status, raw event payload, attempt count, and last HTTP delivery error.
       security:
         - apiKey: []
       responses:
@@ -977,12 +1005,13 @@ paths:
       tags:
         - Webhooks
       summary: List Webhook Delivery
-      description: Retrieve a paginated list of webhook deliveries. It supports pagination, filtering by `status`, `type` and `event_id`.
+      description: Retrieve a newest-first paginated list of webhook-delivery summaries. It supports filtering by `status`, `type`, `event_id`, and `delivery_id`.
       security:
         - apiKey: []
       parameters:
         - $ref: "#/components/parameters/WebhookDeliveryListTypeParam"
         - $ref: "#/components/parameters/WebhookDeliveryListEventIdParam"
+        - $ref: "#/components/parameters/WebhookDeliveryListDeliveryIdParam"
         - $ref: "#/components/parameters/WebhookDeliveryListStatusParam"
         - $ref: "#/components/parameters/WebhookDeliveryListLimitParam"
         - $ref: "#/components/parameters/WebhookDeliveryListOffsetParam"
@@ -1954,7 +1983,12 @@ components:
       name: status
       in: query
       required: false
-      description: Filter Webhook deliveries by their status.
+      description: >-
+        Filter webhook deliveries by status. `WD_PENDING` is waiting for an initial
+        attempt or retry (retryable failures stay `WD_PENDING` with an advanced
+        `next_attempt_at`), `WD_DELIVERED` received a 2xx response, `WD_FAILED` is
+        reserved by the API contract but not currently assigned, and `WD_DEAD` will
+        receive no more automatic attempts.
       schema:
         type: string
         enum:
@@ -1968,10 +2002,15 @@ components:
       name: event_id
       in: query
       required: false
-      description: Filter Webhook deliveries by event_id.
+      description: Filter by one or more originating event IDs. Repeat the query parameter to supply multiple values.
+      style: form
+      explode: true
       schema:
-        type: string
-        example: txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291
+        type: array
+        items:
+          type: string
+        example:
+          - txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291
     WebhookDeliveryListTypeParam:
       name: type
       in: query
@@ -2001,7 +2040,21 @@ components:
           - refund.failed
           - refund.canceled
         example: refund.created
-      description: Limit results to Webhook deliveries of the given type
+      description: Limit results to webhook deliveries of the given public event type.
+    WebhookDeliveryListDeliveryIdParam:
+      name: delivery_id
+      in: query
+      required: false
+      description: Filter by one or more webhook delivery tokens. Repeat the query parameter to supply multiple values.
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
+          pattern: '^whd_'
+        example:
+          - whd_f35737a8-60d0-4d62-8259-9cade007570a
   schemas:
     CreateRtpBase:
       type: object
@@ -2658,6 +2711,8 @@ components:
             - RTP_LATER
             - STATIC_QR
             - DYNAMIC_QR
+            - PAYOUT
+            - SETTLEMENT_PAYOUT
         amount:
           type: string
           description: Payment amount expressed as a string to preserve formatting.
@@ -2975,24 +3030,29 @@ components:
           description: Timestamp when the QR code expires, when applicable.
     Webhook:
       type: object
+      description: >-
+        Registered webhook endpoint. The signing secret itself is never included here;
+        it is returned only in the `secret` field of the Create and Rotate responses.
       properties:
         token:
           type: string
+          pattern: '^wh_'
         aggregator_id:
           type: string
+          pattern: '^agg_'
         url:
           type: string
+          format: uri
         description:
           type: string
         enabled:
           type: boolean
         event_filter_json:
           type: string
-        secret:
-          type: string
-          description: Base64-encoded signing secret (returned on create or rotate). Base64-decode it and use the bytes as the HMAC-SHA256 key when verifying webhook deliveries; see webhooks documentation for the signature algorithm.
+          description: JSON-encoded exact event names and/or trailing-wildcard filters such as `payment.*`.
         secret_version:
           type: integer
+          description: Increments each time the signing secret is rotated. Does not reveal the secret value.
         created_at:
           type: string
           format: date-time
@@ -3002,13 +3062,140 @@ components:
         secret_rotated_at:
           type: string
           format: date-time
+      required:
+        - token
+        - aggregator_id
+        - url
+        - enabled
+        - event_filter_json
+        - secret_version
+        - created_at
+        - updated_at
+        - secret_rotated_at
+    WebhookEvent:
+      type: object
+      description: Versioned JSON body sent to a webhook endpoint. Property names use lower camel case.
+      additionalProperties: true
+      properties:
+        source:
+          type: string
+          enum: [SAFEPAY_RAAST]
+        kind:
+          type: string
+          enum: [PAYMENT_EVENT, REFUND_EVENT, SETTLEMENT_EVENT]
+        code:
+          type: string
+          description: Raast event code corresponding to the state transition.
+        version:
+          type: string
+          enum: [V1_0_0]
+        timestamp:
+          type: string
+          format: date-time
+          description: Time the event was created. This is distinct from the per-attempt `X-SFPY-TIMESTAMP` header.
+        identifier:
+          type: string
+          description: Unique event ID matching `X-SFPY-EVENT-ID`.
+        partnerId:
+          type: string
+        aggregatorId:
+          type: string
+          description: Aggregator ID matching `X-SFPY-AGGREGATOR-ID`.
+        subject:
+          $ref: "#/components/schemas/WebhookEventSubject"
+        destinations:
+          type: array
+          description: Internal routing metadata. Do not use it for business logic.
+          items:
+            type: object
+        raastChannel:
+          type: string
+          description: Internal channel metadata. It can be empty.
+        webhookEventType:
+          type: string
+          description: Public event name matching `X-SFPY-EVENT-TYPE`.
+      required:
+        - source
+        - kind
+        - code
+        - version
+        - timestamp
+        - identifier
+        - aggregatorId
+        - subject
+        - webhookEventType
+    WebhookEventSubject:
+      type: object
+      description: Snapshot of the resource affected by the event.
+      additionalProperties: true
+      properties:
+        errorDetails:
+          type: object
+          nullable: true
+          properties:
+            httpCode:
+              type: integer
+            error:
+              type: string
+        payment:
+          $ref: "#/components/schemas/WebhookEventPayment"
+      required:
+        - payment
+    WebhookEventPayment:
+      type: object
+      description: Payment snapshot serialized in lower camel case. Additional related resources may be included.
+      additionalProperties: true
+      properties:
+        token:
+          type: string
+          pattern: '^pm_'
+        aggregatorId:
+          type: string
+          pattern: '^agg_'
+        aggregatorMerchantId:
+          type: string
+        qrCodeId:
+          type: string
+        orderId:
+          type: string
+        type:
+          type: string
+          enum: [RTP_NOW, RTP_LATER, STATIC_QR, DYNAMIC_QR, PAYOUT, SETTLEMENT_PAYOUT]
+        amount:
+          type: string
+          description: Amount in the lowest currency denomination. Protobuf int64 values serialize as JSON strings.
+        status:
+          type: string
+          enum: [P_INITIATED, P_RECEIVED, P_CANCELLED, P_REJECTED, P_FAILED, P_AUTHORIZED, P_REVERSED, P_CAPTURED, P_SETTLED, P_PARTIALLY_REFUNDED, P_REFUNDED]
+        requestId:
+          type: string
+        traceReference:
+          type: string
+        txnLogs:
+          type: array
+          items:
+            type: object
+        refunds:
+          type: array
+          items:
+            type: object
+        settlement:
+          type: object
+          nullable: true
+      required:
+        - token
+        - aggregatorId
+        - type
+        - amount
+        - status
     WebhookDelivery:
       type: object
-      description: Delivery attempt metadata for a webhook event.
+      description: Webhook delivery metadata. The complete raw event body is available in `payload_json` when reading one delivery.
       properties:
         token:
           type: string
           description: Public token representing the webhook delivery.
+          pattern: '^whd_'
         endpoint_token:
           type: string
           description: Identifier of the webhook endpoint this delivery was sent to.
@@ -3021,25 +3208,47 @@ components:
         type:
           type: string
           description: Event type delivered.
+          example: payment.completed
         payload_json:
           type: string
-          description: Raw JSON payload delivered to the endpoint.
+          description: Exact JSON event body delivered to the endpoint, encoded as a string in this API response. It is omitted from delivery-list summaries.
+          contentMediaType: application/json
+          contentSchema:
+            $ref: "#/components/schemas/WebhookEvent"
+          example: '{"source":"SAFEPAY_RAAST","kind":"PAYMENT_EVENT","code":"PAYMENT_CAPTURED","version":"V1_0_0","timestamp":"2026-09-14T10:15:30.123456Z","identifier":"txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291","partnerId":"partner_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","subject":{"payment":{"token":"pm_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","orderId":"order-1042","type":"RTP_NOW","amount":"250000","status":"P_CAPTURED"}},"destinations":[],"raastChannel":"","webhookEventType":"payment.completed"}'
         status:
           type: string
           description: Current status of the delivery attempt.
+          enum:
+            - WD_PENDING
+            - WD_DELIVERED
+            - WD_FAILED
+            - WD_DEAD
         attempts:
           type: integer
-          description: Number of attempts made to deliver the payload.
+          description: Number of retryable failures recorded before the current state. Use `status` rather than this field alone to determine whether more attempts are scheduled.
         last_error:
           type: string
-          description: Last error message if delivery failed.
+          nullable: true
+          description: Last HTTP or transport delivery error. This does not describe a payment or refund business failure.
         next_attempt_at:
           $ref: "#/components/schemas/Timestamp"
           description: Timestamp for the next scheduled retry, if applicable.
+          nullable: true
         created_at:
           $ref: "#/components/schemas/Timestamp"
         delivered_at:
           $ref: "#/components/schemas/Timestamp"
+          nullable: true
+      required:
+        - token
+        - endpoint_token
+        - aggregator_id
+        - event_id
+        - type
+        - status
+        - attempts
+        - created_at
 
     SettlementListCount:
       type: object
@@ -3867,7 +4076,7 @@ components:
                 amount: 1200
                 expiry_in_minutes: 180
     CreateWebhook:
-      description: Request to create a webhook endpoint
+      description: Register a webhook endpoint. At least one event filter is required.
       content:
         application/json:
           schema:
@@ -3876,25 +4085,22 @@ components:
             properties:
               url:
                 type: string
-                description: The URL where webhook events will be sent
-                example: https://github.com/HasCold
+                format: uri
+                description: The final HTTPS URL where webhook events will be sent.
+                example: https://api.example.com/webhooks/safepay
               description:
                 type: string
                 description: Optional description for the webhook endpoint
-                example: this is testing url endpoint
+                example: Raast production webhook
               event_types:
                 type: array
-                description: List of event types to subscribe to
+                description: Exact public event names or trailing-wildcard category filters such as `payment.*`, `refund.*`, or `settlement.*`.
                 items:
                   type: string
                 example:
                   [
-                    "payment.created",
-                    "payment.completed",
-                    "refund.completed",
-                    "refund.created",
-                    "settlement.processing",
-                    "settlement.completed",
+                    "payment.*",
+                    "refund.*",
                   ]
               enabled:
                 type: boolean
@@ -3906,9 +4112,9 @@ components:
           examples:
             Create Webhook:
               value:
-                url: https://github.com/HasCold
-                description: this is testing url endpoint
-                event_types: ["payment.created"]
+                url: https://api.example.com/webhooks/safepay
+                description: Raast production webhook
+                event_types: ["payment.*", "refund.*"]
                 enabled: true
     UpdateWebhook:
       description: Request to update a webhook endpoint
@@ -3920,27 +4126,28 @@ components:
             properties:
               url:
                 type: string
-                description: The URL where webhook events will be sent
-                example: https://github.com/HasCold
+                format: uri
+                description: The final HTTPS URL where webhook events will be sent.
+                example: https://api.example.com/webhooks/safepay
               description:
                 type: string
                 description: Optional description for the webhook endpoint
-                example: this is testing url endpoint
+                example: Raast production webhook
               event_types:
                 type: array
-                description: List of event types to subscribe to
+                description: Replacement exact event names or trailing-wildcard category filters. Omit this property to preserve the current filters.
                 items:
                   type: string
-                example: ["payment.created", "payment.refunded"]
+                example: ["payment.*", "refund.*"]
               enabled:
                 type: boolean
                 example: true
           examples:
             Update Webhook:
               value:
-                url: https://github.com/HasCold
-                description: this is testing url endpoint
-                event_types: ["payment.created", "payment.refunded"]
+                url: https://api.example.com/webhooks/safepay
+                description: Raast production webhook
+                event_types: ["payment.*", "refund.*"]
                 enabled: true
   responses:
 
@@ -5851,13 +6058,12 @@ components:
                   endpoint:
                     token: wh_f52d84b4-a140-4a3a-b707-80644232e926
                     aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
-                    url: https://github.com/HasCold
-                    description: this is testing url endpoint
+                    url: https://api.example.com/webhooks/safepay
+                    description: Raast production webhook
                     enabled: true
                     event_filter_json: '["payment.created"]'
                     created_at: "2025-12-02T12:48:35.416597859Z"
                     updated_at: "2025-12-02T12:48:35.416597859Z"
-                    secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
                     secret_version: 1
                     secret_rotated_at: "2025-12-02T12:48:35.416597859Z"
                   secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
@@ -5890,13 +6096,12 @@ components:
                   endpoint:
                     token: wh_f52d84b4-a140-4a3a-b707-80644232e926
                     aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
-                    url: https://github.com/HasCold
-                    description: this is the testing url
+                    url: https://api.example.com/webhooks/safepay
+                    description: Raast production webhook
                     enabled: true
                     event_filter_json: '["payment.created","payment.authorized"]'
                     created_at: "2025-12-02T12:48:35Z"
                     updated_at: "2025-12-02T12:53:10.338063178Z"
-                    secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
                     secret_version: 1
                     secret_rotated_at: "2025-12-02T12:48:35Z"
     RotateWebhookResponse:
@@ -5937,13 +6142,12 @@ components:
                   endpoint:
                     token: wh_f52d84b4-a140-4a3a-b707-80644232e926
                     aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
-                    url: https://github.com/HasCold
-                    description: this is the testing url
+                    url: https://api.example.com/webhooks/safepay
+                    description: Raast production webhook
                     enabled: true
                     event_filter_json: '["payment.created","payment.authorized"]'
                     created_at: "2025-12-02T12:48:35Z"
                     updated_at: "2025-12-03T08:45:13.869665886Z"
-                    secret: "s3UvEYcNaKdLD0pOCEOjy0e6XMszyuj/DIFEJRwIkHA="
                     secret_version: 3
                     secret_rotated_at: "2025-12-03T08:45:13.867701713Z"
                   secret: "s3UvEYcNaKdLD0pOCEOjy0e6XMszyuj/DIFEJRwIkHA="
@@ -5971,18 +6175,18 @@ components:
               value:
                 api_version: v1
                 data:
-                  token: wh_7f3c2d10
-                  endpoint_token: wh_ep_02c9b78d
-                  aggregator_id: agg_b12f8c30
-                  event_id: evt_8aa12f
-                  type: payment.succeeded
-                  payload_json: '{"id":"evt_8aa12f","object":"event"}'
+                  token: whd_f35737a8-60d0-4d62-8259-9cade007570a
+                  endpoint_token: wh_f52d84b4-a140-4a3a-b707-80644232e926
+                  aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
+                  event_id: txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291
+                  type: payment.completed
+                  payload_json: '{"source":"SAFEPAY_RAAST","kind":"PAYMENT_EVENT","code":"PAYMENT_CAPTURED","version":"V1_0_0","timestamp":"2026-09-14T10:15:30.123456Z","identifier":"txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291","partnerId":"partner_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","subject":{"payment":{"token":"pm_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","orderId":"order-1042","type":"RTP_NOW","amount":"250000","status":"P_CAPTURED"}},"destinations":[],"raastChannel":"","webhookEventType":"payment.completed"}'
                   status: WD_DELIVERED
                   attempts: 2
-                  last_error: ""
-                  next_attempt_at: "2025-12-15T09:05:00Z"
-                  created_at: "2025-12-15T09:00:00Z"
-                  delivered_at: "2025-12-15T09:00:04Z"
+                  last_error: null
+                  next_attempt_at: null
+                  created_at: "2026-09-14T10:15:30Z"
+                  delivered_at: "2026-09-14T10:15:34Z"
     FindWebhookResponse:
       description: This response contains details of a Webhook
       headers:
@@ -6012,13 +6216,12 @@ components:
                   endpoint:
                     token: wh_f52d84b4-a140-4a3a-b707-80644232e926
                     aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
-                    url: https://github.com/HasCold
-                    description: this is the testing url
+                    url: https://api.example.com/webhooks/safepay
+                    description: Raast production webhook
                     enabled: true
                     event_filter_json: '["payment.created","payment.authorized"]'
                     created_at: "2025-12-02T12:48:35Z"
                     updated_at: "2025-12-02T12:53:10.338063178Z"
-                    secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
                     secret_version: 1
                     secret_rotated_at: "2025-12-02T12:48:35Z"
     ListWebhookResponse:
@@ -6058,13 +6261,12 @@ components:
                   endpoints:
                     - token: wh_f52d84b4-a140-4a3a-b707-80644232e926
                       aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
-                      url: https://github.com/HasCold
-                      description: this is the testing url
+                      url: https://api.example.com/webhooks/safepay
+                      description: Raast production webhook
                       enabled: true
                       event_filter_json: '["payment.created","payment.authorized"]'
                       created_at: "2025-12-02T12:48:35Z"
                       updated_at: "2025-12-02T12:53:10Z"
-                      secret: "9sU3KVM5iQYZsxt40st1nkJsvbyuLnquB3Re1Q7k08w="
                       secret_version: 1
                       secret_rotated_at: "2025-12-02T12:48:35Z"
                   count: "1"
