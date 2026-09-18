@@ -80,7 +80,7 @@ Safepay sends an HTTP `POST` with `Content-Type: application/json`. Header names
 | `X-SFPY-SIGNATURE` | HMAC-SHA256 signature formatted as `sha256=<lowercase hex digest>`. |
 | `X-SFPY-TIMESTAMP` | UTC RFC 3339 timestamp used to calculate the signature. |
 
-The JSON body is the raw event envelope. The values in `X-SFPY-EVENT-ID`, `X-SFPY-EVENT-TYPE`, and `X-SFPY-AGGREGATOR-ID` correspond to the body’s `identifier`, `webhookEventType`, and `aggregatorId` fields.
+The JSON body is the raw event envelope. The values in `X-SFPY-EVENT-ID`, `X-SFPY-EVENT-TYPE`, and `X-SFPY-AGGREGATOR-ID` correspond to the body’s `identifier`, `webhook_event_type`, and `aggregator_id` fields.
 
 ## Verify the signature
 
