@@ -3074,7 +3074,7 @@ components:
         - secret_rotated_at
     WebhookEvent:
       type: object
-      description: Versioned JSON body sent to a webhook endpoint. Property names use lower camel case.
+      description: Versioned JSON body sent to a webhook endpoint. Property names use snake_case (the protobuf field names).
       additionalProperties: true
       properties:
         source:
@@ -3096,9 +3096,9 @@ components:
         identifier:
           type: string
           description: Unique event ID matching `X-SFPY-EVENT-ID`.
-        partnerId:
+        partner_id:
           type: string
-        aggregatorId:
+        aggregator_id:
           type: string
           description: Aggregator ID matching `X-SFPY-AGGREGATOR-ID`.
         subject:
@@ -3108,10 +3108,10 @@ components:
           description: Internal routing metadata. Do not use it for business logic.
           items:
             type: object
-        raastChannel:
+        raast_channel:
           type: string
           description: Internal channel metadata. It can be empty.
-        webhookEventType:
+        webhook_event_type:
           type: string
           description: Public event name matching `X-SFPY-EVENT-TYPE`.
       required:
@@ -3121,19 +3121,19 @@ components:
         - version
         - timestamp
         - identifier
-        - aggregatorId
+        - aggregator_id
         - subject
-        - webhookEventType
+        - webhook_event_type
     WebhookEventSubject:
       type: object
       description: Snapshot of the resource affected by the event.
       additionalProperties: true
       properties:
-        errorDetails:
+        error_details:
           type: object
           nullable: true
           properties:
-            httpCode:
+            http_code:
               type: integer
             error:
               type: string
@@ -3143,20 +3143,20 @@ components:
         - payment
     WebhookEventPayment:
       type: object
-      description: Payment snapshot serialized in lower camel case. Additional related resources may be included.
+      description: Payment snapshot serialized in snake_case (the protobuf field names). Additional related resources may be included.
       additionalProperties: true
       properties:
         token:
           type: string
           pattern: '^pm_'
-        aggregatorId:
+        aggregator_id:
           type: string
           pattern: '^agg_'
-        aggregatorMerchantId:
+        aggregator_merchant_id:
           type: string
-        qrCodeId:
+        qr_code_id:
           type: string
-        orderId:
+        order_id:
           type: string
         type:
           type: string
@@ -3167,11 +3167,11 @@ components:
         status:
           type: string
           enum: [P_INITIATED, P_RECEIVED, P_CANCELLED, P_REJECTED, P_FAILED, P_AUTHORIZED, P_REVERSED, P_CAPTURED, P_SETTLED, P_PARTIALLY_REFUNDED, P_REFUNDED]
-        requestId:
+        request_id:
           type: string
-        traceReference:
+        trace_reference:
           type: string
-        txnLogs:
+        txn_logs:
           type: array
           items:
             type: object
@@ -3184,7 +3184,7 @@ components:
           nullable: true
       required:
         - token
-        - aggregatorId
+        - aggregator_id
         - type
         - amount
         - status
@@ -3215,7 +3215,7 @@ components:
           contentMediaType: application/json
           contentSchema:
             $ref: "#/components/schemas/WebhookEvent"
-          example: '{"source":"SAFEPAY_RAAST","kind":"PAYMENT_EVENT","code":"PAYMENT_CAPTURED","version":"V1_0_0","timestamp":"2026-09-14T10:15:30.123456Z","identifier":"txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291","partnerId":"partner_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","subject":{"payment":{"token":"pm_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","orderId":"order-1042","type":"RTP_NOW","amount":"250000","status":"P_CAPTURED"}},"destinations":[],"raastChannel":"","webhookEventType":"payment.completed"}'
+          example: '{"source":"SAFEPAY_RAAST","kind":"PAYMENT_EVENT","code":"PAYMENT_CAPTURED","version":"V1_0_0","timestamp":"2026-09-14T10:15:30.123456Z","identifier":"txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291","partner_id":"partner_12345678-1234-1234-1234-123456789012","aggregator_id":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","subject":{"payment":{"token":"pm_12345678-1234-1234-1234-123456789012","aggregator_id":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","order_id":"order-1042","type":"RTP_NOW","amount":"250000","status":"P_CAPTURED"}},"destinations":[],"raast_channel":"","webhook_event_type":"payment.completed"}'
         status:
           type: string
           description: Current status of the delivery attempt.
@@ -6180,7 +6180,7 @@ components:
                   aggregator_id: agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e
                   event_id: txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291
                   type: payment.completed
-                  payload_json: '{"source":"SAFEPAY_RAAST","kind":"PAYMENT_EVENT","code":"PAYMENT_CAPTURED","version":"V1_0_0","timestamp":"2026-09-14T10:15:30.123456Z","identifier":"txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291","partnerId":"partner_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","subject":{"payment":{"token":"pm_12345678-1234-1234-1234-123456789012","aggregatorId":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","orderId":"order-1042","type":"RTP_NOW","amount":"250000","status":"P_CAPTURED"}},"destinations":[],"raastChannel":"","webhookEventType":"payment.completed"}'
+                  payload_json: '{"source":"SAFEPAY_RAAST","kind":"PAYMENT_EVENT","code":"PAYMENT_CAPTURED","version":"V1_0_0","timestamp":"2026-09-14T10:15:30.123456Z","identifier":"txnlog_5246fdcc-6c86-49bb-9da2-aa38262e0291","partner_id":"partner_12345678-1234-1234-1234-123456789012","aggregator_id":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","subject":{"payment":{"token":"pm_12345678-1234-1234-1234-123456789012","aggregator_id":"agg_2288490a-2176-4de5-b373-0ffb6f8e2e6e","order_id":"order-1042","type":"RTP_NOW","amount":"250000","status":"P_CAPTURED"}},"destinations":[],"raast_channel":"","webhook_event_type":"payment.completed"}'
                   status: WD_DELIVERED
                   attempts: 2
                   last_error: null

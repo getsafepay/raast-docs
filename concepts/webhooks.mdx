@@ -43,8 +43,8 @@ The signature is calculated over `X-SFPY-TIMESTAMP + '.' + raw_body` using the d
 Every event uses a versioned envelope containing:
 
 - event metadata such as `identifier`, `timestamp`, `kind`, `code`, and `version`;
-- `aggregatorId` and, when applicable, `partnerId`;
-- the public `webhookEventType`; and
+- `aggregator_id` and, when applicable, `partner_id`;
+- the public `webhook_event_type`; and
 - a resource snapshot under `subject.payment`.
 
 See [Webhook events and payloads](/guides/webhook-events) for a field reference and complete JSON examples.
