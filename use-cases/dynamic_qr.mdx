@@ -48,7 +48,7 @@ Dynamic QR codes encode order-specific metadata so you can present a scannable R
   Token returned from merchant creation (`data.token`).
 </ParamField>
 <ParamField path="request_id" type="string" required>
-  UUID v4 that enforces idempotency (exactly 36 characters with hyphens). Reuse only when retrying the same payload. Generate with `crypto.randomUUID()` or an equivalent UUID v4 library.
+  UUID v4 that enforces idempotency (exactly 36 characters with hyphens). Reuse only when retrying the same payload. Generate with UUID v4 library.
 </ParamField>
 <ParamField path="order_id" type="string">
   Optional order reference surfaced in webhook payloads.
