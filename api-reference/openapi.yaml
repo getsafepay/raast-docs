@@ -2062,7 +2062,11 @@ components:
       properties:
         request_id:
           type: string
-          description: Client-supplied idempotency identifier for the RTP request.
+          description: >
+            Client-supplied idempotency identifier for the RTP request. Must be a
+            UUID v4 (exactly 36 characters with hyphens).
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
         amount:
           type: integer
           description: Payment amount in the smallest currency unit (PKR).
@@ -3979,7 +3983,11 @@ components:
             properties:
               request_id:
                 type: string
-                description: Unique identifier supplied by the client to ensure idempotency
+                description: >
+                  Unique UUID v4 supplied by the client to ensure idempotency
+                  (exactly 36 characters with hyphens).
+                format: uuid
+                example: "d44940a1-663b-4d92-91e7-65438e4bf80b"
               amount:
                 type: string
                 description: Amount to credit in PKR, expressed as a string to preserve formatting
@@ -4005,6 +4013,11 @@ components:
             properties:
               request_id:
                 type: string
+                description: >
+                  Client-supplied UUID v4 idempotency key (exactly 36 characters
+                  with hyphens).
+                format: uuid
+                example: "9af69842-3011-4d6b-98d0-c3de1caa96d3"
               payment_id:
                 type: string
               amount:
@@ -4049,7 +4062,12 @@ components:
                 description: Identifier of the aggregator merchant the QR code belongs to
               request_id:
                 type: string
-                description: Optional idempotency key provided by the client
+                description: >
+                  Client-supplied idempotency key. Must be a UUID v4 (exactly 36
+                  characters with hyphens). Required for DYNAMIC QR
+                  codes.
+                format: uuid
+                example: "550e8400-e29b-41d4-a716-446655440000"
               order_id:
                 type: string
                 description: Merchant-supplied order reference for dynamic QR codes

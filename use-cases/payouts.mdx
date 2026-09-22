@@ -35,7 +35,7 @@ Use this recipe to push funds to beneficiaries such as drivers, vendors, or part
   <Tab title="Request Fields">
 
 <ParamField path="request_id" type="string" required>
-  UUID that keeps payout submissions idempotent.
+  UUID v4 that keeps payout submissions idempotent (exactly 36 characters with hyphens).
 </ParamField>
 <ParamField path="amount" type="string" required>
   Amount in PKR represented as a string (for example, `"200"` = PKR 200).

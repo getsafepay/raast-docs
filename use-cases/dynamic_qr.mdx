@@ -32,6 +32,10 @@ Dynamic QR codes encode order-specific metadata so you can present a scannable R
 
 <Callout type="info">Set `{{base_url}}` to `https://dev.api.getsafepay.com/raastwire` in Sandbox or `https://api.getsafepay.com/raastwire` in Production.</Callout>
 
+<Callout type="warning">
+  `request_id` must be a **UUID v4** (exactly 36 characters with hyphens), for example `550e8400-e29b-41d4-a716-446655440000`. Do not pad `order_id` or use arbitrary strings — those fail validation.
+</Callout>
+
 ## Dynamic QR
 
 <Tabs>
@@ -43,8 +47,8 @@ Dynamic QR codes encode order-specific metadata so you can present a scannable R
 <ParamField path="aggregator_merchant_identifier" type="string" required>
   Token returned from merchant creation (`data.token`).
 </ParamField>
-<ParamField path="request_id" type="string">
-  Recommended to guarantee idempotency. Reuse only when retrying the same payload.
+<ParamField path="request_id" type="string" required>
+  UUID v4 that enforces idempotency (exactly 36 characters with hyphens). Reuse only when retrying the same payload. Generate with `crypto.randomUUID()` or an equivalent UUID v4 library.
 </ParamField>
 <ParamField path="order_id" type="string">
   Optional order reference surfaced in webhook payloads.

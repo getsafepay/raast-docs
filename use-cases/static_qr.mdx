@@ -43,7 +43,7 @@ Static QR codes are reusable. They identify your aggregator merchant but leave a
   Token returned from merchant creation (`data.token`).
 </ParamField>
 <ParamField path="request_id" type="string">
-  Recommended to prevent duplicate QR creation on retries.
+  UUID v4 recommended to prevent duplicate QR creation on retries (exactly 36 characters with hyphens). Generate with UUID v4 library.
 </ParamField>
 
   </Tab>

@@ -63,7 +63,7 @@ console.log('Refund token', payload.data.token);
 
 | Field | Type | Required? | Notes |
 | --- | --- | --- | --- |
-| `request_id` | string | Yes | UUID to guarantee idempotency. |
+| `request_id` | string | Yes | UUID v4 to guarantee idempotency (exactly 36 characters with hyphens). |
 | `payment_id` | string | Yes | Token from the original payment response. |
 | `amount` | integer | Yes | Amount in paisa; cannot exceed the settled payment amount. |
 | `reason` | string | Yes | One of `TechnicalProblem` or `DuplicatePayment`. |
