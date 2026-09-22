@@ -78,6 +78,10 @@ console.log('QR code', payload.data.code);
 
 Dynamic codes embed transaction metadata so each scan maps to a unique order.
 
+<Callout type="warning">
+  Dynamic QR `request_id` must be a **UUID v4** (exactly 36 characters with hyphens). Do not pad `order_id` into `request_id` — use a real UUID such as `550e8400-e29b-41d4-a716-446655440000`.
+</Callout>
+
 <Steps>
   <Step title="Create the QR">
     Call `POST /v1/aggregators/{{aggregator_id}}/qrs` with `type: DYNAMIC`, order details, and amount.

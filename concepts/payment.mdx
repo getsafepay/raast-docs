@@ -17,7 +17,7 @@ Payments initiate a Request-to-Pay (RTP) against a customer's bank account. Each
 
 | Field | Type | Required? | Notes |
 | --- | --- | --- | --- |
-| `request_id` | string | Yes | UUID that enforces idempotency. |
+| `request_id` | string | Yes | UUID v4 that enforces idempotency (exactly 36 characters with hyphens). |
 | `amount` | integer | Yes | Amount in paisa (PKR). |
 | `aggregator_merchant_identifier` | string | Yes | Token returned when you created the merchant. |
 | `order_id` | string | Yes | Merchant order reference. |

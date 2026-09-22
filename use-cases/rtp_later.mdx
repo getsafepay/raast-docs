@@ -38,7 +38,7 @@ Use this flow when customers may approve hours or days after you submit the paym
   <Tab title="Request Fields">
 
 <ParamField path="request_id" type="string" required>
-  UUID that keeps the scheduled Request To Pay idempotent.
+  UUID v4 that keeps the scheduled Request To Pay idempotent (exactly 36 characters with hyphens).
 </ParamField>
 <ParamField path="amount" type="integer" required>
   Amount in paisa. `22000` equals PKR 220.00.

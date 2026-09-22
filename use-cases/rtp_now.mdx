@@ -38,7 +38,7 @@ Use this recipe to collect funds instantly. Submit a Request To Pay payload with
   <Tab title="Request Fields">
 
 <ParamField path="request_id" type="string" required>
-  UUID that enforces idempotency. Reuse only when retrying the exact same payload.
+  UUID v4 that enforces idempotency (exactly 36 characters with hyphens). Reuse only when retrying the exact same payload.
 </ParamField>
 <ParamField path="amount" type="integer" required>
   Amount in paisa (PKR minor units). `94000` represents PKR 940.00.
