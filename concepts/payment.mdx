@@ -115,9 +115,58 @@ console.log('Payment status', paymentPayload.data.status);
 | `P_PARTIALLY_REFUNDED` | Payment partially refunded. |
 | `P_REFUNDED` | Payment fully refunded. |
 
+### Charges breakdown
+
+Every captured payment, including one that is later fully refunded, carries a breakdown of the fees and taxes deducted before the net amount is credited to the merchant. Read it with `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/charges`.
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `payment_id` | string | Payment the charges apply to. |
+| `gross_amount` | string | Total payment amount in paisa before deductions. |
+| `currency` | string | ISO 4217 currency code, for example `PKR`. |
+| `fee_amount` | string | Fee charged for the payment, in paisa. |
+| `sales_tax_on_fee_amount` | string | Sales tax charged on the fee, in paisa. |
+| `sales_tax_withholding_amount` | string | Sales tax withheld on behalf of the merchant, in paisa. |
+| `income_tax_withholding_amount` | string | Income tax withheld on behalf of the merchant, in paisa. |
+| `digital_tax_amount` | string | Digital presence tax charged for the payment, in paisa. |
+| `net_amount` | string | Amount credited to the merchant, in paisa. |
+
+The net amount is the gross amount minus every deduction:
+
+```text
+net_amount = gross_amount - fee_amount - sales_tax_on_fee_amount
+             - sales_tax_withholding_amount - income_tax_withholding_amount
+             - digital_tax_amount
+```
+
+<Callout type="info">Charges are recorded shortly after a payment reaches `P_CAPTURED`. Until then, and for payments that never complete, the endpoint returns `404`. Refunded payments (`P_REFUNDED`) keep returning the charges of the original payment.</Callout>
+
+```bash cURL
+curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/charges" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}"
+```
+
+```json Response
+{
+  "api_version": "v1",
+  "data": {
+    "payment_id": "pm_8084eaf1-0f1b-43ef-bd27-23743d9c37f6",
+    "gross_amount": "500",
+    "currency": "PKR",
+    "fee_amount": "2",
+    "net_amount": "483",
+    "sales_tax_on_fee_amount": "0",
+    "sales_tax_withholding_amount": "10",
+    "income_tax_withholding_amount": "5",
+    "digital_tax_amount": "0"
+  }
+}
+```
+
 ### Monitoring
 
 - Poll `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` for dashboards.
+- Call `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/charges` to show the fee and tax breakdown alongside a captured or refunded payment.
 - Subscribe to [webhooks](/concepts/webhooks) to receive final states.
 - Use `request_id` to deduplicate retries.
 
@@ -128,6 +177,7 @@ console.log('Payment status', paymentPayload.data.status);
 | `POST /v1/aggregators/{{aggregator_id}}/payments` | Create RTP Now or RTP Later payments. |
 | `GET /v1/aggregators/{{aggregator_id}}/payments` | List payments with filters and pagination. |
 | `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` | Read a single payment. |
+| `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/charges` | Read the fee and tax breakdown of a payment. |
 
 ## See also
 
