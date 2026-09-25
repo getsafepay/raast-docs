@@ -412,6 +412,25 @@ paths:
         "200":
           $ref: "#/components/responses/FindPaymentResponse"
 
+  /v1/aggregators/{raast-aggregator-id}/payments/{payment-id}/charges:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/PaymentIdParam"
+    get:
+      tags:
+        - Payments
+      summary: Find Payment Charges
+      description: Retrieve the fee and tax breakdown applied to a payment.
+      security:
+        - apiKey: []
+      responses:
+        "200":
+          $ref: "#/components/responses/FindPaymentChargesResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /v1/aggregators/{raast-aggregator-id}/payout:
     parameters:
       - $ref: "#/components/parameters/AggregatorIdParam"
@@ -2805,6 +2824,46 @@ components:
           type: object
           description: Settlement information for the payment when applicable.
           nullable: true
+    PaymentCharges:
+      type: object
+      description: Fee and tax breakdown applied to a payment. All amounts are in the lowest currency denomination (paisa).
+      properties:
+        payment_id:
+          type: string
+          description: Identifier of the payment the charges apply to.
+          example: pm_8084eaf1-0f1b-43ef-bd27-23743d9c37f6
+        gross_amount:
+          type: string
+          description: Total payment amount before any deductions.
+          example: "500"
+        currency:
+          type: string
+          description: ISO 4217 currency code.
+          example: PKR
+        fee_amount:
+          type: string
+          description: Fee charged for the payment.
+          example: "2"
+        net_amount:
+          type: string
+          description: Amount credited to the merchant after fees and taxes.
+          example: "483"
+        sales_tax_on_fee_amount:
+          type: string
+          description: Sales tax charged on the fee.
+          example: "0"
+        sales_tax_withholding_amount:
+          type: string
+          description: Sales tax withheld on behalf of the merchant.
+          example: "10"
+        income_tax_withholding_amount:
+          type: string
+          description: Income tax withheld on behalf of the merchant.
+          example: "5"
+        digital_tax_amount:
+          type: string
+          description: Digital presence tax charged for the payment.
+          example: "0"
     PaymentCreationResult:
       type: object
       description: Data returned when an RTP request is created successfully.
@@ -5678,6 +5737,36 @@ components:
                       updated_at: "2025-06-15T11:12:45Z"
                   refunds: []
                   settlement: null
+    FindPaymentChargesResponse:
+      description: This response contains the fee and tax breakdown of a payment
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PaymentCharges"
+          examples:
+            PaymentChargesFound:
+              value:
+                api_version: v1
+                data:
+                  payment_id: pm_8084eaf1-0f1b-43ef-bd27-23743d9c37f6
+                  gross_amount: "500"
+                  currency: PKR
+                  fee_amount: "2"
+                  net_amount: "483"
+                  sales_tax_on_fee_amount: "0"
+                  sales_tax_withholding_amount: "10"
+                  income_tax_withholding_amount: "5"
+                  digital_tax_amount: "0"
     CreateRefundResponse:
       description: This response contains details of a refund
       headers:
