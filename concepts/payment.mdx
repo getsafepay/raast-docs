@@ -115,6 +115,60 @@ console.log('Payment status', paymentPayload.data.status);
 | `P_PARTIALLY_REFUNDED` | Payment partially refunded. |
 | `P_REFUNDED` | Payment fully refunded. |
 
+### Cancelling a payment
+
+Withdraw an **unsettled** RTP before the customer authorizes it. Cancellation targets a single payment and applies only while it is in `P_INITIATED` or `P_RECEIVED`; terminal payments (for example `P_SETTLED`, `P_CAPTURED`, `P_REJECTED`, or one already `P_CANCELLED`) cannot be cancelled.
+
+- **Method & path**: `POST /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/cancel`
+- **Authentication**: `X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}`
+- **Idempotency**: Supply a fresh `request_id` for the cancellation — it must be distinct from the payment's own `request_id`.
+
+| Field | Type | Required? | Notes |
+| --- | --- | --- | --- |
+| `request_id` | string | Yes | UUID v4 idempotency key for the cancel (exactly 36 characters). Must differ from the original payment's `request_id`. |
+| `reason` | enum | Yes | Public cancellation reason. Only `PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST` is accepted today; the other codes are reserved until Raast confirms support. |
+| `additional_info` | string | No | Free-text context (max 105 characters). |
+
+A `202 Accepted` response means Safepay built and posted the cancellation (an ISO 20022 `camt.055`) to Raast. **The final outcome is asynchronous** — the response returns a cancellation record whose `status` starts at `PAYMENT_CANCEL_CREATED` and later resolves to `PAYMENT_CANCEL_ACCEPTED` or `PAYMENT_CANCEL_REJECTED`.
+
+| Cancellation status | Description |
+| --- | --- |
+| `PAYMENT_CANCEL_CREATED` | The `camt.055` was posted; awaiting the rail result. This is the pending state. |
+| `PAYMENT_CANCEL_ACCEPTED` | Raast accepted the cancellation; the payment moves to `P_CANCELLED`. |
+| `PAYMENT_CANCEL_REJECTED` | Raast, or the `camt.055` message itself, rejected the cancellation; the payment keeps its previous status. |
+
+<Callout type="info">When the cancellation is accepted the payment reaches `P_CANCELLED` and emits the `payment.voided` [webhook](/concepts/webhooks). Poll the payment or subscribe to webhooks for the final result — do not treat the `202` as a completed cancellation.</Callout>
+
+<CodeGroup>
+
+```bash cURL
+curl --request POST "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/cancel" \
+  --header "X-SFPY-AGGREGATOR-SECRET-KEY: {{secret_key}}" \
+  --header "Content-Type: application/json" \
+  --data '{
+    "request_id": "{{request_id}}",
+    "reason": "PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST",
+    "additional_info": "Customer requested cancellation"
+  }'
+```
+
+```json Response
+{
+  "api_version": "v1",
+  "data": {
+    "token": "pc_3b2a1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    "payment_id": "pm_96bc0ef4-7857-47fb-a345-c411a23aeb92",
+    "request_id": "f0a3b1c2-8d4e-4f6a-9b1c-2d3e4f5a6b7c",
+    "status": "PAYMENT_CANCEL_CREATED",
+    "reason": "PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST",
+    "iso_reason": "CUST",
+    "created_at": "2025-06-26T10:58:17Z"
+  }
+}
+```
+
+</CodeGroup>
+
 ### Charges breakdown
 
 Every captured payment, including one that is later fully refunded, carries a breakdown of the fees and taxes deducted before the net amount is credited to the merchant. Read it with `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/charges`.
@@ -178,6 +232,7 @@ curl --request GET "{{base_url}}/v1/aggregators/{{aggregator_id}}/payments/{{pay
 | `GET /v1/aggregators/{{aggregator_id}}/payments` | List payments with filters and pagination. |
 | `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}` | Read a single payment. |
 | `GET /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/charges` | Read the fee and tax breakdown of a payment. |
+| `POST /v1/aggregators/{{aggregator_id}}/payments/{{payment_id}}/cancel` | Request cancellation of an unsettled RTP payment. |
 
 ## See also
 
