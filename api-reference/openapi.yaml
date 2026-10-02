@@ -431,6 +431,38 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /v1/aggregators/{raast-aggregator-id}/payments/{payment-id}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/AggregatorIdParam"
+      - $ref: "#/components/parameters/PaymentIdParam"
+    post:
+      tags:
+        - Payments
+      summary: Cancel RTP
+      description: >
+        Request cancellation of an unsettled Request-to-Pay (RTP) payment. The
+        payment must still be in a `P_INITIATED` or `P_RECEIVED` state;
+        terminal payments cannot be cancelled. A `202 Accepted` response means
+        the cancellation request was created and the camt.055 was posted to
+        Raast - the final outcome is asynchronous. Poll the payment and inspect
+        the cancellation `status`, which progresses from `PAYMENT_CANCEL_CREATED`
+        to either `PAYMENT_CANCEL_ACCEPTED` or `PAYMENT_CANCEL_REJECTED`.
+      security:
+        - apiKey: []
+      requestBody:
+        $ref: "#/components/requestBodies/CancelPayment"
+      responses:
+        "202":
+          $ref: "#/components/responses/CancelPaymentResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /v1/aggregators/{raast-aggregator-id}/payout:
     parameters:
       - $ref: "#/components/parameters/AggregatorIdParam"
@@ -4032,6 +4064,45 @@ components:
                 order_id: order_paylater_token
                 type: RTP_LATER
                 expiry_in_days: 7
+    CancelPayment:
+      description: Request to cancel an unsettled RTP payment
+      content:
+        application/json:
+          schema:
+            type: object
+            description: RTP cancellation payload
+            properties:
+              request_id:
+                type: string
+                description: >
+                  Client-supplied UUID v4 idempotency key for the cancellation
+                  (exactly 36 characters with hyphens). Must be distinct from the
+                  original payment's request id.
+                format: uuid
+                example: "f0a3b1c2-8d4e-4f6a-9b1c-2d3e4f5a6b7c"
+              reason:
+                type: string
+                description: >
+                  Public reason for the cancellation. Only
+                  `PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST` is currently accepted;
+                  the remaining reason codes are reserved until Raast confirms
+                  support for them.
+                enum:
+                  - PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST
+                example: PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST
+              additional_info:
+                type: string
+                description: Optional free-text context for the cancellation (max 105 characters).
+                maxLength: 105
+            required:
+              - request_id
+              - reason
+          examples:
+            Cancel RTP:
+              value:
+                request_id: "f0a3b1c2-8d4e-4f6a-9b1c-2d3e4f5a6b7c"
+                reason: PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST
+                additional_info: Customer requested cancellation
     CreatePayout:
       description: Request to initiate a payout
       content:
@@ -5540,6 +5611,95 @@ components:
                     fixed_rate: "40000"
                     tax_rate: 0
                     tax_region: ""
+    CancelPaymentResponse:
+      description: >
+        Cancellation request accepted. The camt.055 has been posted to Raast and
+        the final outcome is delivered asynchronously.
+      headers:
+        Content-Length:
+          $ref: "#/components/headers/ContentLengthHeader"
+        Date:
+          $ref: "#/components/headers/DateHeader"
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/StandardResponse"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    description: The created cancellation record.
+                    properties:
+                      token:
+                        type: string
+                        description: Unique cancellation identifier.
+                        example: pc_3b2a1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                      payment_id:
+                        type: string
+                        description: Token of the payment being cancelled.
+                        example: pm_96bc0ef4-7857-47fb-a345-c411a23aeb92
+                      request_id:
+                        type: string
+                        description: Client-supplied idempotency key for the cancellation.
+                      status:
+                        type: string
+                        description: >
+                          Lifecycle of the cancellation. `PAYMENT_CANCEL_CREATED` is the
+                          pending state (including while a camt.029 diagnostic has been
+                          received but no terminal rail result has arrived); it resolves
+                          to `PAYMENT_CANCEL_ACCEPTED` or `PAYMENT_CANCEL_REJECTED`.
+                        enum:
+                          - PAYMENT_CANCEL_CREATED
+                          - PAYMENT_CANCEL_ACCEPTED
+                          - PAYMENT_CANCEL_REJECTED
+                      reason:
+                        type: string
+                        description: Public reason supplied for the cancellation.
+                      additional_info:
+                        type: string
+                        description: Free-text context supplied with the cancellation.
+                      iso_reason:
+                        type: string
+                        description: Exact camt.055 cancellation reason code sent to Raast.
+                      iso_status:
+                        type: string
+                        description: Exact camt.029 investigation status (CNCL, RJCR, or PDCR); empty until received.
+                      iso_status_reason:
+                        type: string
+                        description: Reason code accompanying the camt.029 status, when present.
+                      iso_status_additional_info:
+                        type: string
+                        description: Additional information accompanying the camt.029 status, when present.
+                      dispatch_error:
+                        type: string
+                        description: Populated when an admi.002 rejects the outgoing camt.055 message.
+                      resolved_at:
+                        type: string
+                        format: date-time
+                        nullable: true
+                        description: When the cancellation reached a terminal status.
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+          examples:
+            CancellationRequested:
+              value:
+                api_version: v1
+                data:
+                  token: pc_3b2a1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d
+                  payment_id: pm_96bc0ef4-7857-47fb-a345-c411a23aeb92
+                  request_id: f0a3b1c2-8d4e-4f6a-9b1c-2d3e4f5a6b7c
+                  status: PAYMENT_CANCEL_CREATED
+                  reason: PAYMENT_CANCEL_REASON_CUSTOMER_REQUEST
+                  additional_info: Customer requested cancellation
+                  iso_reason: CUST
+                  iso_status: ""
+                  created_at: "2025-06-26T10:58:17Z"
+                  updated_at: "2025-06-26T10:58:17Z"
     CreatePaymentResponse:
       description: Response envelope returned after a payment request is accepted.
       headers:
