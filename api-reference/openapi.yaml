@@ -2143,6 +2143,19 @@ components:
           description: Days until the RTP LATER request expires; must be between 1 and 40.
           minimum: 1
           maximum: 40
+        metadata:
+          type: object
+          description: >
+            Optional string key/value pairs stored with the payment (up to 20
+            pairs; keys up to 40 characters, values up to 500). Set `order_id`
+            to the merchant's own order number to show it in the Merchant
+            Order ID column of settlement reports.
+          maxProperties: 20
+          additionalProperties:
+            type: string
+            maxLength: 500
+          example:
+            order_id: "SHOP-1001"
       required:
         - request_id
         - amount
@@ -4207,6 +4220,19 @@ components:
               expiry_in_minutes:
                 type: integer
                 description: Optional expiry window in minutes for dynamic QR codes; defaults to 180 when omitted
+              metadata:
+                type: object
+                description: >
+                  Optional string key/value pairs stored with the resulting
+                  payment (up to 20 pairs; keys up to 40 characters, values up
+                  to 500). Set `order_id` to the merchant's own order number to
+                  show it in the Merchant Order ID column of settlement reports.
+                maxProperties: 20
+                additionalProperties:
+                  type: string
+                  maxLength: 500
+                example:
+                  order_id: "SHOP-1001"
             required:
               - type
               - aggregator_merchant_identifier
