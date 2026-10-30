@@ -64,6 +64,9 @@ Use this flow when customers may approve hours or days after you submit the paym
 <ParamField path="debitor_vault_token" type="string">
   Reference a stored payment method for recurring requests. One of the debtor identifiers must be supplied.
 </ParamField>
+<ParamField path="metadata" type="object">
+  Optional string key/value pairs stored with the payment (up to 20 pairs; keys up to 40 characters, values up to 500). Set `metadata.order_id` to the merchant's own order number to show it in the **Merchant Order ID** column of [settlement reports](/concepts/settlement-reports).
+</ParamField>
 
   </Tab>
   <Tab title="API Example">
