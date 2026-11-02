@@ -59,6 +59,9 @@ Dynamic QR codes encode order-specific metadata so you can present a scannable R
 <ParamField path="expiry_in_minutes" type="integer">
   Optional expiry window (defaults to 180) after which the QR is invalid.
 </ParamField>
+<ParamField path="metadata" type="object">
+  Optional string key/value pairs stored with the resulting payment (up to 20 pairs; keys up to 40 characters, values up to 500). Set `metadata.order_id` to the merchant's own order number to show it in the **Merchant Order ID** column of [settlement reports](/concepts/settlement-reports).
+</ParamField>
 
   </Tab>
   <Tab title="API Example">

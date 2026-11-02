@@ -84,6 +84,17 @@ console.log('Current status', payload.data.status);
   Report exports are generated asynchronously. Keep polling the read endpoint until status indicates REPORT_STATUS_SUCCEEDED, then use the returned file URL.
 </Callout>
 
+## Order references in the report
+
+Each report row carries two order references:
+
+| Column | Source |
+| --- | --- |
+| `Order ID` | The `order_id` you sent when creating the RTP or dynamic QR. |
+| `Merchant Order ID` | The `metadata.order_id` value you sent with the RTP or dynamic QR. Empty when not provided. |
+
+Use `metadata.order_id` when your `order_id` is an internal reference (for example, a checkout session) and you also want the merchant's own order number in the report. Refund rows show the values of the original payment.
+
 ## List settlement report exports
 
 Lists report exports for auditing.

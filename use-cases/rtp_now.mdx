@@ -64,6 +64,9 @@ Use this recipe to collect funds instantly. Submit a Request To Pay payload with
 <ParamField path="debitor_vault_token" type="string">
   Reference to a stored payment method for repeat customers. One of the debtor identifiers is required.
 </ParamField>
+<ParamField path="metadata" type="object">
+  Optional string key/value pairs stored with the payment (up to 20 pairs; keys up to 40 characters, values up to 500). Set `metadata.order_id` to the merchant's own order number to show it in the **Merchant Order ID** column of [settlement reports](/concepts/settlement-reports).
+</ParamField>
 
   </Tab>
   <Tab title="API Example">
